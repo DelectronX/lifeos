@@ -1,0 +1,121 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/**
+ * Design tokens.
+ * A calm, paper-like light theme and a low-contrast slate dark theme.
+ * One accent (indigo) used sparingly for interactive affordances only.
+ */
+@layer base {
+  :root {
+    --c-surface: 255 255 255;
+    --c-surface-raised: 255 255 255;
+    --c-surface-sunken: 248 250 252;
+    --c-line: 226 232 240;
+    --c-line-strong: 203 213 225;
+    --c-ink: 15 23 42;
+    --c-ink-muted: 71 85 105;
+    --c-ink-faint: 148 163 184;
+    --c-ink-inverse: 255 255 255;
+    --c-accent: 79 70 229;
+    --c-accent-soft: 238 242 255;
+    --c-accent-ink: 67 56 202;
+    --c-positive: 16 122 87;
+    --c-caution: 180 118 8;
+    --c-critical: 190 42 42;
+
+    --sp-gutter: 1.5rem;
+  }
+
+  .dark {
+    --c-surface: 15 20 32;
+    --c-surface-raised: 22 28 42;
+    --c-surface-sunken: 11 15 24;
+    --c-line: 39 48 66;
+    --c-line-strong: 55 66 88;
+    --c-ink: 226 232 240;
+    --c-ink-muted: 148 163 184;
+    --c-ink-faint: 100 116 139;
+    --c-ink-inverse: 15 23 42;
+    --c-accent: 129 140 248;
+    --c-accent-soft: 32 36 66;
+    --c-accent-ink: 165 180 252;
+    --c-positive: 52 191 143;
+    --c-caution: 227 168 62;
+    --c-critical: 248 113 113;
+  }
+
+  * {
+    border-color: rgb(var(--c-line));
+  }
+
+  html, body, #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-surface-sunken text-ink antialiased;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    text-rendering: optimizeLegibility;
+  }
+
+  h1, h2, h3, h4 {
+    @apply text-ink font-semibold tracking-[-0.011em];
+  }
+
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: rgb(var(--c-line-strong));
+    border-radius: 999px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover { background-color: rgb(var(--c-ink-faint)); background-clip: content-box; }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-accent/50 ring-offset-1 ring-offset-surface;
+  }
+
+  input[type='number']::-webkit-inner-spin-button { opacity: 0.4; }
+}
+
+@layer components {
+  /* Typographic scale used across the app */
+  .t-display { @apply text-2xl font-semibold tracking-[-0.02em] text-ink; }
+  .t-title { @apply text-lg font-semibold tracking-[-0.014em] text-ink; }
+  .t-section { @apply text-sm font-semibold text-ink; }
+  .t-body { @apply text-sm text-ink; }
+  .t-muted { @apply text-sm text-ink-muted; }
+  .t-meta { @apply text-xs text-ink-faint; }
+  .t-label { @apply text-2xs font-medium uppercase tracking-[0.08em] text-ink-faint; }
+  .t-num { @apply tabular-nums; }
+
+  .hairline { @apply border-line; }
+}
+
+@layer utilities {
+  .scrollbar-none { scrollbar-width: none; }
+  .scrollbar-none::-webkit-scrollbar { display: none; }
+
+  .animate-in-fade { animation: lo-fade 180ms cubic-bezier(0.22, 1, 0.36, 1); }
+  .animate-in-rise { animation: lo-rise 220ms cubic-bezier(0.22, 1, 0.36, 1); }
+}
+
+@keyframes lo-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes lo-rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
