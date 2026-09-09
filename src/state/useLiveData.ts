@@ -1,9 +1,9 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { db } from '@/db/db';
 import { mergeSchedulingConfig } from '@/config/schedulingConfig';
 import { addDaysToKey, todayKey } from '@/lib/date';
-import type { DateKey, SchedulingConfig, Settings, Tracker, UserProfile } from '@/types';
+import type { DateKey, Goal, ScheduleBlock, SchedulingConfig, Settings, Task, Tracker, UserProfile } from '@/types';
 
 /**
  * Thin live-query hooks. Every read in the UI goes through one of these, so
@@ -146,4 +146,73 @@ export function usePapers() {
 
 export function useRecentPlanRuns(limit = 10) {
   return useLiveQuery(() => db.planRuns.orderBy('at').reverse().limit(limit).toArray(), [limit]) ?? [];
+}
+
+/* ------------------------------------------------------------------ */
+/* Phase 2: schedule templates, recurring rules, block/task joins       */
+/* ------------------------------------------------------------------ */
+
+export function useTemplates() {
+  return useLiveQuery(() => db.templates.orderBy('name').toArray(), []) ?? [];
+}
+
+export function useTemplate(id: string | null | undefined) {
+  return useLiveQuery(() => (id ? db.templates.get(id) : undefined), [id]);
+}
+
+export function useRecurringRules(activeOnly = false) {
+  return (
+    useLiveQuery(async () => {
+      const all = await db.recurringRules.toArray();
+      return activeOnly ? all.filter((r) => r.active) : all;
+    }, [activeOnly]) ?? []
+  );
+}
+
+export function useRecurringRule(id: string | null | undefined) {
+  return useLiveQuery(() => (id ? db.recurringRules.get(id) : undefined), [id]);
+}
+
+export function useBlock(id: string | null | undefined) {
+  return useLiveQuery(() => (id ? db.blocks.get(id) : undefined), [id]);
+}
+
+export function useGoal(id: string | null | undefined) {
+  return useLiveQuery(() => (id ? db.goals.get(id) : undefined), [id]);
+}
+
+/** Tasks linked to a goal — the third level of the Goal > Milestone > Task tree. */
+export function useTasksForGoal(goalId: string | null | undefined): Task[] {
+  return (
+    useLiveQuery<Task[]>(
+      async () => (goalId ? db.tasks.where('goalId').equals(goalId).toArray() : []),
+      [goalId],
+    ) ?? []
+  );
+}
+
+/** Every schedule block attached to a task, ordered in time. */
+export function useBlocksForTask(taskId: string | null | undefined): ScheduleBlock[] {
+  return (
+    useLiveQuery<ScheduleBlock[]>(
+      async () => (taskId ? db.blocks.where('taskId').equals(taskId).sortBy('start') : []),
+      [taskId],
+    ) ?? []
+  );
+}
+
+/** id -> Goal map for label lookups in lists. */
+export function useGoalMap(): Record<string, Goal> {
+  const goals = useGoals(false);
+  return useMemo(() => Object.fromEntries(goals.map((g) => [g.id, g])), [goals]);
+}
+
+/** A ticking "now" timestamp, used by the current-time indicator. */
+export function useNow(intervalMs = 30_000): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), intervalMs);
+    return () => clearInterval(t);
+  }, [intervalMs]);
+  return now;
 }

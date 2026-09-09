@@ -166,6 +166,14 @@ export type TimeWindow = 'morning' | 'afternoon' | 'evening' | 'night' | 'any';
 /** Cognitive/physical intensity - drives mandatory breaks between sessions. */
 export type Intensity = 'low' | 'medium' | 'high';
 
+/**
+ * How willing the user is to let engines move this task.
+ *   fixed    - must stay exactly where the user put it
+ *   movable  - may be moved, but only as a whole
+ *   flexible - may be moved, split and reshaped freely
+ */
+export type TaskFlexibility = 'fixed' | 'movable' | 'flexible';
+
 export interface TaskStatusChange {
   from: TaskStatus | null;
   to: TaskStatus;
@@ -213,6 +221,16 @@ export interface Task extends BaseEntity {
   /** Number of times a rescheduling engine has moved this task. */
   rescheduleCount: number;
   sortOrder: number;
+
+  /* --- Phase 2 additions (all optional so existing records stay valid) --- */
+  /** Free-text topic/chapter within the tracker's subject. */
+  topic?: string;
+  /** Do not schedule before this day (soft floor for the scheduler). */
+  earliestDate?: DateKey | null;
+  /** Movement policy for engines. Defaults to `flexible`. */
+  flexibility?: TaskFlexibility;
+  /** External reference links (URLs) attached to the task. */
+  links?: string[];
 }
 
 /* ------------------------------------------------------------------ */
@@ -260,6 +278,19 @@ export interface ScheduleBlock extends BaseEntity {
   actualStart: Timestamp | null;
   actualEnd: Timestamp | null;
   notes?: string;
+
+  /* --- Phase 2 additions (optional; existing rows stay valid) --- */
+  /** Set when this block was materialised from a RecurringRule. */
+  recurringRuleId?: ID | null;
+  /**
+   * The rule's nominal occurrence day. Kept even when the block is dragged to
+   * another time so "this occurrence" edits stay attached to the right slot.
+   */
+  occurrenceDate?: DateKey | null;
+  /** True when the user detached this occurrence from its series. */
+  detachedFromSeries?: boolean;
+  /** Set when this block came from applying a ScheduleTemplate. */
+  templateId?: ID | null;
 }
 
 export interface ScheduleTemplateEntry {
@@ -309,7 +340,30 @@ export interface RecurringRule extends BaseEntity {
   } | null;
   lastGeneratedDate: DateKey | null;
   active: boolean;
+
+  /* --- Phase 2 additions --- */
+  /** Occurrence dates the user removed. Never regenerated. */
+  exceptions?: DateKey[];
+  /**
+   * Per-occurrence overrides keyed by the occurrence DateKey. Used by the
+   * "this occurrence only" edit mode so the series definition stays intact.
+   */
+  overrides?: Record<DateKey, RecurrenceOverride>;
 }
+
+/** A single-occurrence override of a recurring block. */
+export interface RecurrenceOverride {
+  title?: string;
+  startMinute?: MinuteOfDay;
+  durationMinutes?: number;
+  trackerId?: ID;
+  kind?: BlockKind;
+  protected?: boolean;
+  notes?: string;
+}
+
+/** Which occurrences an edit to a recurring series applies to. */
+export type RecurrenceEditScope = 'occurrence' | 'future' | 'series';
 
 /* ------------------------------------------------------------------ */
 /* Timers                                                              */

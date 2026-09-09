@@ -1,5 +1,6 @@
 import { db } from '@/db/db';
-import { todayKey } from '@/lib/date';
+import { addDaysToKey, todayKey } from '@/lib/date';
+import { materialiseAllRules } from './recurrenceService';
 
 /**
  * Startup maintenance. Runs once per app load, guarded so a second load on the
@@ -44,6 +45,16 @@ export interface MaintenanceStep {
 
 /** Later phases push their steps here at module load. */
 export const MAINTENANCE_STEPS: MaintenanceStep[] = [
+  {
+    name: 'materialise-recurring-rules',
+    // Keeps the next 60 days of recurring blocks/tasks present. Idempotent:
+    // occurrences that already exist are skipped, exceptions are respected.
+    run: async (today) => {
+      const result = await materialiseAllRules(today, addDaysToKey(today, 60));
+      const created = result.blocksCreated + result.tasksCreated;
+      return created ? `Generated ${created} recurring occurrence${created === 1 ? '' : 's'}.` : null;
+    },
+  },
   {
     name: 'prune-empty-plan-runs',
     // Undone plan runs older than 60 days carry no value and cost space.

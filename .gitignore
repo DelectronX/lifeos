@@ -1,8 +1,5 @@
 node_modules
 dist
-dist-ssr
+*.tsbuildinfo
 build.log
-*.local
-.DS_Store
-.vite
-coverage
+browser-out.txt

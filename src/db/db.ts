@@ -7,7 +7,7 @@ import type {
 } from '@/types';
 
 /** Bumped whenever the Dexie stores definition changes. Also written into exports. */
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 /**
  * Index design notes (this app must stay fast with years of history):
@@ -88,6 +88,21 @@ export class LifeOSDatabase extends Dexie {
       achievements: 'id, &key, category, unlockedAt, [category+tier]',
       snapshots: 'id, scope, periodKey, &[scope+periodKey], computedAt',
       planRuns: 'id, at, kind, undone, [kind+at]',
+    });
+
+    /**
+     * v2 (Phase 2): schedule blocks gained a link back to the RecurringRule /
+     * ScheduleTemplate that produced them, so "this occurrence / this and
+     * future / entire series" edits and template re-applies can find their
+     * materialised rows without a full table scan. Only `blocks` changes;
+     * every other store is carried forward untouched.
+     */
+    this.version(2).stores({
+      blocks:
+        'id, date, start, end, taskId, trackerId, goalId, status, kind, planRunId, splitGroupId, ' +
+        'recurringRuleId, templateId, occurrenceDate, ' +
+        '[date+start], [date+status], [taskId+date], [trackerId+date], [status+start], ' +
+        '[recurringRuleId+date], [templateId+date]',
     });
   }
 }
