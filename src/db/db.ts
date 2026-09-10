@@ -1,13 +1,13 @@
 import Dexie, { type Table } from 'dexie';
 import type {
-  Achievement, Activity, AnalyticsSnapshot, Attachment, Goal, Habit, Milestone,
+  Achievement, Activity, AnalyticsSnapshot, Attachment, BackupSnapshot, Goal, Habit, Milestone,
   Paper, PlanRun, Question, QuestionAttempt, RecurringRule, Resource,
   RevisionEntry, RevisionPlan, ScheduleBlock, ScheduleTemplate, Settings,
   Task, TimerSession, Tracker, UserProfile, XPTransaction,
 } from '@/types';
 
 /** Bumped whenever the Dexie stores definition changes. Also written into exports. */
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 /**
  * Index design notes (this app must stay fast with years of history):
@@ -47,6 +47,7 @@ export class LifeOSDatabase extends Dexie {
   achievements!: Table<Achievement, string>;
   snapshots!: Table<AnalyticsSnapshot, string>;
   planRuns!: Table<PlanRun, string>;
+  backups!: Table<BackupSnapshot, string>;
 
   constructor(name = 'lifeos') {
     super(name);
@@ -104,6 +105,18 @@ export class LifeOSDatabase extends Dexie {
         '[date+start], [date+status], [taskId+date], [trackerId+date], [status+start], ' +
         '[recurringRuleId+date], [templateId+date]',
     });
+
+    /**
+     * v3 (Phase 8): local backup snapshots, plus reverse-lookup multi-entry
+     * indexes on resources so "what is attached to this task/block/goal" is an
+     * index hit rather than a full table scan. `attachments` gains blockId and
+     * goalId for the same reason. Every other store carries forward untouched.
+     */
+    this.version(3).stores({
+      resources: 'id, trackerId, type, archived, title, *tags, *taskIds, *blockIds, *goalIds',
+      attachments: 'id, resourceId, taskId, blockId, goalId, createdAt',
+      backups: 'id, at, kind, [kind+at]',
+    });
   }
 }
 
@@ -135,6 +148,7 @@ export function tableByName(name: string): Table<any, string> | null {
     achievements: db.achievements,
     snapshots: db.snapshots,
     planRuns: db.planRuns,
+    backups: db.backups,
   };
   return map[name] ?? null;
 }

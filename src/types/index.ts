@@ -96,10 +96,69 @@ export interface Settings extends BaseEntity {
     breakEnd: boolean;
     revisionDue: boolean;
     dailyReviewHour: number;
+    /** Phase 8: how far ahead of a block an "upcoming" reminder fires. */
+    leadMinutes?: number;
+    /** Phase 8: notify when a task's due date arrives. */
+    taskDue?: boolean;
   };
   lastDailyReviewDate: DateKey | null;
   lastWeeklyReviewDate: DateKey | null;
+
+  /* --- Phase 8 additions (all optional so existing rows stay valid) --- */
+  /** Timer + pomodoro defaults, read by the Focus module. */
+  timers?: TimerPreferences;
+  /** Presentation-only preferences. */
+  appearance?: AppearancePreferences;
+  /** Automatic local backup policy. */
+  backup?: BackupPreferences;
 }
+
+export interface TimerPreferences {
+  defaultFocusMinutes: number;
+  pomodoroWorkMinutes: number;
+  pomodoroShortBreakMinutes: number;
+  pomodoroLongBreakMinutes: number;
+  pomodorosBeforeLongBreak: number;
+  autoStartBreaks: boolean;
+}
+
+export interface AppearancePreferences {
+  density: 'comfortable' | 'compact';
+  use24HourClock: boolean;
+  reduceMotion: boolean;
+}
+
+export interface BackupPreferences {
+  autoBackupEnabled: boolean;
+  /** Minimum days between automatic snapshots. */
+  intervalDays: number;
+  /** How many automatic snapshots to retain; older ones are pruned. */
+  keepCount: number;
+  lastBackupAt: Timestamp | null;
+}
+
+/** Default values for every Phase 8 preference group. */
+export const DEFAULT_TIMER_PREFERENCES: TimerPreferences = {
+  defaultFocusMinutes: 45,
+  pomodoroWorkMinutes: 25,
+  pomodoroShortBreakMinutes: 5,
+  pomodoroLongBreakMinutes: 20,
+  pomodorosBeforeLongBreak: 4,
+  autoStartBreaks: true,
+};
+
+export const DEFAULT_APPEARANCE_PREFERENCES: AppearancePreferences = {
+  density: 'comfortable',
+  use24HourClock: false,
+  reduceMotion: false,
+};
+
+export const DEFAULT_BACKUP_PREFERENCES: BackupPreferences = {
+  autoBackupEnabled: true,
+  intervalDays: 1,
+  keepCount: 5,
+  lastBackupAt: null,
+};
 
 /* ------------------------------------------------------------------ */
 /* Goals                                                               */
@@ -536,6 +595,15 @@ export interface Resource extends BaseEntity {
   tags: string[];
   archived: boolean;
   notes?: string;
+
+  /* --- Phase 8 additions (optional; existing rows stay valid) --- */
+  /** Reverse links, multi-entry indexed so attachment lookups never scan. */
+  taskIds?: ID[];
+  blockIds?: ID[];
+  goalIds?: ID[];
+  /** MIME type of the backing attachment, cached for icon/open decisions. */
+  mime?: string;
+  sizeBytes?: number;
 }
 
 export interface Attachment extends BaseEntity {
@@ -545,6 +613,10 @@ export interface Attachment extends BaseEntity {
   blob: Blob;
   resourceId: ID | null;
   taskId: ID | null;
+
+  /* --- Phase 8 additions --- */
+  blockId?: ID | null;
+  goalId?: ID | null;
 }
 
 /* ------------------------------------------------------------------ */
@@ -707,6 +779,28 @@ export interface PlanRun extends BaseEntity {
   changes: RecordChange[];
   undone: boolean;
   undoneAt: Timestamp | null;
+}
+
+/* ------------------------------------------------------------------ */
+/* Local backup snapshots (Phase 8)                                    */
+/* ------------------------------------------------------------------ */
+
+export type BackupKind = 'auto' | 'manual' | 'pre_import';
+
+/**
+ * A point-in-time JSON export kept inside IndexedDB. Nothing leaves the
+ * device: this is a local safety net, not a sync mechanism.
+ */
+export interface BackupSnapshot extends BaseEntity {
+  at: Timestamp;
+  kind: BackupKind;
+  schemaVersion: number;
+  /** Serialised ExportBundle. Stored as text so restore is a pure parse. */
+  payload: string;
+  sizeBytes: number;
+  /** Row counts per table, shown in the restore list without parsing. */
+  tableCounts: Record<string, number>;
+  note?: string;
 }
 
 /* ------------------------------------------------------------------ */

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  CalendarDays, ChevronLeft, ChevronRight, LayoutTemplate, ListOrdered, Plus, Repeat, ZoomIn, ZoomOut,
+  AlertTriangle, CalendarDays, ChevronLeft, ChevronRight, LayoutTemplate, ListOrdered, Plus,
+  Repeat, Sparkles, Undo2, ZoomIn, ZoomOut,
 } from 'lucide-react';
 import { Page } from '@/components/layout/Page';
 import { Card } from '@/components/ui/Card';
@@ -22,8 +23,13 @@ import { BlockInspector } from './BlockInspector';
 import { BlockCreateModal } from './BlockCreateModal';
 import { TemplateManager } from './TemplateManager';
 import { RecurringRulesManager } from './RecurringRulesManager';
+import { PlanPanel } from './PlanPanel';
+import { PlanOverloadBanner } from './PlanOverloadBanner';
+import { PlanConflictDialog } from './PlanConflictDialog';
+import { PlanRescheduleDialog } from './PlanRescheduleDialog';
+import { getLastUndoableRun, undoPlanRun } from '@/services/planService';
 import { cn } from '@/lib/cn';
-import type { DateKey, ID, ScheduleBlock } from '@/types';
+import type { DateKey, ID, PlanRun, ScheduleBlock } from '@/types';
 
 type ViewMode = 'day' | 'week' | 'agenda';
 
@@ -42,6 +48,29 @@ export function SchedulePage() {
   const [createSlot, setCreateSlot] = useState<{ date: DateKey; startMinute: number } | null>(null);
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
+
+  /* --- Phase 3 intelligence UI state --- */
+  const [planOpen, setPlanOpen] = useState(false);
+  const [conflictBlockId, setConflictBlockId] = useState<ID | null>(null);
+  const [rescheduleTaskId, setRescheduleTaskId] = useState<ID | null>(null);
+  const [lastRun, setLastRun] = useState<PlanRun | null>(null);
+  // Bumped after any engine-driven change so dependent panels recompute.
+  const [planVersion, setPlanVersion] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    void getLastUndoableRun().then((run) => { if (!cancelled) setLastRun(run); });
+    return () => { cancelled = true; };
+  }, [planVersion, anchor]);
+
+  const afterPlanChange = useCallback(() => setPlanVersion((v) => v + 1), []);
+
+  const handleUndo = useCallback(async () => {
+    if (!lastRun) return;
+    const result = await undoPlanRun(lastRun.id);
+    toast[result.ok ? 'success' : 'warning'](result.ok ? 'Change reverted' : 'Could not undo', result.message);
+    afterPlanChange();
+  }, [lastRun, afterPlanChange]);
 
   const weekStart = startOfWeekKey(anchor, settings?.weekStartsOn ?? 1);
   const dates = useMemo<DateKey[]>(
@@ -122,6 +151,23 @@ export function SchedulePage() {
       subtitle={view === 'day' ? formatDateKeyLong(anchor) : `Week of ${formatDateKeyLong(dates[0])}`}
       actions={
         <>
+          <Button
+            size="sm"
+            iconLeft={<Sparkles className="h-3.5 w-3.5" />}
+            onClick={() => setPlanOpen(true)}
+          >
+            Auto-plan day
+          </Button>
+          {lastRun ? (
+            <Button
+              size="sm"
+              iconLeft={<Undo2 className="h-3.5 w-3.5" />}
+              title={lastRun.explanation[0] ?? 'Revert the last automated change'}
+              onClick={() => void handleUndo()}
+            >
+              Undo last change
+            </Button>
+          ) : null}
           <Button size="sm" iconLeft={<LayoutTemplate className="h-3.5 w-3.5" />} onClick={() => setTemplatesOpen(true)}>
             Templates
           </Button>
@@ -173,6 +219,14 @@ export function SchedulePage() {
         </div>
       }
     >
+      <PlanOverloadBanner
+        from={dates[0]}
+        days={view === 'day' ? 3 : 7}
+        refreshKey={planVersion}
+        onFix={() => setPlanOpen(true)}
+        className="mb-4"
+      />
+
       {trackerTotals.length > 0 ? (
         <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-card border border-line bg-surface-raised px-3 py-2">
           {trackerTotals.map(({ tracker, minutes }) => (
@@ -245,12 +299,37 @@ export function SchedulePage() {
         </div>
 
         {selected ? (
-          <BlockInspector
-            block={selected}
-            onClose={() => setSelectedId(null)}
-            onSelectBlock={setSelectedId}
-            className="lg:sticky lg:top-4 lg:max-h-[calc(100vh-8rem)]"
-          />
+          <div className="space-y-3">
+            <BlockInspector
+              block={selected}
+              onClose={() => setSelectedId(null)}
+              onSelectBlock={setSelectedId}
+              className="lg:sticky lg:top-4 lg:max-h-[calc(100vh-8rem)]"
+            />
+            {/* Overrun handling lives beside the inspector so the block it
+                refers to is always the one on screen. */}
+            <div className="rounded-card border border-line bg-surface-raised p-3">
+              <div className="t-label">Ran over?</div>
+              <p className="t-meta mt-1">
+                If this block took longer than planned, see exactly what it does to the rest of the
+                day before anything moves.
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  iconLeft={<AlertTriangle className="h-3.5 w-3.5" />}
+                  onClick={() => setConflictBlockId(selected.id)}
+                >
+                  Resolve overrun
+                </Button>
+                {selected.taskId ? (
+                  <Button size="sm" onClick={() => setRescheduleTaskId(selected.taskId)}>
+                    Reschedule task
+                  </Button>
+                ) : null}
+              </div>
+            </div>
+          </div>
         ) : null}
       </div>
 
@@ -281,6 +360,25 @@ export function SchedulePage() {
 
       <TemplateManager open={templatesOpen} onClose={() => setTemplatesOpen(false)} currentDate={anchor} />
       <RecurringRulesManager open={rulesOpen} onClose={() => setRulesOpen(false)} />
+
+      <PlanPanel
+        open={planOpen}
+        onClose={() => setPlanOpen(false)}
+        date={view === 'day' ? anchor : dates[0]}
+        onApplied={afterPlanChange}
+      />
+      <PlanConflictDialog
+        open={conflictBlockId !== null}
+        onClose={() => setConflictBlockId(null)}
+        blockId={conflictBlockId}
+        onApplied={afterPlanChange}
+      />
+      <PlanRescheduleDialog
+        open={rescheduleTaskId !== null}
+        onClose={() => setRescheduleTaskId(null)}
+        taskId={rescheduleTaskId}
+        onApplied={afterPlanChange}
+      />
     </Page>
   );
 }
