@@ -23,13 +23,15 @@ export interface BarDatum {
 }
 
 export function BarChart({
-  data, height = 120, formatValue, className, emptyLabel = 'No data in this period.',
+  data, height = 120, formatValue, className, emptyLabel = 'No data in this period.', labelEvery = 1,
 }: {
   data: BarDatum[];
   height?: number;
   formatValue?: (v: number) => string;
   className?: string;
   emptyLabel?: string;
+  /** Draw only every Nth axis label — keeps dense series (24 hours, 30 days) readable. */
+  labelEvery?: number;
 }) {
   const max = Math.max(1, ...data.map((d) => Math.max(d.value, d.reference ?? 0)));
   if (data.length === 0) return <ChartEmpty label={emptyLabel} height={height} />;
@@ -64,7 +66,7 @@ export function BarChart({
       <div className="mt-1.5 flex gap-1">
         {data.map((d, i) => (
           <div key={`${d.label}-label-${i}`} className="t-meta min-w-0 flex-1 truncate text-center">
-            {d.label}
+            {i % labelEvery === 0 ? d.label : '\u00a0'}
           </div>
         ))}
       </div>

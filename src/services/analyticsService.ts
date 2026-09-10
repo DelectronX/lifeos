@@ -12,7 +12,7 @@ import {
   type DailyReviewMetrics,
   type WeeklyReviewMetrics,
 } from '@/engines/analytics';
-import type { AnalyticsSnapshot, DateKey, SchedulingConfig } from '@/types';
+import type { AnalyticsSnapshot, DateKey, ID, SchedulingConfig, Tracker } from '@/types';
 
 /**
  * Analytics data access.
@@ -123,6 +123,52 @@ export function useAnalytics(from: DateKey, to: DateKey): AnalyticsBundle | unde
 export function useAnalyticsRange(range: AnalyticsRange): ResolvedRange {
   const today = todayKey();
   return useMemo(() => resolveRange(range, today), [range, today]);
+}
+
+/* ------------------------------------------------------------------ */
+/* Selectors                                                           */
+/* ------------------------------------------------------------------ */
+
+export interface TrackerPlanActualRow {
+  trackerId: ID;
+  label: string;
+  color: Tracker['color'];
+  plannedMinutes: number;
+  actualMinutes: number;
+}
+
+/**
+ * Joins the engine's per-tracker *actual* minutes with the planned minutes held
+ * on ScheduleBlocks for the same window. Both sides already exist — this only
+ * pairs them up by tracker id so the UI does not have to.
+ */
+export function selectPlanVsActualByTracker(
+  input: AnalyticsInput,
+  result: AnalyticsResult,
+): TrackerPlanActualRow[] {
+  const trackers = new Map(input.trackers.map((t) => [t.id, t]));
+  const planned = new Map<string, number>();
+  for (const b of input.blocks) {
+    if (b.date < input.from || b.date > input.to) continue;
+    if (b.status === 'cancelled') continue;
+    planned.set(b.trackerId, (planned.get(b.trackerId) ?? 0) + (b.end - b.start) / 60_000);
+  }
+
+  const actual = new Map<string, number>(
+    result.time.distribution.byTracker.map((r) => [r.id, r.minutes]),
+  );
+
+  const ids = new Set<string>([...planned.keys(), ...actual.keys()]);
+  return [...ids]
+    .map((id) => ({
+      trackerId: id,
+      label: trackers.get(id)?.name ?? 'Unknown tracker',
+      color: trackers.get(id)?.color ?? 'slate',
+      plannedMinutes: Math.round(planned.get(id) ?? 0),
+      actualMinutes: Math.round(actual.get(id) ?? 0),
+    }))
+    .filter((r) => r.plannedMinutes > 0 || r.actualMinutes > 0)
+    .sort((a, b) => b.actualMinutes + b.plannedMinutes - (a.actualMinutes + a.plannedMinutes));
 }
 
 /* ------------------------------------------------------------------ */
