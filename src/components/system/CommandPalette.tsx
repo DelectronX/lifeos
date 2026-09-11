@@ -6,6 +6,7 @@ import { CornerDownLeft, Search, X } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { fuzzyScore, highlightSegments } from '@/lib/fuzzy';
 import { modKeyLabel } from '@/lib/platform';
+import { getUiState, setUiState } from '@/services/uiStateStore';
 import { Kbd } from '@/components/ui/Kbd';
 import { SECTION_ORDER, useCommands, type Command, type CommandSection } from './commands';
 
@@ -24,7 +25,7 @@ import { SECTION_ORDER, useCommands, type Command, type CommandSection } from '.
  * `aria-activedescendant`, which is what a combobox is supposed to do.
  */
 
-const RECENTS_KEY = 'lifeos.palette.recents';
+const RECENTS_KEY = 'palette.recents';
 const MAX_RECENTS = 6;
 const MAX_ROWS = 60;
 
@@ -35,21 +36,12 @@ interface Ranked {
 }
 
 function readRecents(): string[] {
-  try {
-    const raw = localStorage.getItem(RECENTS_KEY);
-    const parsed: unknown = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === 'string') : [];
-  } catch {
-    return [];
-  }
+  const parsed = getUiState<unknown>(RECENTS_KEY, []);
+  return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === 'string') : [];
 }
 
 function writeRecents(ids: string[]): void {
-  try {
-    localStorage.setItem(RECENTS_KEY, JSON.stringify(ids.slice(0, MAX_RECENTS)));
-  } catch {
-    /* private mode */
-  }
+  setUiState(RECENTS_KEY, ids.slice(0, MAX_RECENTS));
 }
 
 /** Ranks commands for a query. An empty query returns recents + suggestions. */

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { CommandPalette } from '@/components/system/CommandPalette';
+import { BundleDropZone } from '@/components/system/SaveIndicator';
 import { hasModKey, isTypingTarget, useIsMobile, usePersistentState } from '@/lib/platform';
 import { useTheme } from '@/lib/theme';
 import { SidebarRail } from './SidebarRail';
@@ -32,7 +33,7 @@ export function AppShell() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [paletteQuery, setPaletteQuery] = useState('');
   const [moreOpen, setMoreOpen] = useState(false);
-  const [railCollapsedRaw, setRailCollapsedRaw] = usePersistentState('lifeos.rail.collapsed', false);
+  const [railCollapsedRaw, setRailCollapsedRaw] = usePersistentState('rail.collapsed', false);
   const railCollapsed = railCollapsedRaw;
   // `usePersistentState` returns a fresh setter each render; pin it through a
   // ref so the shell context and the global key handler stay referentially
@@ -130,6 +131,9 @@ export function AppShell() {
         onClose={closeCommandPalette}
         initialQuery={paletteQuery}
       />
+
+      {/* Drop a lifeos.json anywhere to restore it — the other half of manual mode. */}
+      <BundleDropZone />
     </ShellContext.Provider>
   );
 }

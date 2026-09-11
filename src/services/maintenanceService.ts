@@ -1,6 +1,7 @@
 import { db } from '@/db/db';
 import { addDaysToKey, todayKey } from '@/lib/date';
 import { materialiseAllRules } from './recurrenceService';
+import { getUiState, setUiState } from './uiStateStore';
 
 /**
  * Startup maintenance. Runs once per app load, guarded so a second load on the
@@ -9,7 +10,7 @@ import { materialiseAllRules } from './recurrenceService';
  *   - mark overdue RevisionEntries as missed
  *   - roll yesterday's AnalyticsSnapshot
  */
-const RUN_KEY = 'lifeos.maintenance.lastRun';
+const RUN_KEY = 'maintenance.lastRun';
 
 export interface MaintenanceResult {
   ran: boolean;
@@ -18,7 +19,7 @@ export interface MaintenanceResult {
 
 export async function runStartupMaintenance(force = false): Promise<MaintenanceResult> {
   const today = todayKey();
-  if (!force && localStorage.getItem(RUN_KEY) === today) {
+  if (!force && getUiState<string | null>(RUN_KEY, null) === today) {
     return { ran: false, steps: [] };
   }
 
@@ -34,7 +35,7 @@ export async function runStartupMaintenance(force = false): Promise<MaintenanceR
     }
   }
 
-  localStorage.setItem(RUN_KEY, today);
+  setUiState(RUN_KEY, today);
   return { ran: true, steps };
 }
 

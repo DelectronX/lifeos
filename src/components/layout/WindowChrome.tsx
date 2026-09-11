@@ -3,6 +3,7 @@ import { Search } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Kbd } from '@/components/ui/Kbd';
 import { modKeyLabel } from '@/lib/platform';
+import { SaveIndicator } from '@/components/system/SaveIndicator';
 import { useShell } from './ShellContext';
 
 /**
@@ -35,6 +36,8 @@ export function WindowChrome({
       <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
         {actions}
       </div>
+
+      <SaveIndicator />
 
       <PaletteTrigger onClick={() => openCommandPalette()} />
 

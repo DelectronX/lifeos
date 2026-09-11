@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   AlertTriangle, CheckCircle2, Download, FolderOpen, HardDriveDownload, Loader2, RefreshCw, Save, Upload,
 } from 'lucide-react';
+import { modKeyLabel } from '@/lib/platform';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Toggle } from '@/components/ui/Input';
@@ -25,14 +26,24 @@ export function StorageSettings({ settings }: { settings: Settings }) {
   const state = useStorageState();
   const [busy, setBusy] = useState<string | null>(null);
   const [autoDownload, setAutoDownload] = useState(settings.storage?.autoDownload ?? false);
+  const [counts, setCounts] = useState<{ name: string; count: number; dirty: boolean }[]>([]);
   const fileInput = useRef<HTMLInputElement>(null);
 
   const unsaved = state.dirtyCollections.length;
+
+  /* Per-collection counts, refreshed whenever anything is written. */
+  useEffect(() => {
+    let alive = true;
+    void storage.getCollectionCounts().then((rows) => { if (alive) setCounts(rows); });
+    return () => { alive = false; };
+  }, [state.lastSavedAt, state.dirtyCollections.length]);
 
   /* Auto-download: manual mode only, and only when the user opted in. */
   useEffect(() => {
     if (!autoDownload || state.canAutoSave || unsaved === 0) return;
     const minutes = settings.storage?.autoDownloadMinutes ?? 10;
+    // Debounced, not periodic: the timer restarts on every change, so a burst
+    // of edits produces one download once you stop, not one per edit.
     const id = setTimeout(() => {
       void storage.saveBundleToFile(BUNDLE_FILENAME);
     }, Math.max(1, minutes) * 60_000);
@@ -70,6 +81,24 @@ export function StorageSettings({ settings }: { settings: Settings }) {
         <SettingRow label="Saving to" hint="The folder or file your data is written to.">
           <div className="truncate text-sm text-ink-muted" title={state.target}>{state.target}</div>
         </SettingRow>
+
+        {state.considered.length ? (
+          <SettingRow
+            label="Why this mode"
+            hint="Every backend the app tried at startup, best first, and what happened."
+          >
+            <ul className="space-y-1 text-xs text-ink-muted">
+              {state.considered.map((c) => (
+                <li key={c.id} className="flex items-start gap-2">
+                  <Badge tone={c.id === state.adapterId ? 'positive' : c.available ? 'neutral' : 'caution'}>
+                    {c.id}
+                  </Badge>
+                  <span>{c.id === state.adapterId ? `Chosen. ${c.reason}` : c.reason}</span>
+                </li>
+              ))}
+            </ul>
+          </SettingRow>
+        ) : null}
 
         <SettingRow
           label="Automatic saving"
@@ -248,10 +277,31 @@ export function StorageSettings({ settings }: { settings: Settings }) {
             <span>
               Your work is held safely in this app&apos;s local cache between visits, so a refresh
               will not lose it — but the only thing your file manager can see or back up is the{' '}
-              <code>{BUNDLE_FILENAME}</code> you save. Save before you clear browser data or move
-              devices.
+              <code>{BUNDLE_FILENAME}</code> you save. Press{' '}
+              <strong>{modKeyLabel()}+S</strong> anywhere in the app, or the Save button in the top
+              bar. You can also drag a <code>{BUNDLE_FILENAME}</code> onto the window to restore it.
+              Save before you clear browser data or move devices.
             </span>
           </div>
+        ) : null}
+      </SettingsSection>
+
+      <SettingsSection
+        title="What is in your files"
+        description="One JSON file per collection. A collection marked Unsaved has changes that are not on disk yet."
+      >
+        <div className="grid grid-cols-2 gap-x-6 gap-y-1 sm:grid-cols-3">
+          {counts.filter((c) => c.count > 0 || c.dirty).map((c) => (
+            <div key={c.name} className="flex items-baseline justify-between gap-2 text-sm">
+              <span className="truncate text-ink-muted" title={`${c.name}.json`}>{c.name}</span>
+              <span className={c.dirty ? 'font-medium text-caution' : 'text-ink'}>
+                {c.count}{c.dirty ? ' •' : ''}
+              </span>
+            </div>
+          ))}
+        </div>
+        {counts.every((c) => c.count === 0) ? (
+          <p className="text-sm text-ink-muted">Nothing stored yet.</p>
         ) : null}
       </SettingsSection>
     </>

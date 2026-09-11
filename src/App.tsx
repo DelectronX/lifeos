@@ -57,8 +57,9 @@ export default function App() {
           <h1 className="t-title text-critical">LifeOS could not start</h1>
           <p className="t-muted mt-2">{error}</p>
           <p className="t-meta mt-3">
-            Your data is stored in this browser&apos;s IndexedDB. If this persists, export a backup from
-            another browser profile or clear site data to reinitialise.
+            Your data lives in JSON files (and a local cache of them). Nothing has been overwritten.
+            If this persists, open Settings → Storage to see which file failed, or import a{' '}
+            <code>lifeos.json</code> bundle to restore.
           </p>
         </div>
       </div>

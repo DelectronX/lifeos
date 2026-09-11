@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { getPersistedTheme, onUiStateHydrated, persistTheme } from '@/services/uiStateStore';
 import type { ThemeMode } from '@/types';
 
 /**
@@ -9,8 +10,12 @@ import type { ThemeMode } from '@/types';
  *  - The resolved theme is expressed as the `dark` class on <html>, which is
  *    also written statically in index.html and re-asserted by the inline
  *    pre-paint script, so there is never a flash of the wrong theme.
- *  - The choice persists to localStorage under `lifeos.theme`, the same key
- *    the settings service mirrors, so the Settings page and this hook agree.
+ *  - The choice is PERSISTED IN `settings.theme`, and therefore inside
+ *    `data/settings.json` along with everything else. localStorage holds a
+ *    copy under `lifeos.theme` for exactly one reason: the pre-paint script in
+ *    index.html has to decide the colour scheme synchronously, long before
+ *    IndexedDB or the JSON files are open. That cache is written, never
+ *    trusted over the file value once storage has booted.
  */
 
 const STORAGE_KEY = 'lifeos.theme';
@@ -21,8 +26,14 @@ function isThemeMode(v: unknown): v is ThemeMode {
   return v === 'dark' || v === 'light' || v === 'system';
 }
 
-/** The stored preference, defaulting to `dark` when nothing is stored. */
+/**
+ * The stored preference. `settings.theme` (i.e. settings.json) wins when the
+ * storage layer has hydrated; the localStorage cache is only the pre-boot
+ * stand-in, and `dark` is the default when neither has an answer.
+ */
 export function readThemeMode(): ThemeMode {
+  const persisted = getPersistedTheme();
+  if (isThemeMode(persisted)) return persisted;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     return isThemeMode(raw) ? raw : 'dark';
@@ -46,7 +57,10 @@ export function applyThemeMode(mode: ThemeMode): ResolvedTheme {
   const root = document.documentElement;
   root.classList.toggle('dark', resolved === 'dark');
   root.style.colorScheme = resolved;
+  // The durable copy — this is what lands in data/settings.json.
+  persistTheme(mode);
   try {
+    // Pre-paint cache only. Never read in preference to settings.json.
     localStorage.setItem(STORAGE_KEY, mode);
   } catch {
     /* private mode — the DOM class is still correct for this session */
@@ -88,7 +102,14 @@ export function useTheme(): ThemeController {
     return () => mq.removeEventListener('change', handler);
   }, [mode]);
 
-  // Stay in sync with other tabs and with the Settings page's service call.
+  // Adopt the value from settings.json as soon as storage finishes hydrating,
+  // so a bundle imported from another device brings its theme with it.
+  useEffect(() => onUiStateHydrated(() => {
+    const persisted = getPersistedTheme();
+    if (persisted) setModeState(persisted);
+  }), []);
+
+  // Stay in sync with other tabs.
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
       if (e.key !== STORAGE_KEY) return;

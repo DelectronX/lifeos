@@ -2,6 +2,9 @@ import { db } from '@/db/db';
 import { createDefaultSettings } from '@/db/seed';
 import { mergeSchedulingConfig } from '@/config/schedulingConfig';
 import {
+  flushUiState, getPersistedTheme, persistTheme, setUiState as setUiStateSync,
+} from './uiStateStore';
+import {
   DEFAULT_STORAGE_PREFERENCES,
   type DeepPartial, type SchedulingConfig, type Settings, type StoragePreferences, type ThemeMode,
 } from '@/types';
@@ -69,6 +72,11 @@ export async function updateStoragePreferences(patch: Partial<StoragePreferences
  * `settings.uiState`, so they travel with an export and land in
  * `data/settings.json` like everything else. localStorage remains only as the
  * theme's paint-before-boot cache.
+ *
+ * The synchronous mirror in {@link module:services/uiStateStore} is the entry
+ * point most call sites use (zustand initialisers and `useState` defaults
+ * cannot await Dexie). These async wrappers exist for code that is already in
+ * an async context and wants a guaranteed-fresh read.
  */
 export async function getUiState<T>(key: string, fallback: T): Promise<T> {
   const settings = await getSettings();
@@ -77,18 +85,31 @@ export async function getUiState<T>(key: string, fallback: T): Promise<T> {
 }
 
 export async function setUiState(key: string, value: unknown): Promise<void> {
-  const settings = await getSettings();
-  await updateSettings({ uiState: { ...(settings.uiState ?? {}), [key]: value } });
+  setUiStateSync(key, value);
+  await flushUiState();
 }
 
 /* ------------------------------------------------------------------ */
 /* Theme                                                               */
 /* ------------------------------------------------------------------ */
 
-/** LocalStorage mirror so the theme paints before IndexedDB opens (no flash). */
+/**
+ * The theme to paint with right now.
+ *
+ * Authoritative source: `settings.theme` (→ `data/settings.json`), read from
+ * the hydrated mirror. The localStorage copy is consulted only before storage
+ * has booted, purely so the first paint is not the wrong colour scheme — it is
+ * the single sanctioned use of localStorage left in the app.
+ */
 export function readCachedTheme(): ThemeMode {
-  const v = localStorage.getItem(THEME_KEY);
-  return v === 'light' || v === 'dark' || v === 'system' ? v : 'system';
+  const persisted = getPersistedTheme();
+  if (persisted === 'light' || persisted === 'dark' || persisted === 'system') return persisted;
+  try {
+    const v = localStorage.getItem(THEME_KEY);
+    return v === 'light' || v === 'dark' || v === 'system' ? v : 'dark';
+  } catch {
+    return 'dark';
+  }
 }
 
 export function applyTheme(mode: ThemeMode): void {
@@ -96,7 +117,10 @@ export function applyTheme(mode: ThemeMode): void {
   const dark = mode === 'dark' || (mode === 'system' && prefersDark);
   document.documentElement.classList.toggle('dark', dark);
   document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
-  localStorage.setItem(THEME_KEY, mode);
+  persistTheme(mode);
+  try {
+    localStorage.setItem(THEME_KEY, mode); // pre-paint cache only
+  } catch { /* private mode */ }
 }
 
 export async function setTheme(mode: ThemeMode): Promise<void> {

@@ -3,6 +3,7 @@ import { newId } from '@/lib/id';
 import { toDateKey, todayKey } from '@/lib/date';
 import { logActivity } from './activityService';
 import { awardXP } from './timerService';
+import { getUiState, setUiState } from './uiStateStore';
 import { analysePaper, type PaperAnalytics } from '@/engines/paperAnalytics';
 import type {
   DateKey, ID, MistakeType, Paper, PaperSection, Question, QuestionAttempt, QuestionStatus,
@@ -19,7 +20,7 @@ import type {
  * alongside the paper run, which is what makes a mid-paper refresh lossless.
  */
 
-const RUN_KEY = 'lifeos.paper.run';
+const RUN_KEY = 'paper.run';
 
 /* ------------------------------------------------------------------ */
 /* Builder                                                             */
@@ -198,24 +199,13 @@ export interface PaperRunState {
 }
 
 export function loadRunState(paperId: ID): PaperRunState | null {
-  try {
-    const raw = localStorage.getItem(RUN_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as PaperRunState;
-    if (!parsed || parsed.paperId !== paperId) return null;
-    return parsed;
-  } catch {
-    return null;
-  }
+  const parsed = getUiState<PaperRunState | null>(RUN_KEY, null);
+  if (!parsed || parsed.paperId !== paperId) return null;
+  return parsed;
 }
 
 export function saveRunState(state: PaperRunState | null): void {
-  try {
-    if (state === null) localStorage.removeItem(RUN_KEY);
-    else localStorage.setItem(RUN_KEY, JSON.stringify(state));
-  } catch {
-    /* storage unavailable — the run still works for this tab */
-  }
+  setUiState(RUN_KEY, state);
 }
 
 export function clearRunState(paperId?: ID): void {

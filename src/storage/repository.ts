@@ -1,4 +1,5 @@
 import { db, EXPORTABLE_TABLES, SCHEMA_VERSION, tableByName } from '@/db/db';
+import { flushUiState, hydrateUiState } from '@/services/uiStateStore';
 import type { ExportBundle } from '@/services/migrationService';
 import { migrateBundle, validateBundle } from '@/services/migrationService';
 import { DownloadUploadAdapter, saveTextAsFile } from './adapters/downloadUploadAdapter';
@@ -141,6 +142,12 @@ export class StorageRepository {
     }
 
     this.installHooks();
+
+    // The synchronous UI-state mirror has to be populated from the freshly
+    // hydrated settings row BEFORE the first render, or the rail, the palette
+    // recents and a running timer would all start from their defaults and then
+    // immediately overwrite the persisted values with those defaults.
+    await hydrateUiState();
 
     this.patch({
       ready: true,
@@ -298,9 +305,19 @@ export class StorageRepository {
     if (this.flushing) return this.flushing.then(() => this.state.status !== 'error');
     const adapter = this.adapter;
     if (!adapter) return false;
-    if (!this.tracker.isDirty()) return true;
+    if (!this.tracker.isDirty()) {
+      // Nothing marked — but a UI-state change may still be sitting in the
+      // debounce. Settle it and re-check rather than reporting a false "clean".
+      await flushUiState();
+      if (!this.tracker.isDirty()) return true;
+      // Settling it may have started a flush of its own; join that one.
+      const inFlight = this.flushing as Promise<void> | null;
+      if (inFlight) return inFlight.then(() => this.state.status !== 'error');
+    }
 
     const run = async (): Promise<void> => {
+      // Anything typed in the last few hundred ms belongs in this write.
+      await flushUiState();
       const names = this.tracker.take();
       if (names.length === 0) return;
       this.patch({ status: 'saving', dirtyCollections: this.tracker.snapshot() });
@@ -366,6 +383,9 @@ export class StorageRepository {
 
   /** The whole working set as one `lifeos.json` string. */
   async buildBundleText(): Promise<string> {
+    // Anything still sitting in the debounced UI-state mirror belongs in the
+    // bundle: exporting a file that omits the last thing you changed is a bug.
+    await flushUiState();
     const collections = await readCollectionsFromDb();
     return JSON.stringify(collectionsToBundle(collections), null, 2);
   }
@@ -431,6 +451,9 @@ export class StorageRepository {
     }
 
     await this.writeToWorkingSet(bundle);
+    // Adopt the imported settings (theme, rail state, ...) into the live mirror
+    // so the UI reflects the bundle instead of the state it had a moment ago.
+    await hydrateUiState();
     await this.saveAll();
 
     const total = Object.values(bundle.tables).reduce((sum, rows) => sum + (Array.isArray(rows) ? rows.length : 0), 0);
@@ -439,6 +462,23 @@ export class StorageRepository {
       applied,
       message: `Restored ${total} record${total === 1 ? '' : 's'} from the file.`,
     };
+  }
+
+  /**
+   * Live record counts straight out of the working set, for the Settings
+   * panel. Deliberately NOT read from the manifest: the manifest describes
+   * what was last written, and showing that as "what you have" would hide
+   * exactly the unsaved work the user needs to know about.
+   */
+  async getCollectionCounts(): Promise<{ name: string; count: number; dirty: boolean }[]> {
+    const dirty = new Set(this.tracker.snapshot());
+    const out: { name: string; count: number; dirty: boolean }[] = [];
+    for (const name of FILE_COLLECTIONS) {
+      const table = tableByName(name);
+      if (!table) continue;
+      out.push({ name, count: await table.count(), dirty: dirty.has(name) });
+    }
+    return out;
   }
 
   /** Current manifest as written on the target, for the Settings panel. */

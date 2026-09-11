@@ -1,4 +1,5 @@
 import { useEffect, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
+import { getUiState, onUiStateHydrated, setUiState } from '@/services/uiStateStore';
 
 /**
  * Small platform helpers used by the shell and the command palette.
@@ -57,23 +58,23 @@ export function useIsMobile(): boolean {
   return useMediaQuery('(max-width: 1023px)');
 }
 
-/** A state value mirrored into localStorage. Falls back gracefully. */
+/**
+ * A state value mirrored into `settings.uiState`, and therefore into
+ * `data/settings.json`. It is deliberately NOT localStorage: the whole point
+ * of the file-storage layer is that a user's preferences travel with their
+ * data instead of being stranded in one browser profile.
+ *
+ * The initial read is synchronous against the hydrated mirror; if the
+ * component mounts before storage boot finishes, it re-reads on hydration.
+ */
 export function usePersistentState<T>(key: string, initial: T): [T, (v: T) => void] {
-  const [value, setValue] = useState<T>(() => {
-    try {
-      const raw = localStorage.getItem(key);
-      return raw === null ? initial : (JSON.parse(raw) as T);
-    } catch {
-      return initial;
-    }
-  });
+  const [value, setValue] = useState<T>(() => getUiState(key, initial));
+
+  useEffect(() => onUiStateHydrated(() => setValue(getUiState(key, initial))), [key]);
+
   const set = (v: T) => {
     setValue(v);
-    try {
-      localStorage.setItem(key, JSON.stringify(v));
-    } catch {
-      /* ignore */
-    }
+    setUiState(key, v);
   };
   return [value, set];
 }

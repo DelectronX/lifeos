@@ -3,6 +3,7 @@ import { newId } from '@/lib/id';
 import { toDateKey, todayKey, MINUTE_MS } from '@/lib/date';
 import { logActivity } from './activityService';
 import { getSettings, getSchedulingConfig } from './settingsService';
+import { getUiState, setUiState } from './uiStateStore';
 import { applyDailyCaps, computeXPAward, levelProgress, nextStreak, type XPEventInput } from '@/engines/xp';
 import { diffDays } from '@/lib/date';
 import { DEFAULT_TIMER_PREFERENCES } from '@/types';
@@ -25,7 +26,7 @@ import type {
  * plus an Activity record — which is what analytics, XP and goals read.
  */
 
-const STORAGE_KEY = 'lifeos.timer.active';
+const STORAGE_KEY = 'timer.active';
 const SNAPSHOT_VERSION = 1;
 
 /* ------------------------------------------------------------------ */
@@ -208,9 +209,8 @@ function isSnapshot(value: unknown): value is TimerSnapshot {
 
 export function loadSnapshot(): TimerSnapshot | null {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const parsed: unknown = JSON.parse(raw);
+    const parsed = getUiState<unknown>(STORAGE_KEY, null);
+    if (!parsed) return null;
     if (!isSnapshot(parsed)) return null;
     return {
       ...parsed,
@@ -222,12 +222,7 @@ export function loadSnapshot(): TimerSnapshot | null {
 }
 
 export function saveSnapshot(snapshot: TimerSnapshot | null): void {
-  try {
-    if (snapshot === null) localStorage.removeItem(STORAGE_KEY);
-    else localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
-  } catch {
-    // Private mode / quota — the timer still works for this tab's lifetime.
-  }
+  setUiState(STORAGE_KEY, snapshot === undefined ? null : snapshot);
 }
 
 /* ------------------------------------------------------------------ */

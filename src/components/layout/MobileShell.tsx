@@ -5,6 +5,7 @@ import { cn } from '@/lib/cn';
 import { MOBILE_OVERFLOW, MOBILE_TABS } from './navigation';
 import { IdentityBlock } from './IdentityBlock';
 import { Clock } from './WindowChrome';
+import { SaveIndicator } from '@/components/system/SaveIndicator';
 import { useShell } from './ShellContext';
 
 /**
@@ -27,6 +28,7 @@ export function MobileTopBar({ title, actions }: { title: string; actions?: Reac
         {title}
       </h1>
       <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5">{actions}</div>
+      <SaveIndicator />
       <Clock className="!flex" />
       <button
         type="button"
