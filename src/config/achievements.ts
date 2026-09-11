@@ -104,4 +104,8 @@ export const ACHIEVEMENT_CATEGORY_LABELS: Record<AchievementCategory, string> = 
   consistency: 'Consistency',
   fitness: 'Fitness',
   mastery: 'Mastery',
+  personal: 'Personal',
+  revision: 'Revision',
+  focus: 'Focus',
+  planning: 'Planning',
 };

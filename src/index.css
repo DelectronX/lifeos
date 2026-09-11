@@ -3,48 +3,136 @@
 @tailwind utilities;
 
 /**
- * Design tokens.
- * A calm, paper-like light theme and a low-contrast slate dark theme.
- * One accent (indigo) used sparingly for interactive affordances only.
+ * ============================================================================
+ * LifeOS design tokens
+ * ============================================================================
+ * A calm operating system, not a dashboard template.
+ *
+ * Dark is the DEFAULT and the polished theme. Light is fully supported and
+ * derives from the same token names, so every component is written once.
+ *
+ * Depth comes from LUMINANCE STEPS + HAIRLINES, never from heavy shadows or
+ * glass blur. Borders are expressed as solid RGB triples that are the exact
+ * composite of a low-alpha white hairline over their parent surface, so the
+ * Tailwind `<alpha-value>` syntax (border-line/60) keeps working.
+ *
+ * Naming contract (do not rename without updating every consumer):
+ *   --c-surface-*   background luminance steps
+ *   --c-line-*      hairline / divider colours
+ *   --c-ink-*       foreground text levels
+ *   --c-accent-*    the single accent (blue-violet)
+ *   --c-positive|caution|critical   semantic, desaturated for dark
+ *   --r-*           radii
+ *   --shadow-*      ambient elevation
+ *   --dur-* / --ease-*   motion
  */
 @layer base {
+  /* ---------------------------------------------------------------- */
+  /* DARK — the default theme                                          */
+  /* ---------------------------------------------------------------- */
   :root {
+    /* Surfaces: the desktop backdrop is the darkest; panels step up. */
+    --c-surface-base: 11 13 16;        /* #0B0D10 — the "desktop" */
+    --c-surface-sunken: 15 17 21;      /* #0F1115 — wells, inset regions */
+    --c-surface: 19 22 25;             /* #131619 — chrome, rails */
+    --c-surface-raised: 25 29 34;      /* #191D22 — panels, cards */
+    --c-surface-overlay: 32 37 43;     /* #20252B — menus, modals, palette */
+
+    /* Hairlines: white @ 6–12% composited over the surfaces above. */
+    --c-line: 38 42 48;
+    --c-line-strong: 54 60 68;
+    --c-line-faint: 28 32 37;
+
+    /* Ink */
+    --c-ink: 233 236 241;
+    --c-ink-muted: 156 165 177;
+    --c-ink-faint: 110 119 130;
+    --c-ink-inverse: 11 13 16;
+
+    /* One restrained accent: calm blue-violet. */
+    --c-accent: 124 141 248;
+    --c-accent-soft: 30 35 58;
+    --c-accent-ink: 173 185 253;
+    --c-accent-contrast: 8 10 14;      /* text/icon colour on an accent fill */
+
+    /* Semantics, desaturated for dark backgrounds. */
+    --c-positive: 82 187 143;
+    --c-caution: 216 168 88;
+    --c-critical: 232 114 114;
+
+    /* Radii — soft, OS-like. */
+    --r-xs: 6px;
+    --r-sm: 8px;
+    --r-md: 10px;
+    --r-lg: 12px;
+    --r-xl: 16px;
+    --r-2xl: 20px;
+
+    /* Ambient elevation. Soft and wide, never a hard drop shadow. */
+    --shadow-ambient: 0 1px 0 0 rgb(255 255 255 / 0.02) inset, 0 1px 2px rgb(0 0 0 / 0.28);
+    --shadow-panel: 0 1px 2px rgb(0 0 0 / 0.22), 0 8px 24px -16px rgb(0 0 0 / 0.55);
+    --shadow-pop: 0 4px 12px -4px rgb(0 0 0 / 0.4), 0 16px 48px -24px rgb(0 0 0 / 0.7);
+    --shadow-overlay: 0 8px 24px -8px rgb(0 0 0 / 0.5), 0 32px 80px -32px rgb(0 0 0 / 0.8);
+
+    /* Motion */
+    --dur-fast: 120ms;
+    --dur-base: 160ms;
+    --dur-slow: 200ms;
+    --dur-lazy: 320ms;
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Shell metrics — consumed by the AppShell layout. */
+    --rail-w: 15rem;
+    --rail-w-collapsed: 3.75rem;
+    --chrome-h: 3rem;
+    --sp-gutter: 1.5rem;
+
+    color-scheme: dark;
+  }
+
+  /* ---------------------------------------------------------------- */
+  /* LIGHT — same token names, paper-calm palette                      */
+  /* ---------------------------------------------------------------- */
+  :root:not(.dark) {
+    --c-surface-base: 241 243 246;
+    --c-surface-sunken: 246 247 250;
     --c-surface: 255 255 255;
     --c-surface-raised: 255 255 255;
-    --c-surface-sunken: 248 250 252;
-    --c-line: 226 232 240;
-    --c-line-strong: 203 213 225;
-    --c-ink: 15 23 42;
-    --c-ink-muted: 71 85 105;
-    --c-ink-faint: 148 163 184;
+    --c-surface-overlay: 255 255 255;
+
+    --c-line: 226 230 236;
+    --c-line-strong: 203 210 220;
+    --c-line-faint: 236 239 243;
+
+    --c-ink: 17 24 34;
+    --c-ink-muted: 82 93 108;
+    --c-ink-faint: 140 150 163;
     --c-ink-inverse: 255 255 255;
+
     --c-accent: 79 70 229;
-    --c-accent-soft: 238 242 255;
+    --c-accent-soft: 238 240 254;
     --c-accent-ink: 67 56 202;
+    --c-accent-contrast: 255 255 255;
+
     --c-positive: 16 122 87;
-    --c-caution: 180 118 8;
+    --c-caution: 170 112 8;
     --c-critical: 190 42 42;
 
-    --sp-gutter: 1.5rem;
+    --shadow-ambient: 0 1px 2px rgb(15 23 42 / 0.05);
+    --shadow-panel: 0 1px 2px rgb(15 23 42 / 0.05), 0 8px 24px -18px rgb(15 23 42 / 0.28);
+    --shadow-pop: 0 4px 12px -4px rgb(15 23 42 / 0.1), 0 16px 40px -20px rgb(15 23 42 / 0.24);
+    --shadow-overlay: 0 8px 24px -8px rgb(15 23 42 / 0.14), 0 32px 72px -32px rgb(15 23 42 / 0.3);
+
+    color-scheme: light;
   }
 
-  .dark {
-    --c-surface: 15 20 32;
-    --c-surface-raised: 22 28 42;
-    --c-surface-sunken: 11 15 24;
-    --c-line: 39 48 66;
-    --c-line-strong: 55 66 88;
-    --c-ink: 226 232 240;
-    --c-ink-muted: 148 163 184;
-    --c-ink-faint: 100 116 139;
-    --c-ink-inverse: 15 23 42;
-    --c-accent: 129 140 248;
-    --c-accent-soft: 32 36 66;
-    --c-accent-ink: 165 180 252;
-    --c-positive: 52 191 143;
-    --c-caution: 227 168 62;
-    --c-critical: 248 113 113;
-  }
+  /*
+   * Theme switching contract: <html> carries the `dark` class by default
+   * (set statically in index.html and re-asserted by the pre-paint script).
+   * Removing it activates the `:root:not(.dark)` light overrides above.
+   * This keeps every existing `dark:` Tailwind variant in feature code valid.
+   */
 
   * {
     border-color: rgb(var(--c-line));
@@ -54,16 +142,24 @@
     height: 100%;
   }
 
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
   body {
-    @apply bg-surface-sunken text-ink antialiased;
-    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    @apply bg-surface-base text-ink antialiased;
+    font-family: theme('fontFamily.sans');
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11', 'ss01';
     text-rendering: optimizeLegibility;
+    overscroll-behavior: none;
   }
 
   h1, h2, h3, h4 {
-    @apply text-ink font-semibold tracking-[-0.011em];
+    @apply text-ink font-semibold;
+    letter-spacing: -0.014em;
   }
 
+  /* Slim, self-effacing scrollbars — OS chrome, not decoration. */
   ::-webkit-scrollbar { width: 10px; height: 10px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb {
@@ -72,35 +168,80 @@
     border: 3px solid transparent;
     background-clip: content-box;
   }
-  ::-webkit-scrollbar-thumb:hover { background-color: rgb(var(--c-ink-faint)); background-clip: content-box; }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: rgb(var(--c-ink-faint));
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-corner { background: transparent; }
 
+  /* One focus ring for the whole system. */
   :focus-visible {
-    @apply outline-none ring-2 ring-accent/50 ring-offset-1 ring-offset-surface;
+    outline: none;
+    box-shadow:
+      0 0 0 2px rgb(var(--c-surface-base)),
+      0 0 0 4px rgb(var(--c-accent) / 0.7);
+    border-radius: var(--r-sm);
+  }
+
+  ::selection {
+    background: rgb(var(--c-accent) / 0.28);
+    color: rgb(var(--c-ink));
   }
 
   input[type='number']::-webkit-inner-spin-button { opacity: 0.4; }
+
+  /* All numerals are tabular by default so live clocks/timers never jitter. */
+  input, select, textarea, button, table {
+    font-feature-settings: 'tnum';
+  }
 }
 
 @layer components {
-  /* Typographic scale used across the app */
-  .t-display { @apply text-2xl font-semibold tracking-[-0.02em] text-ink; }
-  .t-title { @apply text-lg font-semibold tracking-[-0.014em] text-ink; }
-  .t-section { @apply text-sm font-semibold text-ink; }
-  .t-body { @apply text-sm text-ink; }
-  .t-muted { @apply text-sm text-ink-muted; }
-  .t-meta { @apply text-xs text-ink-faint; }
-  .t-label { @apply text-2xs font-medium uppercase tracking-[0.08em] text-ink-faint; }
-  .t-num { @apply tabular-nums; }
+  /* --------------------------------------------------------------- */
+  /* Typographic scale — the primary hierarchy device                  */
+  /* --------------------------------------------------------------- */
+  .t-display { @apply text-[1.625rem] font-semibold leading-tight tracking-[-0.025em] text-ink; }
+  .t-title { @apply text-base font-semibold tracking-[-0.015em] text-ink; }
+  .t-section { @apply text-sm font-semibold tracking-[-0.006em] text-ink; }
+  .t-body { @apply text-sm leading-relaxed text-ink; }
+  .t-muted { @apply text-sm leading-relaxed text-ink-muted; }
+  .t-meta { @apply text-xs leading-relaxed text-ink-faint; }
+  .t-label { @apply text-2xs font-medium uppercase tracking-[0.09em] text-ink-faint; }
+  .t-num { font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+  .t-mono { @apply font-mono; font-variant-numeric: tabular-nums; }
+
+  /* Large metric numerals: tight tracking, tabular figures. */
+  .t-metric {
+    @apply text-2xl font-semibold text-ink;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.03em;
+  }
 
   .hairline { @apply border-line; }
+
+  /* A surface panel: hairline + soft ambient depth. The core OS container. */
+  .panel {
+    @apply rounded-panel border border-line bg-surface-raised;
+    box-shadow: var(--shadow-panel);
+  }
 }
 
 @layer utilities {
   .scrollbar-none { scrollbar-width: none; }
   .scrollbar-none::-webkit-scrollbar { display: none; }
 
-  .animate-in-fade { animation: lo-fade 180ms cubic-bezier(0.22, 1, 0.36, 1); }
-  .animate-in-rise { animation: lo-rise 220ms cubic-bezier(0.22, 1, 0.36, 1); }
+  .tabular { font-variant-numeric: tabular-nums; }
+
+  .animate-in-fade { animation: lo-fade var(--dur-base) var(--ease-out) both; }
+  .animate-in-rise { animation: lo-rise var(--dur-slow) var(--ease-out) both; }
+  .animate-in-scale { animation: lo-scale var(--dur-slow) var(--ease-out) both; }
+  .animate-in-slide-right { animation: lo-slide-right var(--dur-slow) var(--ease-out) both; }
+
+  /* 1–2px hover lift, nothing more. */
+  .lift {
+    transition: transform var(--dur-base) var(--ease-out), border-color var(--dur-base) var(--ease-out);
+  }
+  .lift:hover { transform: translateY(-1px); }
 }
 
 @keyframes lo-fade {
@@ -113,9 +254,26 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes lo-scale {
+  from { opacity: 0; transform: translateY(-4px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes lo-slide-right {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes lo-shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

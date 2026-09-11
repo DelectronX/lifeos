@@ -111,7 +111,77 @@ export interface Settings extends BaseEntity {
   appearance?: AppearancePreferences;
   /** Automatic local backup policy. */
   backup?: BackupPreferences;
+
+  /* --- Phase 9 additions (optional; existing rows stay valid) --- */
+  /** How the app treats work that slipped. See {@link AutoRescheduleMode}. */
+  autoReschedule?: AutoReschedulePreferences;
+  /** Analytics snapshot rollup policy. */
+  analytics?: AnalyticsMaintenancePreferences;
+  /** First-run / demo-data bookkeeping. */
+  demo?: DemoDataState;
 }
+
+/**
+ * Full-auto rescheduling behaviour.
+ *
+ *   off       — nothing runs; rescheduling stays a per-task, user-driven action.
+ *   suggest   — the engine runs on a preview basis and the app shows what it
+ *               *would* do. Nothing is written until the user accepts.
+ *   automatic — the engine runs and applies its decisions as one undoable
+ *               PlanRun, then surfaces a dismissible notice saying exactly what
+ *               moved, with Undo. Per SPEC §40 nothing may move invisibly.
+ */
+export type AutoRescheduleMode = 'off' | 'suggest' | 'automatic';
+
+export interface AutoReschedulePreferences {
+  mode: AutoRescheduleMode;
+  /** Also sweep on a timer while a tab is open, not only at app start. */
+  runWhileOpen: boolean;
+  /** Minutes between sweeps when `runWhileOpen` is set. */
+  intervalMinutes: number;
+  /** Guard so one app start does not sweep repeatedly. */
+  lastRunAt: Timestamp | null;
+  /** Id of the most recent automatic run, so the notice survives a reload. */
+  lastRunId: ID | null;
+}
+
+export const DEFAULT_AUTO_RESCHEDULE_PREFERENCES: AutoReschedulePreferences = {
+  mode: 'suggest',
+  runWhileOpen: true,
+  intervalMinutes: 60,
+  lastRunAt: null,
+  lastRunId: null,
+};
+
+export interface AnalyticsMaintenancePreferences {
+  /** Roll day/week snapshots so long-range views do not replay the event log. */
+  rollSnapshots: boolean;
+  /** Minutes between rollups while a tab is open. */
+  intervalMinutes: number;
+  lastRolledAt: Timestamp | null;
+}
+
+export const DEFAULT_ANALYTICS_MAINTENANCE: AnalyticsMaintenancePreferences = {
+  rollSnapshots: true,
+  intervalMinutes: 180,
+  lastRolledAt: null,
+};
+
+/** Bookkeeping for the preloaded demo dataset and the first-run choice. */
+export interface DemoDataState {
+  /** Set when the demo dataset was last installed. */
+  loadedAt: Timestamp | null;
+  /** Seed the dataset was generated from, so a reload reproduces it exactly. */
+  seed: number | null;
+  /** True once the user has answered the first-run "load demo data?" prompt. */
+  firstRunAnswered: boolean;
+}
+
+export const DEFAULT_DEMO_STATE: DemoDataState = {
+  loadedAt: null,
+  seed: null,
+  firstRunAnswered: false,
+};
 
 export interface TimerPreferences {
   defaultFocusMinutes: number;
@@ -717,7 +787,9 @@ export interface XPTransaction extends BaseEntity {
 }
 
 export type AchievementCategory =
-  | 'study' | 'goals' | 'skills' | 'consistency' | 'fitness' | 'mastery';
+  | 'study' | 'goals' | 'skills' | 'consistency' | 'fitness' | 'mastery'
+  /* --- Phase 9 additions. Existing values are unchanged. --- */
+  | 'revision' | 'focus' | 'planning' | 'personal';
 
 export interface Achievement extends BaseEntity {
   /** Stable definition key from src/config/achievements.ts */

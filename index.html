@@ -1,18 +1,21 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="description" content="LifeOS - offline-first personal productivity and growth system." />
-    <meta name="theme-color" content="#0f1420" />
+    <meta name="theme-color" content="#0B0D10" />
     <title>LifeOS</title>
     <script>
       // Paint the correct theme before React mounts to avoid a flash.
+      // Dark is the default: absent an explicit stored preference we stay dark.
       (function () {
         try {
-          var m = localStorage.getItem('lifeos.theme') || 'system';
-          var dark = m === 'dark' || (m === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-          if (dark) document.documentElement.classList.add('dark');
+          var m = localStorage.getItem('lifeos.theme') || 'dark';
+          var dark =
+            m === 'dark' ||
+            (m === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          document.documentElement.classList.toggle('dark', dark);
           document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
         } catch (e) {}
       })();
