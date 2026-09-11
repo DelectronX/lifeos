@@ -119,7 +119,53 @@ export interface Settings extends BaseEntity {
   analytics?: AnalyticsMaintenancePreferences;
   /** First-run / demo-data bookkeeping. */
   demo?: DemoDataState;
+
+  /* --- File-storage era additions (optional; existing rows stay valid) --- */
+  /**
+   * Preferences that used to live in localStorage. They are stored here so
+   * they end up inside `data/settings.json` with everything else — the whole
+   * point of file-based storage is that the user's settings are portable too,
+   * not stranded in one browser profile.
+   */
+  storage?: StoragePreferences;
+  /**
+   * Small UI bookkeeping that also used to live in localStorage (recent
+   * commands, last maintenance run). Free-form because it is not behavioural.
+   */
+  uiState?: Record<string, unknown>;
 }
+
+/** How and where the app persists its JSON files. */
+export interface StoragePreferences {
+  /**
+   * Pin a specific backend instead of auto-detecting. Null = auto-detect,
+   * which is right for almost everyone.
+   */
+  preferredAdapter?: 'http' | 'fsaccess' | 'download' | 'memory' | null;
+  /** Folder the JSON files live in on an HTTP target. */
+  baseDir?: string;
+  /**
+   * In manual-file mode, download the bundle automatically on a debounce
+   * instead of waiting for a Save. Off by default because a stream of
+   * downloads is obnoxious on some devices.
+   */
+  autoDownload?: boolean;
+  /** Minutes between automatic downloads when `autoDownload` is on. */
+  autoDownloadMinutes?: number;
+  /** Timestamp of the last successful write, mirrored for display. */
+  lastSavedAt?: Timestamp | null;
+}
+
+export const DEFAULT_STORAGE_PREFERENCES: Required<Omit<StoragePreferences, 'lastSavedAt' | 'preferredAdapter'>> & {
+  preferredAdapter: null;
+  lastSavedAt: null;
+} = {
+  preferredAdapter: null,
+  baseDir: 'data',
+  autoDownload: false,
+  autoDownloadMinutes: 10,
+  lastSavedAt: null,
+};
 
 /**
  * Full-auto rescheduling behaviour.
@@ -802,6 +848,48 @@ export interface Achievement extends BaseEntity {
   progress: number;
   unlockedAt: Timestamp | null;
   xpReward: number;
+}
+
+/* ------------------------------------------------------------------ */
+/* Custom rewards (Phase 9)                                            */
+/* ------------------------------------------------------------------ */
+
+/**
+ * A user-defined reward. Its `condition` is a serialised ConditionEngine AST
+ * (see src/engines/conditionEngine.ts) — stored as `unknown` here so the domain
+ * model stays free of engine imports; rewardService validates it on read.
+ */
+export interface CustomReward extends BaseEntity {
+  name: string;
+  description: string;
+  /** Optional XP paid once per earning. 0 means "no XP, just the treat". */
+  xpValue: number;
+  /** Free-text thing the user promises themselves, e.g. "cinema trip". */
+  treat: string;
+  /** Serialised Condition AST. */
+  condition: unknown;
+  /** 'once' | 'daily' | 'weekly' | 'monthly' — see RepeatMode. */
+  repeat: string;
+  archived: boolean;
+  sortOrder: number;
+}
+
+/**
+ * One earning of a CustomReward. `periodKey` is the repeat bucket ('once',
+ * a date key, an ISO week key or a month key) and is uniquely indexed with the
+ * reward id so a reward can never be earned twice in the same period.
+ */
+export interface RewardEarning extends BaseEntity {
+  rewardId: ID;
+  at: Timestamp;
+  date: DateKey;
+  periodKey: string;
+  /** XP actually banked for this earning. */
+  xpAwarded: number;
+  /** Set when the user marks the treat as taken. */
+  claimedAt: Timestamp | null;
+  /** Snapshot of the trace sentence at the moment it was earned. */
+  summary: string;
 }
 
 /* ------------------------------------------------------------------ */

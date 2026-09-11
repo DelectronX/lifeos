@@ -1,174 +1,135 @@
-import { useEffect, useState } from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import {
-  BarChart3, CalendarDays, CheckSquare, Home, ListTodo, Menu, Moon,
-  RotateCcw, Settings as SettingsIcon, Sun, Target, Timer, Trophy, X,
-} from 'lucide-react';
-import { cn } from '@/lib/cn';
-import { useLiveProfile, useLiveSettings } from '@/state/useLiveData';
-import { levelProgress } from '@/engines/xp';
-import { mergeSchedulingConfig } from '@/config/schedulingConfig';
-import { setTheme } from '@/services/settingsService';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { CommandPalette } from '@/components/system/CommandPalette';
+import { hasModKey, isTypingTarget, useIsMobile, usePersistentState } from '@/lib/platform';
+import { useTheme } from '@/lib/theme';
+import { SidebarRail } from './SidebarRail';
+import { IdentityBlock } from './IdentityBlock';
+import { WindowChrome } from './WindowChrome';
+import { MobileMoreSheet, MobileTabBar, MobileTopBar } from './MobileShell';
+import { ShellContext, type ShellContextValue } from './ShellContext';
+import { NAV_DESTINATIONS, moduleTitleFor } from './navigation';
 
-interface NavItem {
-  to: string;
-  label: string;
-  icon: typeof Home;
-  /** Shown in the compact mobile tab bar. */
-  mobile?: boolean;
-}
-
-const NAV: NavItem[] = [
-  { to: '/', label: 'Home', icon: Home, mobile: true },
-  { to: '/schedule', label: 'Schedule', icon: CalendarDays, mobile: true },
-  { to: '/tasks', label: 'Tasks', icon: ListTodo, mobile: true },
-  { to: '/goals', label: 'Goals', icon: Target },
-  { to: '/focus', label: 'Focus', icon: Timer, mobile: true },
-  { to: '/revision', label: 'Revision', icon: RotateCcw },
-  { to: '/trackers', label: 'Trackers', icon: CheckSquare },
-  { to: '/analytics', label: 'Analytics', icon: BarChart3 },
-  { to: '/achievements', label: 'Achievements', icon: Trophy },
-  { to: '/settings', label: 'Settings', icon: SettingsIcon },
-];
-
+/**
+ * AppShell — the LifeOS window.
+ *
+ * Desktop: a navigation rail (collapsible to icon-only), a slim window-chrome
+ * top bar, and an inset content region. Mobile (<lg): a compact top bar and a
+ * bottom tab bar with a More sheet — a genuinely different layout, not a
+ * narrowed desktop.
+ *
+ * Global keyboard:
+ *   ⌘K / Ctrl K   command palette
+ *   ⌘\ / Ctrl \   collapse / expand the rail
+ *   ⌘1…4          jump to the first four destinations
+ *   /             focus the palette (when not typing)
+ */
 export function AppShell() {
-  const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
-  const profile = useLiveProfile();
-  const settings = useLiveSettings();
+  const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
-  useEffect(() => { setMobileOpen(false); }, [location.pathname]);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [paletteQuery, setPaletteQuery] = useState('');
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [railCollapsedRaw, setRailCollapsedRaw] = usePersistentState('lifeos.rail.collapsed', false);
+  const railCollapsed = railCollapsedRaw;
+  // `usePersistentState` returns a fresh setter each render; pin it through a
+  // ref so the shell context and the global key handler stay referentially
+  // stable and the keydown listener is not re-registered on every render.
+  const setterRef = useRef(setRailCollapsedRaw);
+  setterRef.current = setRailCollapsedRaw;
+  const setRailCollapsed = useCallback((v: boolean) => setterRef.current(v), []);
 
-  const xpConfig = mergeSchedulingConfig(settings?.scheduling).xp;
-  const lp = profile ? levelProgress(profile.totalXP, xpConfig) : null;
+  // Mount the theme system: reads the persisted preference, follows the OS in
+  // `system` mode, and keeps <html class="dark"> authoritative.
+  useTheme();
 
-  return (
-    <div className="flex h-full min-h-screen bg-surface-sunken">
-      {/* Desktop sidebar */}
-      <aside className="hidden w-56 shrink-0 flex-col border-r border-line bg-surface lg:flex">
-        <Brand />
-        <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-2">
-          {NAV.map((item) => <NavRow key={item.to} item={item} />)}
-        </nav>
-        {lp ? <LevelFooter level={lp.level} progress={lp.progress} into={lp.into} span={lp.span} /> : null}
-      </aside>
+  const openCommandPalette = useCallback((query = '') => {
+    setPaletteQuery(query);
+    setPaletteOpen(true);
+  }, []);
+  const closeCommandPalette = useCallback(() => setPaletteOpen(false), []);
 
-      {/* Mobile drawer */}
-      {mobileOpen && (
-        <div className="fixed inset-0 z-40 lg:hidden">
-          <div className="absolute inset-0 bg-slate-900/30 backdrop-blur-[2px]" onClick={() => setMobileOpen(false)} />
-          <aside className="relative flex h-full w-64 flex-col border-r border-line bg-surface animate-in-fade">
-            <div className="flex items-center justify-between pr-2">
-              <Brand />
-              <button aria-label="Close menu" onClick={() => setMobileOpen(false)} className="rounded-lg p-2 text-ink-muted hover:bg-surface-sunken">
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-2">
-              {NAV.map((item) => <NavRow key={item.to} item={item} />)}
-            </nav>
-            {lp ? <LevelFooter level={lp.level} progress={lp.progress} into={lp.into} span={lp.span} /> : null}
-          </aside>
-        </div>
-      )}
+  useEffect(() => { setMoreOpen(false); }, [location.pathname]);
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 border-b border-line bg-surface/85 px-4 backdrop-blur-md lg:hidden">
-          <button aria-label="Open menu" onClick={() => setMobileOpen(true)} className="rounded-lg p-2 text-ink-muted hover:bg-surface-sunken">
-            <Menu className="h-5 w-5" />
-          </button>
-          <span className="text-sm font-semibold tracking-[-0.01em]">LifeOS</span>
-          <div className="flex-1" />
-          <ThemeToggle />
-        </header>
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const mod = hasModKey(e);
 
-        <main className="min-w-0 flex-1 overflow-y-auto pb-20 lg:pb-0">
-          <Outlet />
-        </main>
-
-        {/* Mobile bottom bar: Today / Schedule / Tasks / Focus */}
-        <nav className="fixed bottom-0 left-0 right-0 z-30 flex h-16 items-stretch border-t border-line bg-surface/95 backdrop-blur-md lg:hidden">
-          {NAV.filter((n) => n.mobile).map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === '/'}
-              className={({ isActive }) =>
-                cn(
-                  'flex flex-1 flex-col items-center justify-center gap-1 text-2xs font-medium transition-colors',
-                  isActive ? 'text-accent' : 'text-ink-faint',
-                )
-              }
-            >
-              <item.icon className="h-5 w-5" />
-              {item.label}
-            </NavLink>
-          ))}
-        </nav>
-      </div>
-    </div>
-  );
-}
-
-function Brand() {
-  return (
-    <div className="flex h-14 items-center gap-2.5 px-5">
-      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent text-xs font-bold text-white dark:text-slate-950">
-        L
-      </div>
-      <div className="text-sm font-semibold tracking-[-0.012em] text-ink">LifeOS</div>
-      <div className="flex-1" />
-      <div className="hidden lg:block"><ThemeToggle /></div>
-    </div>
-  );
-}
-
-function NavRow({ item }: { item: NavItem }) {
-  return (
-    <NavLink
-      to={item.to}
-      end={item.to === '/'}
-      className={({ isActive }) =>
-        cn(
-          'flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors duration-150 ease-calm',
-          isActive
-            ? 'bg-accent-soft text-accent-ink'
-            : 'text-ink-muted hover:bg-surface-sunken hover:text-ink',
-        )
+      if (mod && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setPaletteOpen((v) => !v);
+        return;
       }
-    >
-      <item.icon className="h-4 w-4 shrink-0" />
-      {item.label}
-    </NavLink>
-  );
-}
+      if (mod && e.key === '\\') {
+        e.preventDefault();
+        setRailCollapsed(!railCollapsed);
+        return;
+      }
+      if (mod && /^[1-9]$/.test(e.key)) {
+        const dest = NAV_DESTINATIONS.find((d) => d.shortcut === e.key);
+        if (dest) {
+          e.preventDefault();
+          navigate(dest.to);
+        }
+        return;
+      }
+      if (e.key === '/' && !mod && !isTypingTarget(e.target)) {
+        e.preventDefault();
+        openCommandPalette();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [navigate, openCommandPalette, railCollapsed, setRailCollapsed]);
 
-function LevelFooter({ level, progress, into, span }: { level: number; progress: number; into: number; span: number }) {
-  return (
-    <div className="border-t border-line px-4 py-3">
-      <div className="flex items-baseline justify-between">
-        <span className="t-label">Level {level}</span>
-        <span className="t-num text-2xs text-ink-faint">{Math.round(into)} / {Math.round(span)} XP</span>
-      </div>
-      <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-line">
-        <div className="h-full rounded-full bg-accent transition-[width] duration-500 ease-calm" style={{ width: `${progress * 100}%` }} />
-      </div>
-    </div>
-  );
-}
+  const title = useMemo(() => moduleTitleFor(location.pathname), [location.pathname]);
 
-function ThemeToggle() {
-  const settings = useLiveSettings();
-  const isDark = document.documentElement.classList.contains('dark');
+  const ctx: ShellContextValue = useMemo(
+    () => ({
+      openCommandPalette,
+      closeCommandPalette,
+      commandPaletteOpen: paletteOpen,
+      railCollapsed,
+      setRailCollapsed,
+      isMobile,
+    }),
+    [openCommandPalette, closeCommandPalette, paletteOpen, railCollapsed, setRailCollapsed, isMobile],
+  );
+
   return (
-    <button
-      type="button"
-      aria-label="Toggle theme"
-      title={`Theme: ${settings?.theme ?? 'system'}`}
-      onClick={() => void setTheme(isDark ? 'light' : 'dark')}
-      className="rounded-lg p-2 text-ink-muted transition-colors hover:bg-surface-sunken hover:text-ink"
-    >
-      {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-    </button>
+    <ShellContext.Provider value={ctx}>
+      <div className="flex h-full min-h-screen bg-surface-base">
+        <SidebarRail identity={<IdentityBlock collapsed={railCollapsed} />} />
+
+        <div className="flex min-w-0 flex-1 flex-col">
+          {isMobile ? <MobileTopBar title={title} /> : <WindowChrome title={title} />}
+
+          {/* Inset content region: a sunken well one luminance step below chrome. */}
+          <main
+            id="lo-content"
+            className="min-w-0 flex-1 overflow-y-auto bg-surface-base pb-24 lg:pb-0"
+          >
+            <div key={location.pathname} className="animate-fade">
+              <Outlet />
+            </div>
+          </main>
+
+          {isMobile ? (
+            <>
+              <MobileTabBar moreOpen={moreOpen} onMore={() => setMoreOpen((v) => !v)} />
+              <MobileMoreSheet open={moreOpen} onClose={() => setMoreOpen(false)} />
+            </>
+          ) : null}
+        </div>
+      </div>
+
+      <CommandPalette
+        open={paletteOpen}
+        onClose={closeCommandPalette}
+        initialQuery={paletteQuery}
+      />
+    </ShellContext.Provider>
   );
 }

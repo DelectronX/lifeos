@@ -13,6 +13,7 @@ import {
   ProtectedTimeSettings, ReschedulingSettings, RevisionSettings, SchedulingSettings, XPSettings,
 } from './SchedulingSettings';
 import { DataSettings, NotificationSettings } from './DataSettings';
+import { StorageSettings } from './StorageSettings';
 import type { DeepPartial, SchedulingConfig, Settings, ThemeMode } from '@/types';
 
 type Tab = 'general' | 'scheduling' | 'revision' | 'notifications' | 'resources' | 'data';
@@ -152,7 +153,12 @@ export function SettingsPage() {
         </Card>
       ) : null}
 
-      {tab === 'data' ? <DataSettings settings={settings} onPatch={patch} /> : null}
+      {tab === 'data' ? (
+        <>
+          <StorageSettings settings={settings} />
+          <DataSettings settings={settings} onPatch={patch} />
+        </>
+      ) : null}
     </Page>
   );
 }

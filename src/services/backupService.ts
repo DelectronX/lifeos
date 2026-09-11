@@ -5,6 +5,7 @@ import {
   type ExportBundle, type ValidationReport,
 } from './migrationService';
 import { getSettings, updateSettings } from './settingsService';
+import { BUNDLE_FILENAME, saveTextAsFile, storage } from '@/storage';
 import { DEFAULT_BACKUP_PREFERENCES, type BackupKind, type BackupSnapshot, type ID } from '@/types';
 
 /**
@@ -79,17 +80,26 @@ export async function exportToJson(options: ExportOptions = {}): Promise<string>
 export async function downloadExport(options: ExportOptions = { includeAttachments: true }): Promise<string> {
   const json = await exportToJson(options);
   const filename = `lifeos-backup-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.json`;
-  const blob = new Blob([json], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  // Revoke on the next tick so the download has definitely started.
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  await saveTextAsFile(filename, json);
   return filename;
+}
+
+/**
+ * Writes the transport bundle as `lifeos.json` — the same file the manual
+ * storage mode uses, so "Export bundle" here and "Save" in the Storage panel
+ * produce an interchangeable artefact rather than two rival formats.
+ */
+export async function saveBundleFile(): Promise<string> {
+  await storage.saveBundleToFile(BUNDLE_FILENAME);
+  return BUNDLE_FILENAME;
+}
+
+/**
+ * Restores a bundle AND immediately persists it to the JSON files through the
+ * active storage adapter, so an import is durable without a second step.
+ */
+export async function importBundleToFiles(text: string): Promise<{ ok: boolean; message: string; applied: string[] }> {
+  return storage.importBundleText(text);
 }
 
 /* ------------------------------------------------------------------ */
@@ -330,6 +340,9 @@ export async function eraseAllData(): Promise<void> {
   await db.transaction('rw', tables, async () => {
     for (const t of tables) await t.clear();
   });
+  // The JSON files are the source of truth now, so "erase" has to reach them
+  // too — otherwise the next boot would cheerfully restore everything.
+  await storage.saveAll();
 }
 
 /* ------------------------------------------------------------------ */

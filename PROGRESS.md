@@ -1,140 +1,167 @@
-# LifeOS build progress
+# LifeOS — build progress
 
-Accurate status as of the Daily/Weekly Review milestone. See `SPEC.md` for the
-full specification and `README.md` for architecture and setup.
+Offline-first personal productivity OS. See `SPEC.md` for the full product
+specification and `README.md` for setup and architecture.
 
-**Current state:** `npx tsc --noEmit` clean, `npx vitest run` green (237 engine
-tests across 9 files). `npm run build` is green for everything in this report.
+Current state: **`npm run build` green, `npx tsc --noEmit` clean, `npx vitest run`
+346 tests passing across 16 files.**
 
 ---
 
-## Phase 1 — complete
+## Complete
 
-Vite + React 18 + TS (strict) scaffold; Tailwind design system with light/dark
-CSS token themes; full Dexie schema for all entities with compound indexes tuned
-for the hot query paths; universal Activity log and single write path
-(`activityService`); central `schedulingConfig.ts`; XP/level engine; app shell
-with desktop sidebar and mobile tab bar; react-router routes for every module;
-base components (Button, Card, Badge, Input/Select/Textarea/Toggle, Modal, Tabs,
-Progress, Toaster, Menu); live-query hooks layer; tracker CRUD page.
+### Phase 1 — Foundation
+Vite + React 18 + TypeScript (strict), Tailwind design system, Dexie schema for
+all 23 entities with compound indexes on the hot query paths, universal Activity
+model that every module writes through, app shell + routing, base UI primitives.
 
-## Phase 2 — complete
+### Phase 2 — Core productivity
+Tasks module (full field set, 7-state machine with preserved status history,
+grouping/filtering/search, bulk actions). Schedule module (day/week/timeline/
+agenda views, hand-rolled drag + resize with snapping, block inspector,
+templates, recurring rules with exceptions and this/future/series edit
+semantics). Goals → Milestones → Tasks hierarchy with automatic progress.
 
-Tasks CRUD with the full field set and status history (Inbox / Planned /
-In Progress / Completed / Skipped / Rescheduled / Cancelled), filtering, bulk
-edits and direct scheduling. Schedule module with day/week timeline and agenda
-views, block create/inspect, drag/resize/move/duplicate/split/delete/lock/
-protect, task↔block conversion, recurring rules and schedule templates. Goals →
-Milestones → Tasks hierarchy with automatic progress via `goalProgress.ts`.
+### Phase 3 — Scheduling intelligence
+Pure, testable engines in `src/engines/` — no Dexie, no React, every entry point
+takes `now: Date`:
+- `priorityScoring` — 8-term weighted score returning a per-term breakdown
+- `scheduling` — free-slot computation, greedy placement with deadlines,
+  splitting, Kahn topological dependency ordering, break padding; returns
+  unplaced tasks with coded reasons
+- `rescheduling` — remaining-work calculation, seven costed options each with a
+  human-readable explanation, auto mode, overload detection
+- `conflictResolution` — five shift strategies, each with a before/after preview
+  and plain-English rationale; returns proposals only, never mutates
+- `durationPrediction` — estimated-vs-actual patterns with confidence tiers
+- `revisionScheduling` — interval ladders, SM-2, missed-revision recomputation
 
-Note: timeline drag/resize is hand-rolled on pointer events
-(`features/schedule/useTimelineDrag.ts`) rather than `@dnd-kit`, which is still
-listed in `package.json` but unused.
+`src/services/planService.ts` provides the apply/undo persistence layer with
+snapshot-based revert.
 
-## Phase 3 — complete
+### Phase 4 — Execution
+Focus / Pomodoro / Stopwatch / Countdown timers. Timer state is computed from
+wall-clock timestamps, so a refresh mid-session resumes correctly. Completion
+writes a real TimerSession + Activity record and awards XP.
 
-`schedulingConfig.ts` plus PriorityScoring, Scheduling, Rescheduling,
-ConflictResolution and DurationPrediction engines, all pure and unit-tested.
-Wired into the Schedule UI through `planService`: auto-plan with a before/after
-impact preview and per-proposal selection, per-task reschedule dialog with every
-costed option and its explanation, conflict dialog, overload banner, duration
-hints, and undo for every automated change via `PlanRun` before/after snapshots.
+### Phase 5 — Learning
+Paper Mode: multi-subject builder, per-question timing that accumulates across
+revisits, question palette, mistake classification, and a pure
+`paperAnalytics` engine (score, accuracy, median/fastest/slowest, subject
+breakdown, mistake aggregation) behind a sortable review UI.
 
-Partial: `autoReschedule` and `previewAutoReschedule`/`applyAutoReschedule` exist
-and are tested in the engine and service layers, but the full-auto ("reschedule
-everything that slipped, unattended") mode has **no UI entry point** yet — all
-rescheduling in the app today is user-confirmed, one task at a time.
+### Phase 6 — Growth
+Revision dashboard (due today / tomorrow / upcoming / overdue / recent), XP and
+level system with anti-farming safeguards, achievements, Daily Review (guided
+three-step triage wired to the rescheduling engine with real Undo), Weekly
+Review (conclusions printed beside their supporting numbers).
 
-## Phase 4 — complete
+### Phase 7 — Analytics
+Pure `analytics` engine plus seven focused sections (Overview, Study, Fitness,
+Skills, Personal, Time, Goals), a shared range selector, planning-accuracy
+insights, and tracker pillar pages driven by one universal parameterised
+implementation. No hardcoded numbers anywhere.
 
-Focus module with Focus, Pomodoro, Stopwatch and Countdown timers, an active
-timer panel and session history. Every run writes a persistent `TimerSession`
-plus an Activity record tied to the task/goal/tracker, so tracked time is
-measured rather than typed in. Timer core logic is unit-tested (13 tests).
+### Phase 8 — Offline reliability
+PWA service worker + manifest + generated icons, JSON export/import with
+validation and versioned migrations, local file attachments as IndexedDB blobs,
+full Settings page, chunk splitting.
 
-## Phase 5 — complete
+---
 
-Paper Mode: multi-subject mock test builder, per-question timer with automatic
-time capture on navigation, per-question status (Correct / Incorrect / Skipped /
-Marked), mistake classification across the eight specified categories, question
-palette, paper review screen and `paperAnalytics.ts` (26 tests).
+## In progress — resume here
 
-## Phase 6 — complete
+Three agents were stopped mid-task at a clean, compiling checkpoint. All work
+below is committed and building; what remains is finishing and verification.
 
-Revision engine (`revisionScheduling.ts`, 24 tests) with configurable
-spaced-repetition intervals, manual overrides and missed-revision handling
-through the rescheduling engine; Revision dashboard with Due Today / Tomorrow /
-Upcoming / Overdue / Recently Completed. XP engine, level curve and
-automatically-derived achievements with anti-farming safeguards.
+### A. Dark OS-style redesign — partially landed
+**Done:** the complete dark-default token layer in `src/index.css` (surface
+luminance steps, hairlines, single blue-violet accent, radii/shadow/motion
+variables — depth comes from luminance and hairlines, not glassmorphism),
+`tailwind.config.js` wired to those tokens, restyled Button/Card/Badge/Input,
+new EmptyState/Kbd/Separator/Skeleton/SegmentedControl/Tooltip primitives,
+`src/lib/theme.ts`, `src/lib/fuzzy.ts`, `src/lib/platform.ts`, and new shell
+pieces: `SidebarRail`, `WindowChrome`, `IdentityBlock`, `MobileShell`,
+`ShellContext`, `navigation.ts`, plus `src/components/system/CommandPalette.tsx`
+and `commands.ts`.
 
-**Daily Review** (`features/review/DailyReviewPage.tsx` + `DailyRecap`,
-`TaskTriageCard`, `DailySummary`, `ReviewParts`) — a three-step guided close-out
-rather than a dashboard:
+**Remaining:**
+- Verify the new shell and command palette in a real browser at 390px and
+  1440px; iterate on spacing, active states and motion until it reads as a calm
+  OS rather than a dashboard template.
+- Write `src/components/ui/README.md` documenting the tokens and every
+  primitive — the feature-page restyle wave depends on it.
+- **Feature pages have NOT been restyled onto the new tokens yet.** This is the
+  largest remaining visual task: Home, Schedule, Tasks, Goals, Focus, Revision,
+  Trackers, Analytics, Achievements, Review, Settings.
 
-1. Recap: completed vs still-open tasks, time tracked vs planned, block
-   completion and skips, tracker breakdown, goals that gained time, XP earned.
-2. Triage: every incomplete task in sequence. For each one the
-   ReschedulingEngine's costed options are offered — move to tomorrow, find the
-   next available slot, split into sessions, schedule manually, cancel — with
-   the engine's own explanation shown, a before/after schedule preview via the
-   existing `ImpactPreview`, and a link to the complete option list in the
-   existing `PlanRescheduleDialog`. Nothing is written until confirmed.
-3. Summary: exactly what was rescheduled and where it landed, with per-change
-   undo, plus counts of what was cancelled or left open.
+### B. Achievements + custom Rewards — mostly landed
+**Done:** achievements expanded from 34 to **86 definitions** across the
+extended category set (study, goals, skills, consistency, fitness, mastery,
+revision, focus, planning, personal). `src/engines/conditionEngine.ts` (pure
+condition AST: leaf comparisons over metrics with time windows, AND/OR/NOT
+composition, per-leaf evaluation traces, progress computation) with a test
+suite. `src/config/rewards.ts`, `src/services/rewardService.ts`, and the UI:
+`ConditionBuilder.tsx`, `RewardEditor.tsx`, `RewardsSection.tsx`.
 
-Day navigation moves through history; an empty day is stated plainly rather than
-rendered as a wall of zeros.
+**Remaining:**
+- Confirm every new achievement's stat is actually computed in
+  `achievementService.computeStats` — some may still be unimplemented.
+- Browser-verify the condition builder end to end: create a custom reward,
+  confirm it persists across a refresh and that its evaluation trace matches
+  real stored data.
 
-**Weekly Review** (`features/review/WeeklyReviewPage.tsx`) — tasks completed
-with the trend against the previous week, time by pillar and by tracker, a
-day-by-day series that marks inactive days as inactive, planned vs actual,
-questions completed with the accuracy change vs the previous week, revision
-completion rate, and goal progress. The "most time recorded" and "furthest below
-target" verdicts come straight from `computeWeeklyReview` and are always printed
-next to the numbers they were derived from. Week navigation respects the
-configured week start day.
+### C. JSON file storage — partially landed
+The user does **not** run this in a desktop browser; they open it from an iOS
+file-manager/FTP app. All data, **including user settings**, must live in JSON
+files rather than inside IndexedDB.
 
-Both review pages compute nothing themselves: all figures come from
-`computeDailyReview` / `computeWeeklyReview` in `engines/analytics.ts` via
-`analyticsService`, and all schedule changes go through `planService`.
+**Done:** `src/storage/` with `types.ts`, `detect.ts`, `envelope.ts`,
+`dirtyTracker.ts`, `bundle.ts`, `repository.ts`, `boot.ts`, an `adapters/`
+directory and tests; plus `src/features/settings/StorageSettings.tsx` and
+edits to `backupService`, `migrationService`, `settingsService`, `main.tsx`.
 
-## Phase 7 — complete
+**Design:** one `StorageAdapter` interface with several backends, auto-detected
+at boot, because a webview cannot silently write to arbitrary disk paths:
+1. **HTTP/WebDAV** — if served over `http://` and the origin accepts PUT,
+   saving is fully automatic. Best case.
+2. **File System Access API** — user picks a folder once; real file writes
+   thereafter.
+3. **Manual file mode** — universal fallback: import a JSON bundle, save/export
+   it back, with a visible unsaved-changes indicator.
 
-Analytics sections (Overview, Study, Fitness, Skills, Personal, Time, Goals)
-computed from real Activity / Task / TimerSession / QuestionAttempt records by
-`engines/analytics.ts` (67 tests). No hardcoded numbers. Charts are small
-hand-written SVG components in `src/components/charts/` rather than `recharts`,
-which remains an unused dependency.
+Layout: one JSON file per entity type in `data/` (`tasks.json`, `goals.json`,
+`settings.json`, …) plus `manifest.json`, and a single `lifeos.json` bundle for
+transport. IndexedDB remains as a fast local cache so live queries and
+performance are unaffected; existing IndexedDB data migrates into files on
+first save.
 
-## Phase 8 — mostly complete
+**Remaining:**
+- Verify the boot/hydrate path end to end and the one-time IndexedDB → files
+  migration.
+- Confirm settings genuinely persist to `settings.json` (localStorage retained
+  only as a boot-time theme cache to avoid a flash).
+- Browser-verify each adapter's detection and the manual save/export/import
+  flow.
+- **Open question for the user:** does their iOS file app expose a web server /
+  WebDAV / Wi-Fi transfer option? That determines whether they get silent
+  auto-save or a manual Save button.
 
-Done: PWA/service worker via `vite-plugin-pwa` with Workbox precaching and
-navigation fallback; JSON export/import with schema validation, versioned
-migrations (`migrationService`) and automatic local snapshots
-(`backupService`); Dexie schema at version 3 with forward migrations;
-virtualised resource library via `react-window`; Settings page wiring theme,
-week start, durations, Pomodoro, revision intervals, XP, notifications,
-scheduling preferences, working/focus hours, protected blocks and the storage
-report; startup maintenance hook (`runStartupMaintenance`); Vitest suites for
-every engine; this README.
+---
 
-## What remains
+## Known gaps (verified against the code, not assumed)
 
-- **Full-auto rescheduling has no UI.** The engine and service functions exist
-  and are tested; nothing calls them from a screen.
-- **No component or service tests.** All 237 tests are pure-engine tests. The
-  services (`planService`, `taskService`, `analyticsService`, …) and every React
-  component are untested; `fake-indexeddb` is installed for this but unused.
-- **Analytics snapshot rollups are not scheduled.** `rollSnapshots` and
-  `writeSnapshot` in `analyticsService` are implemented but never invoked, so
-  long-range analytics always replay the event log.
-- **Notification scheduling is settings-only.** `notificationService` is wired
-  into Settings for permission and preferences; no screen actually schedules the
-  upcoming-block / revision-due / daily-review reminders it supports.
-- **Unused dependencies.** `@dnd-kit/*` and `recharts` can be dropped from
-  `package.json`.
-- **No accessibility pass** (focus management in modals, keyboard navigation of
-  the timeline, ARIA on the custom charts) and no automated a11y checks.
-- Daily Review's manual-scheduling path reads the task's blocks back from Dexie
-  to report what happened, because `ScheduleTaskModal` does not report its
-  result to the caller; a return value on that modal would be cleaner.
+- Full-auto rescheduling has no UI entry point — the engine and the apply/undo
+  layer both exist, but nothing triggers `autoReschedule`.
+- `rollSnapshots` is written but never invoked; the automatic backup lifecycle
+  is not wired to a schedule.
+- Notification scheduling is settings-only — no reminders actually fire from
+  stored data while the app is open.
+- **No preloaded demo data.** Requested but not yet built: a deterministic,
+  seeded, internally-consistent dataset spanning ~8-10 weeks so every screen
+  opens populated.
+- Test coverage is engine-heavy. All 346 tests are pure-engine/storage; the
+  React layer is verified by manual browser QA only.
+- `ScheduleTaskModal` doesn't report its result, so the manual-scheduling path
+  reads blocks back from Dexie to report accurately. Works, but a return value
+  would be cleaner.

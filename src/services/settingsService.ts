@@ -1,7 +1,10 @@
 import { db } from '@/db/db';
 import { createDefaultSettings } from '@/db/seed';
 import { mergeSchedulingConfig } from '@/config/schedulingConfig';
-import type { DeepPartial, SchedulingConfig, Settings, ThemeMode } from '@/types';
+import {
+  DEFAULT_STORAGE_PREFERENCES,
+  type DeepPartial, type SchedulingConfig, type Settings, type StoragePreferences, type ThemeMode,
+} from '@/types';
 
 const THEME_KEY = 'lifeos.theme';
 
@@ -41,6 +44,41 @@ function mergeDeep(a: Record<string, any>, b: Record<string, any>): Record<strin
     }
   }
   return out;
+}
+
+/* ------------------------------------------------------------------ */
+/* Storage preferences (persisted into data/settings.json)             */
+/* ------------------------------------------------------------------ */
+
+export async function getStoragePreferences(): Promise<Required<StoragePreferences>> {
+  const settings = await getSettings();
+  return { ...DEFAULT_STORAGE_PREFERENCES, ...(settings.storage ?? {}) };
+}
+
+export async function updateStoragePreferences(patch: Partial<StoragePreferences>): Promise<void> {
+  const current = await getStoragePreferences();
+  await updateSettings({ storage: { ...current, ...patch } });
+}
+
+/* ------------------------------------------------------------------ */
+/* Small UI bookkeeping                                                */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Values that used to be individual localStorage keys now live in
+ * `settings.uiState`, so they travel with an export and land in
+ * `data/settings.json` like everything else. localStorage remains only as the
+ * theme's paint-before-boot cache.
+ */
+export async function getUiState<T>(key: string, fallback: T): Promise<T> {
+  const settings = await getSettings();
+  const value = settings.uiState?.[key];
+  return value === undefined ? fallback : (value as T);
+}
+
+export async function setUiState(key: string, value: unknown): Promise<void> {
+  const settings = await getSettings();
+  await updateSettings({ uiState: { ...(settings.uiState ?? {}), [key]: value } });
 }
 
 /* ------------------------------------------------------------------ */

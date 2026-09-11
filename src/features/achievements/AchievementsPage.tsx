@@ -11,21 +11,30 @@ import { formatDateKeyShort, toDateKey } from '@/lib/date';
 import { levelProgress } from '@/engines/xp';
 import { useLiveProfile, useSchedulingConfig } from '@/state/useLiveData';
 import { ACHIEVEMENT_CATEGORY_LABELS } from '@/config/achievements';
-import { evaluateAchievements, groupByCategory, type AchievementView } from '@/services/achievementService';
+import {
+  ACHIEVEMENT_CATEGORY_ORDER, evaluateAchievements, groupByCategory,
+  type AchievementView,
+} from '@/services/achievementService';
 import { getRecentXP, groupXPByReason } from '@/services/xpService';
 import type { AchievementCategory } from '@/types';
+import { RewardsSection } from './RewardsSection';
 
-type Filter = 'all' | 'unlocked' | 'locked';
+type StatusFilter = 'all' | 'unlocked' | 'locked';
+type CategoryFilter = 'all' | AchievementCategory;
+type Section = 'achievements' | 'rewards';
 
 /**
  * Achievements are read-only reflections of stored data: the page recomputes
  * every stat from records on each visit, so what you see is what is measurable
- * right now — nothing is cached into a lie.
+ * right now — nothing is cached into a lie. Rewards sit alongside them and are
+ * evaluated from exactly the same measured numbers.
  */
 export function AchievementsPage() {
   const profile = useLiveProfile();
   const config = useSchedulingConfig();
-  const [filter, setFilter] = useState<Filter>('all');
+  const [section, setSection] = useState<Section>('achievements');
+  const [status, setStatus] = useState<StatusFilter>('all');
+  const [category, setCategory] = useState<CategoryFilter>('all');
 
   const evaluation = useLiveQuery(() => evaluateAchievements(), []);
   const recentXP = useLiveQuery(() => getRecentXP(40), []) ?? [];
@@ -39,6 +48,8 @@ export function AchievementsPage() {
   const unlocked = evaluation?.views.filter((v) => v.unlocked).length ?? 0;
   const total = evaluation?.views.length ?? 0;
   const xpByReason = useMemo(() => groupXPByReason(recentXP), [recentXP]);
+
+  const visibleGroups = groups.filter((g) => category === 'all' || g.category === category);
 
   return (
     <Page
@@ -98,38 +109,84 @@ export function AchievementsPage() {
 
       <Tabs
         className="mb-5"
-        variant="pill"
-        value={filter}
-        onChange={setFilter}
+        value={section}
+        onChange={setSection}
         items={[
-          { value: 'all', label: 'All', count: total },
-          { value: 'unlocked', label: 'Unlocked', count: unlocked },
-          { value: 'locked', label: 'In progress', count: total - unlocked },
+          { value: 'achievements', label: 'Achievements', count: total },
+          { value: 'rewards', label: 'Rewards' },
         ]}
       />
 
-      {!evaluation ? (
-        <Card><p className="t-muted">Measuring your records…</p></Card>
-      ) : total === 0 ? (
-        <EmptyState icon={<Trophy className="h-6 w-6" />} title="No achievement definitions" description="Achievements are seeded on first run." />
+      {section === 'rewards' ? (
+        <RewardsSection />
       ) : (
-        groups.map((group) => {
-          const views = group.views.filter((v) => filter === 'all' || (filter === 'unlocked' ? v.unlocked : !v.unlocked));
-          if (views.length === 0) return null;
-          return (
-            <PageSection
-              key={group.category}
-              title={ACHIEVEMENT_CATEGORY_LABELS[group.category as AchievementCategory]}
-              description={`${group.unlocked} of ${group.views.length} unlocked`}
-            >
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {views.map((view) => <AchievementCard key={view.definition.key} view={view} />)}
-              </div>
-            </PageSection>
-          );
-        })
+        <>
+          <div className="mb-5 flex flex-wrap items-center gap-2">
+            <Tabs
+              variant="pill"
+              value={status}
+              onChange={setStatus}
+              items={[
+                { value: 'all', label: 'All', count: total },
+                { value: 'unlocked', label: 'Unlocked', count: unlocked },
+                { value: 'locked', label: 'In progress', count: total - unlocked },
+              ]}
+            />
+            <CategoryFilterBar value={category} onChange={setCategory} />
+          </div>
+
+          {!evaluation ? (
+            <Card><p className="t-muted">Measuring your records…</p></Card>
+          ) : total === 0 ? (
+            <EmptyState icon={<Trophy className="h-6 w-6" />} title="No achievement definitions" description="Achievements are seeded on first run." />
+          ) : (
+            visibleGroups.map((group) => {
+              const views = group.views.filter(
+                (v) => status === 'all' || (status === 'unlocked' ? v.unlocked : !v.unlocked),
+              );
+              if (views.length === 0) return null;
+              return (
+                <PageSection
+                  key={group.category}
+                  title={ACHIEVEMENT_CATEGORY_LABELS[group.category]}
+                  description={`${group.unlocked} of ${group.views.length} unlocked`}
+                >
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {views.map((view) => <AchievementCard key={view.definition.key} view={view} />)}
+                  </div>
+                </PageSection>
+              );
+            })
+          )}
+        </>
       )}
     </Page>
+  );
+}
+
+function CategoryFilterBar({
+  value, onChange,
+}: { value: CategoryFilter; onChange: (v: CategoryFilter) => void }) {
+  const options: CategoryFilter[] = ['all', ...ACHIEVEMENT_CATEGORY_ORDER];
+  return (
+    <div className="flex flex-wrap items-center gap-1" role="group" aria-label="Filter by category">
+      {options.map((option) => (
+        <button
+          key={option}
+          type="button"
+          aria-pressed={value === option}
+          onClick={() => onChange(option)}
+          className={cn(
+            'rounded-md border px-2.5 py-1 text-xs font-medium transition-colors duration-150',
+            value === option
+              ? 'border-accent/30 bg-accent-soft text-accent-ink'
+              : 'border-line text-ink-muted hover:text-ink',
+          )}
+        >
+          {option === 'all' ? 'Every category' : ACHIEVEMENT_CATEGORY_LABELS[option]}
+        </button>
+      ))}
+    </div>
   );
 }
 

@@ -41,6 +41,19 @@ export const OPERATOR_LABELS: Record<ComparisonOperator, string> = {
   '!=': 'is not',
 };
 
+/**
+ * The same comparisons without the leading verb, so a sentence can put them
+ * after "needs to be" without reading "needs to be is at least".
+ */
+export const OPERATOR_PHRASES: Record<ComparisonOperator, string> = {
+  '>=': 'at least',
+  '>': 'more than',
+  '<=': 'at most',
+  '<': 'less than',
+  '==': 'exactly',
+  '!=': 'anything but',
+};
+
 export type TimeWindowKind =
   | 'all_time'
   | 'today'
@@ -449,7 +462,7 @@ function evalLeaf(
     actual, met, unknownMetric: false, progress,
     explanation: met
       ? `${label}${scope} is ${fmt(actual)}, which ${OPERATOR_LABELS[node.operator]} ${fmt(node.value)}.`
-      : `${label}${scope} is ${fmt(actual)} and needs to be ${OPERATOR_LABELS[node.operator]} ${fmt(node.value)}.`,
+      : `${label}${scope} is ${fmt(actual)} and needs to be ${OPERATOR_PHRASES[node.operator]} ${fmt(node.value)}.`,
   };
 }
 

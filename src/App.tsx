@@ -28,7 +28,10 @@ export default function App() {
 
   useEffect(() => {
     let cancelled = false;
-    applyTheme(readCachedTheme());
+    // The pre-paint script in index.html has already applied the stored theme
+    // (defaulting to dark). Do not re-apply here — readCachedTheme() defaults
+    // to `system`, which would flash light on a light-mode OS. The DB value is
+    // applied below once it is actually known.
 
     (async () => {
       try {
@@ -49,8 +52,8 @@ export default function App() {
 
   if (error) {
     return (
-      <div className="flex min-h-screen items-center justify-center p-6">
-        <div className="max-w-md rounded-card border border-critical/30 bg-critical/5 p-5">
+      <div className="flex min-h-screen items-center justify-center bg-surface-base p-6">
+        <div className="w-full max-w-md rounded-panel border border-critical/30 bg-surface-raised p-6 shadow-panel">
           <h1 className="t-title text-critical">LifeOS could not start</h1>
           <p className="t-muted mt-2">{error}</p>
           <p className="t-meta mt-3">
@@ -64,8 +67,14 @@ export default function App() {
 
   if (!ready) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent border-r-transparent" />
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-surface-base">
+        <div className="flex h-9 w-9 items-center justify-center rounded-[var(--r-md)] bg-accent text-sm font-bold text-accent-contrast">
+          L
+        </div>
+        <div className="h-[3px] w-32 overflow-hidden rounded-full bg-line-faint">
+          <div className="h-full w-1/3 animate-shimmer rounded-full bg-[linear-gradient(90deg,transparent,rgb(var(--c-accent)),transparent)] bg-[length:200%_100%]" />
+        </div>
+        <span className="t-meta">Starting LifeOS</span>
       </div>
     );
   }

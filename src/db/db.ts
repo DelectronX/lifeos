@@ -1,13 +1,14 @@
 import Dexie, { type Table } from 'dexie';
 import type {
   Achievement, Activity, AnalyticsSnapshot, Attachment, BackupSnapshot, Goal, Habit, Milestone,
-  Paper, PlanRun, Question, QuestionAttempt, RecurringRule, Resource,
+  CustomReward, Paper, PlanRun, Question, QuestionAttempt, RecurringRule, Resource,
+  RewardEarning,
   RevisionEntry, RevisionPlan, ScheduleBlock, ScheduleTemplate, Settings,
   Task, TimerSession, Tracker, UserProfile, XPTransaction,
 } from '@/types';
 
 /** Bumped whenever the Dexie stores definition changes. Also written into exports. */
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 /**
  * Index design notes (this app must stay fast with years of history):
@@ -48,6 +49,8 @@ export class LifeOSDatabase extends Dexie {
   snapshots!: Table<AnalyticsSnapshot, string>;
   planRuns!: Table<PlanRun, string>;
   backups!: Table<BackupSnapshot, string>;
+  rewards!: Table<CustomReward, string>;
+  rewardEarnings!: Table<RewardEarning, string>;
 
   constructor(name = 'lifeos') {
     super(name);
@@ -117,6 +120,17 @@ export class LifeOSDatabase extends Dexie {
       attachments: 'id, resourceId, taskId, blockId, goalId, createdAt',
       backups: 'id, at, kind, [kind+at]',
     });
+
+    /**
+     * v4 (Phase 9): user-defined rewards and their earning history. A reward
+     * may only be earned once per repeat period, which is enforced by the
+     * unique compound index [rewardId+periodKey] rather than by a read-then-
+     * write race in the service. Every other store carries forward untouched.
+     */
+    this.version(4).stores({
+      rewards: 'id, archived, sortOrder, updatedAt, [archived+sortOrder]',
+      rewardEarnings: 'id, rewardId, at, date, claimedAt, &[rewardId+periodKey], [rewardId+at]',
+    });
   }
 }
 
@@ -149,6 +163,8 @@ export function tableByName(name: string): Table<any, string> | null {
     snapshots: db.snapshots,
     planRuns: db.planRuns,
     backups: db.backups,
+    rewards: db.rewards,
+    rewardEarnings: db.rewardEarnings,
   };
   return map[name] ?? null;
 }
@@ -158,7 +174,7 @@ export const EXPORTABLE_TABLES = [
   'profile', 'settings', 'trackers', 'goals', 'milestones', 'tasks', 'blocks',
   'templates', 'recurringRules', 'sessions', 'papers', 'questions', 'attempts',
   'revisionPlans', 'revisionEntries', 'resources', 'habits', 'activities',
-  'xp', 'achievements', 'snapshots', 'planRuns',
+  'xp', 'achievements', 'snapshots', 'planRuns', 'rewards', 'rewardEarnings',
 ] as const;
 
 export type ExportableTable = (typeof EXPORTABLE_TABLES)[number];

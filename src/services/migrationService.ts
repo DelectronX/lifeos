@@ -87,7 +87,27 @@ const V2_TO_V3: Migration = {
   }),
 };
 
-export const MIGRATIONS: Migration[] = [V1_TO_V2, V2_TO_V3];
+/**
+ * v3 -> v4: user-defined rewards and their earning history. Older bundles have
+ * neither table; they arrive as empty arrays so a restore does not leave the
+ * tables absent (which validation would otherwise report as missing).
+ */
+const V3_TO_V4: Migration = {
+  from: 3,
+  to: 4,
+  description: 'Adds custom rewards and their earning history.',
+  migrate: (bundle) => ({
+    ...bundle,
+    schemaVersion: 4,
+    tables: {
+      ...bundle.tables,
+      rewards: bundle.tables.rewards ?? [],
+      rewardEarnings: bundle.tables.rewardEarnings ?? [],
+    },
+  }),
+};
+
+export const MIGRATIONS: Migration[] = [V1_TO_V2, V2_TO_V3, V3_TO_V4];
 
 export interface MigrationOutcome {
   bundle: ExportBundle;
