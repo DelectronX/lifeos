@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  AlertTriangle, CheckCircle2, Download, FolderOpen, HardDriveDownload, Loader2, RefreshCw, Save, Upload,
+  AlertTriangle, CheckCircle2, Download, FileJson, FolderOpen, HardDriveDownload, Link2, Loader2,
+  RefreshCw, Save, Unlink, Upload,
 } from 'lucide-react';
 import { modKeyLabel } from '@/lib/platform';
 import { Button } from '@/components/ui/Button';
@@ -27,6 +28,7 @@ export function StorageSettings({ settings }: { settings: Settings }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [autoDownload, setAutoDownload] = useState(settings.storage?.autoDownload ?? false);
   const [counts, setCounts] = useState<{ name: string; count: number; dirty: boolean }[]>([]);
+  const [pasted, setPasted] = useState('');
   const fileInput = useRef<HTMLInputElement>(null);
 
   const unsaved = state.dirtyCollections.length;
@@ -147,12 +149,14 @@ export function StorageSettings({ settings }: { settings: Settings }) {
         ) : null}
       </SettingsSection>
 
+      <BoundTargetSection state={state} busy={busy} run={run} />
+
       <SettingsSection
         title="Save and transfer"
         description={
           state.canAutoSave
             ? 'Saving is automatic, but you can force a write or take a portable copy at any time.'
-            : `Press Save (or Ctrl/Cmd+S) to write ${BUNDLE_FILENAME}. Keep that file in your file manager — importing it here restores everything, settings included.`
+            : `Press Save (or ${modKeyLabel()}+S) to write ${BUNDLE_FILENAME}. It is always that exact filename, so your file manager offers to replace the existing copy rather than adding another one.`
         }
       >
         <div className="flex flex-wrap gap-2">
@@ -162,16 +166,8 @@ export function StorageSettings({ settings }: { settings: Settings }) {
             disabled={busy !== null}
             onClick={() =>
               run('save', async () => {
-                if (state.canAutoSave) {
-                  const ok = await storage.flush();
-                  toast[ok ? 'success' : 'error'](ok ? 'Saved' : 'Save failed', ok ? 'Your JSON files are up to date.' : state.lastError ?? '');
-                } else {
-                  const how = await storage.saveBundleToFile(BUNDLE_FILENAME);
-                  toast.success(
-                    how === 'shared' ? 'Shared' : 'Downloaded',
-                    `${BUNDLE_FILENAME} — keep it somewhere you can find it again.`,
-                  );
-                }
+                const result = await storage.save();
+                toast[result.ok ? 'success' : 'error'](result.ok ? 'Saved' : 'Save failed', result.message);
               })
             }
           >
@@ -183,12 +179,15 @@ export function StorageSettings({ settings }: { settings: Settings }) {
             disabled={busy !== null}
             onClick={() =>
               run('export', async () => {
-                await storage.saveBundleToFile(BUNDLE_FILENAME);
-                toast.success('Bundle exported', `Everything, including your settings, is in ${BUNDLE_FILENAME}.`);
+                const how = await storage.saveBundleToFile(BUNDLE_FILENAME);
+                toast.success(
+                  how === 'shared' ? 'Shared a copy' : 'Copy exported',
+                  `A separate copy of ${BUNDLE_FILENAME} — everything, settings included. This does not change where Save writes.`,
+                );
               })
             }
           >
-            Export bundle
+            Export a copy
           </Button>
 
           <Button
@@ -272,18 +271,78 @@ export function StorageSettings({ settings }: { settings: Settings }) {
         ) : null}
 
         {!state.canAutoSave ? (
-          <div className="flex items-start gap-2 rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink-muted">
-            <HardDriveDownload className="mt-0.5 h-4 w-4 shrink-0" />
-            <span>
-              Your work is held safely in this app&apos;s local cache between visits, so a refresh
-              will not lose it — but the only thing your file manager can see or back up is the{' '}
-              <code>{BUNDLE_FILENAME}</code> you save. Press{' '}
-              <strong>{modKeyLabel()}+S</strong> anywhere in the app, or the Save button in the top
-              bar. You can also drag a <code>{BUNDLE_FILENAME}</code> onto the window to restore it.
-              Save before you clear browser data or move devices.
-            </span>
+          <div className="space-y-2 rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink-muted">
+            <div className="flex items-start gap-2">
+              <HardDriveDownload className="mt-0.5 h-4 w-4 shrink-0" />
+              <div className="space-y-1">
+                <div className="font-medium text-ink">
+                  This environment cannot write files on its own.
+                </div>
+                {state.usesShareSheet ? (
+                  <p>
+                    Save opens the share sheet with <code>{BUNDLE_FILENAME}</code>. Two taps:
+                    choose your file manager, then choose <strong>Replace</strong> over the existing
+                    copy. The filename never changes, so there is only ever one file.
+                  </p>
+                ) : (
+                  <p>
+                    Save hands you <code>{BUNDLE_FILENAME}</code> — always that exact name, never
+                    timestamped — so your file manager offers to replace the existing copy instead
+                    of adding <code>lifeos (1).json</code>. Confirm the replace and you are done.
+                  </p>
+                )}
+                <p>
+                  Between saves your work lives in this app&apos;s local cache, so a refresh will
+                  not lose it, and {modKeyLabel()}+S saves from anywhere. You can restore by
+                  importing, dropping a <code>{BUNDLE_FILENAME}</code> onto the window, or pasting
+                  its contents below.
+                </p>
+              </div>
+            </div>
+
+            {state.storagePersistence !== 'persisted' ? (
+              <div className="flex items-start gap-2 rounded-md border border-caution/25 bg-caution/10 px-3 py-2 text-caution">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>
+                  {state.storagePersistence === 'denied'
+                    ? 'This browser would not promise to keep the local cache'
+                    : 'This browser cannot promise to keep the local cache'}
+                  . iOS in particular evicts storage for pages that are not on the Home Screen.
+                  Add LifeOS to your Home Screen, and save a file whenever you finish a session —
+                  the saved <code>{BUNDLE_FILENAME}</code> is the only copy that is genuinely safe.
+                </span>
+              </div>
+            ) : null}
           </div>
         ) : null}
+
+        <details className="rounded-md border border-line bg-surface px-3 py-2 text-sm">
+          <summary className="cursor-pointer text-ink-muted">Paste JSON instead of picking a file</summary>
+          <textarea
+            className="mt-2 h-28 w-full rounded-md border border-line bg-surface-raised p-2 font-mono text-xs text-ink"
+            placeholder={`Paste the contents of ${BUNDLE_FILENAME} here, then press Restore.`}
+            value={pasted}
+            onChange={(event) => setPasted(event.target.value)}
+          />
+          <Button
+            className="mt-2"
+            disabled={busy !== null || pasted.trim() === ''}
+            iconLeft={<FileJson className="h-4 w-4" />}
+            onClick={() =>
+              run('paste', async () => {
+                const result = await storage.importBundleText(pasted);
+                if (result.ok) {
+                  setPasted('');
+                  toast.success('Imported', result.message);
+                } else {
+                  toast.error('Import failed', result.message);
+                }
+              })
+            }
+          >
+            Restore from pasted JSON
+          </Button>
+        </details>
       </SettingsSection>
 
       <SettingsSection
@@ -308,7 +367,142 @@ export function StorageSettings({ settings }: { settings: Settings }) {
   );
 }
 
-function StatusBadge({ state }: { state: ReturnType<typeof useStorageState> }) {
+type StorageStateView = ReturnType<typeof useStorageState>;
+
+/**
+ * The bound save target.
+ *
+ * Only rendered where the concept is real: a browser with the File System
+ * Access API, or a file that was bound earlier. Everywhere else (the iOS
+ * webview this is mostly used from) showing a "Choose file" button that
+ * cannot work would be a lie, so the section simply says so once and gets out
+ * of the way.
+ */
+function BoundTargetSection({
+  state, busy, run,
+}: {
+  state: StorageStateView;
+  busy: string | null;
+  run: (key: string, action: () => Promise<void>) => Promise<void>;
+}) {
+  const bound = state.boundTarget;
+  const isBound = bound !== null && bound.status !== 'unbound' && bound.status !== 'unsupported';
+
+  if (!state.canBindFile && !isBound) {
+    return (
+      <SettingsSection
+        title="Bound save file"
+        description="On a desktop browser, LifeOS can bind one JSON file and overwrite it in place on every Save."
+      >
+        <div className="flex items-start gap-2 rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink-muted">
+          <Link2 className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>
+            Not available here. This browser has no File System Access API, so nothing can be
+            written to disk without you confirming it. Saving uses the {BUNDLE_FILENAME} hand-off
+            described below, which is the honest best this environment allows. Desktop Chrome,
+            Edge and Opera support binding.
+          </span>
+        </div>
+      </SettingsSection>
+    );
+  }
+
+  const needsReconnect = bound?.status === 'prompt' || bound?.status === 'denied';
+  const isMissing = bound?.status === 'missing';
+
+  return (
+    <SettingsSection
+      title="Bound save file"
+      description="Pick one JSON file. Every Save after that overwrites exactly that file — no picker, no prompt, no duplicate copies."
+      action={
+        isBound ? (
+          <Badge tone={bound?.status === 'granted' ? 'positive' : 'caution'} dot>
+            {bound?.status === 'granted' ? 'Bound' : needsReconnect ? 'Needs reconnect' : 'File missing'}
+          </Badge>
+        ) : (
+          <Badge tone="neutral">Not bound</Badge>
+        )
+      }
+    >
+      <SettingRow label="File" hint={bound?.message ?? ''}>
+        <div className="truncate text-sm font-medium text-ink" title={bound?.filename ?? ''}>
+          {bound?.filename ?? 'None yet'}
+        </div>
+      </SettingRow>
+
+      {isBound ? (
+        <SettingRow label="Last written" hint="When this file was last overwritten in place.">
+          <div className="text-sm text-ink-muted">
+            {bound?.lastWrittenAt ? new Date(bound.lastWrittenAt).toLocaleString() : 'Not yet in this session'}
+          </div>
+        </SettingRow>
+      ) : null}
+
+      {needsReconnect || isMissing ? (
+        <div className="flex items-start gap-2 rounded-md border border-caution/25 bg-caution/10 px-3 py-2 text-sm text-caution">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>{bound?.message}</span>
+        </div>
+      ) : null}
+
+      <div className="flex flex-wrap gap-2">
+        {needsReconnect ? (
+          <Button
+            variant="primary"
+            iconLeft={<RefreshCw className="h-4 w-4" />}
+            disabled={busy !== null}
+            onClick={() =>
+              run('reconnect', async () => {
+                const result = await storage.reconnectSaveFile();
+                toast[result.ok ? 'success' : 'error'](
+                  result.ok ? 'Reconnected' : 'Still not connected',
+                  result.message,
+                );
+              })
+            }
+          >
+            Reconnect file
+          </Button>
+        ) : null}
+
+        {state.canBindFile ? (
+          <Button
+            variant={isBound ? 'secondary' : 'primary'}
+            iconLeft={<Link2 className="h-4 w-4" />}
+            disabled={busy !== null}
+            onClick={() =>
+              run('bind', async () => {
+                const result = await storage.bindSaveFile();
+                toast[result.ok ? 'success' : 'warning'](
+                  result.ok ? 'File bound' : 'Not bound',
+                  result.message,
+                );
+              })
+            }
+          >
+            {isBound ? 'Change file' : 'Choose file'}
+          </Button>
+        ) : null}
+
+        {isBound ? (
+          <Button
+            iconLeft={<Unlink className="h-4 w-4" />}
+            disabled={busy !== null}
+            onClick={() =>
+              run('unbind', async () => {
+                toast.success('Unbound', await storage.unbindSaveFile());
+              })
+            }
+          >
+            Unbind
+          </Button>
+        ) : null}
+      </div>
+    </SettingsSection>
+  );
+}
+
+function StatusBadge({ state }: { state: StorageStateView }) {
   if (state.status === 'error') return <Badge tone="critical" dot>Save failed</Badge>;
   if (state.status === 'saving') {
     return (

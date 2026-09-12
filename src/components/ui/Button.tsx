@@ -32,7 +32,7 @@ const VARIANTS: Record<ButtonVariant, string> = {
   subtle:
     'bg-surface-raised/70 text-ink-muted hover:bg-surface-overlay hover:text-ink',
   danger:
-    'bg-critical text-white hover:bg-critical/90 dark:text-[rgb(var(--c-surface-base))]',
+    'bg-critical text-accent-contrast hover:bg-critical/90',
   link:
     'px-0 text-accent underline-offset-4 hover:underline',
 };

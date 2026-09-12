@@ -5,6 +5,7 @@ import { evaluateAchievements } from '@/services/achievementService';
 import { evaluateRewardsWith } from '@/services/rewardService';
 import { rollSnapshots } from '@/services/analyticsService';
 import { getSettings, updateSettings } from '@/services/settingsService';
+import { storage } from '@/storage';
 import { createDefaultSettings, ensureSeeded } from '@/db/seed';
 import { DEFAULT_DEMO_STATE, type Settings } from '@/types';
 import { createContext, FUTURE_DAYS, HISTORY_DAYS, type DemoContext, type DemoWorld } from './world';
@@ -119,6 +120,7 @@ export async function clearAllData(): Promise<void> {
   await db.settings.put(settings);
 
   await ensureSeeded();
+  await persistToStorage();
 }
 
 /**
@@ -204,7 +206,28 @@ export async function loadDemoData(
 
   const summary = summarise(world, seed);
   summary.counts.achievementsUnlocked = evaluation.views.filter((v) => v.unlocked).length;
+
+  // The working set is only a cache of the JSON files. Without an explicit
+  // full rewrite, boot would re-hydrate from the pre-demo files and the whole
+  // dataset would vanish on the next refresh.
+  await persistToStorage();
+
   return summary;
+}
+
+/**
+ * Pushes the whole working set out to the file layer. Best-effort: an adapter
+ * that cannot write (manual file mode, revoked permission) must not turn a
+ * successful load into a failure — the data is in IndexedDB either way, and
+ * Settings → Storage already surfaces the unsaved state.
+ */
+async function persistToStorage(): Promise<void> {
+  try {
+    if (!storage.getAdapter()) return;
+    await storage.saveAll();
+  } catch {
+    /* reported by the storage panel, not by the demo loader */
+  }
 }
 
 /** Clear + load in one confirmed step. */

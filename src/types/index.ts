@@ -141,7 +141,7 @@ export interface StoragePreferences {
    * Pin a specific backend instead of auto-detecting. Null = auto-detect,
    * which is right for almost everyone.
    */
-  preferredAdapter?: 'http' | 'fsaccess' | 'download' | 'memory' | null;
+  preferredAdapter?: 'http' | 'singlefile' | 'fsaccess' | 'download' | 'memory' | null;
   /** Folder the JSON files live in on an HTTP target. */
   baseDir?: string;
   /**

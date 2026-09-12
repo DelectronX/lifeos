@@ -225,6 +225,8 @@ function ensureDueBuckets(ctx: DemoContext): void {
     ctx.world.revisionEntries.some((e) => e.status === 'scheduled' && e.dueDate === ctx.day(offset));
 
   const fillers: { offset: number; planId: string; trackerId: string }[] = [];
+  // -1 lands in the "overdue" bucket (late, but inside the grace period).
+  if (!has(-1)) fillers.push({ offset: -1, planId: 'rpl_demo_waves', trackerId: 'trk_demo_physics' });
   if (!has(0)) fillers.push({ offset: 0, planId: 'rpl_demo_integration', trackerId: 'trk_demo_maths' });
   if (!has(1)) fillers.push({ offset: 1, planId: 'rpl_demo_electrostatics', trackerId: 'trk_demo_physics' });
   if (!has(4)) fillers.push({ offset: 4, planId: 'rpl_demo_genetics', trackerId: 'trk_demo_biology' });

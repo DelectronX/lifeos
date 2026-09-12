@@ -23,9 +23,15 @@ function fake(id: StorageAdapter['id'], ready: boolean): StorageAdapter {
   };
 }
 
+/**
+ * A browser with the folder API but no bound-file picker, so these older
+ * cases keep exercising exactly the http/fsaccess/download ladder they were
+ * written for. Bound-file precedence is covered in singleFileAdapter.test.ts.
+ */
 const browserEnv: DetectionEnvironment = {
   protocol: 'https:',
   hasFileSystemAccess: true,
+  hasSaveFilePicker: false,
   hasIndexedDb: true,
 };
 
@@ -65,7 +71,7 @@ describe('detectAdapter', () => {
 
   it('skips HTTP entirely on file:// — there is nothing to PUT to', async () => {
     const result = await detectAdapter(
-      { protocol: 'file:', hasFileSystemAccess: false, hasIndexedDb: false },
+      { protocol: 'file:', hasFileSystemAccess: false, hasSaveFilePicker: false, hasIndexedDb: false },
       { makeCache: () => new MemoryAdapter() },
     );
 
@@ -77,7 +83,7 @@ describe('detectAdapter', () => {
 
   it('explains why File System Access was unavailable', async () => {
     const result = await detectAdapter(
-      { protocol: 'file:', hasFileSystemAccess: false, hasIndexedDb: true },
+      { protocol: 'file:', hasFileSystemAccess: false, hasSaveFilePicker: false, hasIndexedDb: true },
       { makeCache: () => new MemoryAdapter() },
     );
 
@@ -108,7 +114,7 @@ describe('detectAdapter', () => {
 
   it('manual mode is always reachable and always reports itself as available', async () => {
     const result = await detectAdapter(
-      { protocol: 'file:', hasFileSystemAccess: false, hasIndexedDb: false },
+      { protocol: 'file:', hasFileSystemAccess: false, hasSaveFilePicker: false, hasIndexedDb: false },
       { makeCache: () => new MemoryAdapter() },
     );
     expect(result.considered.find((c) => c.id === 'download')).toMatchObject({ available: true });

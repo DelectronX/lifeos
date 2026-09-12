@@ -247,7 +247,7 @@ export function BlockCreateModal({
                       onClick={() => setWeekdays((w) => (w.includes(i) ? w.filter((x) => x !== i) : [...w, i]))}
                       className={
                         weekdays.includes(i)
-                          ? 'rounded-md border border-accent/30 bg-accent text-white px-2 py-1 text-2xs font-medium dark:text-slate-950'
+                          ? 'rounded-md border border-accent/30 bg-accent text-accent-contrast px-2 py-1 text-2xs font-medium'
                           : 'rounded-md border border-line bg-surface px-2 py-1 text-2xs text-ink-muted hover:border-line-strong'
                       }
                     >

@@ -13,6 +13,7 @@
 /** Identifier of a backend implementation. */
 export type AdapterId =
   | 'http'
+  | 'singlefile'
   | 'fsaccess'
   | 'indexeddb'
   | 'download'

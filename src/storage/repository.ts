@@ -2,7 +2,10 @@ import { db, EXPORTABLE_TABLES, SCHEMA_VERSION, tableByName } from '@/db/db';
 import { flushUiState, hydrateUiState } from '@/services/uiStateStore';
 import type { ExportBundle } from '@/services/migrationService';
 import { migrateBundle, validateBundle } from '@/services/migrationService';
-import { DownloadUploadAdapter, saveTextAsFile } from './adapters/downloadUploadAdapter';
+import {
+  canShareFiles, DownloadUploadAdapter, requestPersistentStorage, saveTextAsFile, type SaveOutcome,
+} from './adapters/downloadUploadAdapter';
+import { SingleFileAdapter, type BoundTargetInfo } from './adapters/singleFileAdapter';
 import { collectionsToBundle, FILE_COLLECTIONS, readCollectionsFromDb } from './bundle';
 import { detectAdapter, type DetectionResult } from './detect';
 import {
@@ -47,6 +50,23 @@ export interface StorageState {
   /** True when the boot found no files and seeded them from IndexedDB. */
   migratedFromIndexedDb: boolean;
   considered: DetectionResult['considered'];
+
+  /* --- Bound save target --- */
+  /** True when this browser can bind one file to overwrite (desktop Chromium). */
+  canBindFile: boolean;
+  /** Live state of the bound file, or null when the concept does not apply. */
+  boundTarget: BoundTargetInfo | null;
+  /**
+   * True when Save hands the user a file they must confirm replacing, rather
+   * than writing in place. Drives the honest copy in the UI.
+   */
+  savesByHandOff: boolean;
+  /** True when Save will open a share sheet (iOS) rather than download. */
+  usesShareSheet: boolean;
+  /** The exact filename every manual save produces. Never varies. */
+  saveFilename: string;
+  /** Whether the browser promised to keep the local cache. */
+  storagePersistence: 'persisted' | 'denied' | 'unsupported' | 'unknown';
 }
 
 const DEBOUNCE_MS = 1200;
@@ -77,6 +97,12 @@ export class StorageRepository {
     loadWarnings: [],
     migratedFromIndexedDb: false,
     considered: [],
+    canBindFile: false,
+    boundTarget: null,
+    savesByHandOff: false,
+    usesShareSheet: false,
+    saveFilename: BUNDLE_FILENAME,
+    storagePersistence: 'unknown',
   };
 
   getState(): StorageState {
@@ -121,7 +147,19 @@ export class StorageRepository {
       this.detection = result.considered;
     }
 
+    // Keep a probe around when a file was bound but is not the active
+    // adapter, so Settings can offer "Reconnect" instead of going quiet.
+    if (!(this.adapter instanceof SingleFileAdapter) && SingleFileAdapter.isAvailable()) {
+      const probe = new SingleFileAdapter();
+      await probe.ensureReady().catch(() => false);
+      if (probe.info().status !== 'unbound') this.boundProbe = probe;
+    }
+
     this.applyAdapterToState();
+
+    // Ask the browser to keep the local cache. Matters most on iOS, where the
+    // cache is all that stands between the user and lost work between saves.
+    void requestPersistentStorage().then((storagePersistence) => this.patch({ storagePersistence }));
 
     const warnings: string[] = [];
     let hydrated = 0;
@@ -165,6 +203,7 @@ export class StorageRepository {
   private applyAdapterToState(): void {
     const adapter = this.adapter;
     if (!adapter) return;
+    const bound = adapter instanceof SingleFileAdapter ? adapter.info() : this.boundProbe?.info() ?? null;
     this.patch({
       adapterId: adapter.id,
       adapterLabel: adapter.capabilities.label,
@@ -173,8 +212,21 @@ export class StorageRepository {
       canAutoSave: adapter.capabilities.canAutoSave,
       isPersistent: adapter.capabilities.isPersistent,
       producesRealFiles: adapter.capabilities.producesRealFiles,
+      canBindFile: SingleFileAdapter.isAvailable(),
+      boundTarget: bound,
+      // Only the manual mode hands a file over; everything else writes.
+      savesByHandOff: adapter.id === 'download',
+      usesShareSheet: adapter.id === 'download' && canShareFiles(),
+      saveFilename: BUNDLE_FILENAME,
     });
   }
+
+  /**
+   * A non-active SingleFileAdapter kept around purely so Settings can report
+   * "a file is bound but its permission lapsed" while some other adapter is
+   * live. Never written through.
+   */
+  private boundProbe: SingleFileAdapter | null = null;
 
   /**
    * Loads every collection file into Dexie. Returns the number of collections
@@ -350,6 +402,7 @@ export class StorageRepository {
           lastSavedAt: savedAt,
           lastError: null,
         });
+        this.refreshBoundTarget();
       } catch (e) {
         this.tracker.restore();
         this.patch({
@@ -357,6 +410,9 @@ export class StorageRepository {
           dirtyCollections: this.tracker.snapshot(),
           lastError: e instanceof Error ? e.message : String(e),
         });
+        // A bound-file write failing usually means the grant lapsed or the
+        // file moved; surface the new status so the UI can offer Reconnect.
+        this.refreshBoundTarget();
       }
     };
 
@@ -390,12 +446,168 @@ export class StorageRepository {
     return JSON.stringify(collectionsToBundle(collections), null, 2);
   }
 
+  /* ---------------------------------------------------------------- */
+  /* Bound save target                                                 */
+  /* ---------------------------------------------------------------- */
+
+  /** The SingleFileAdapter in play, active or probe, if any. */
+  private singleFile(): SingleFileAdapter | null {
+    if (this.adapter instanceof SingleFileAdapter) return this.adapter;
+    return this.boundProbe;
+  }
+
+  private refreshBoundTarget(): void {
+    const single = this.singleFile();
+    this.patch({ boundTarget: single ? single.info() : null, target: this.adapter?.target() ?? '' });
+  }
+
+  /**
+   * Opens the save-file picker and binds the chosen file as the permanent
+   * save target, then writes the whole working set into it immediately, so
+   * "pick a file" and "the file now holds my data" are one action.
+   *
+   * Must be called from a user gesture.
+   */
+  async bindSaveFile(): Promise<{ ok: boolean; message: string; info: BoundTargetInfo | null }> {
+    if (!SingleFileAdapter.isAvailable()) {
+      return {
+        ok: false,
+        info: null,
+        message:
+          'This environment has no File System Access API, so no file can be bound. Saving here hands you a copy of lifeos.json to replace by hand.',
+      };
+    }
+    const adapter = this.adapter instanceof SingleFileAdapter ? this.adapter : new SingleFileAdapter();
+    const result = await adapter.bind(BUNDLE_FILENAME);
+    if (result.cancelled) {
+      return { ok: false, info: adapter.info(), message: 'No file chosen — nothing changed.' };
+    }
+    if (result.status !== 'granted') {
+      this.boundProbe = adapter;
+      this.refreshBoundTarget();
+      return { ok: false, info: result, message: result.message };
+    }
+
+    this.boundProbe = null;
+    this.adapter = adapter;
+    this.applyAdapterToState();
+    const ok = await this.saveAll();
+    this.refreshBoundTarget();
+    return {
+      ok,
+      info: adapter.info(),
+      message: ok
+        ? `Bound to ${result.filename ?? BUNDLE_FILENAME}. Every Save from now on overwrites that file — no picker, no duplicates.`
+        : this.state.lastError ?? 'The file was bound but the first write failed.',
+    };
+  }
+
+  /** Re-requests write permission on the bound file. Needs a user gesture. */
+  async reconnectSaveFile(): Promise<{ ok: boolean; message: string; info: BoundTargetInfo | null }> {
+    const adapter = this.singleFile();
+    if (!adapter) {
+      return { ok: false, info: null, message: 'No file is bound, so there is nothing to reconnect.' };
+    }
+    const info = await adapter.reconnect();
+    if (info.status !== 'granted') {
+      this.refreshBoundTarget();
+      return { ok: false, info, message: info.message };
+    }
+    this.boundProbe = null;
+    this.adapter = adapter;
+    this.applyAdapterToState();
+    const ok = await this.saveAll();
+    this.refreshBoundTarget();
+    return {
+      ok,
+      info: adapter.info(),
+      message: ok
+        ? `Reconnected to ${info.filename}. It is up to date again.`
+        : this.state.lastError ?? 'Reconnected, but the write failed.',
+    };
+  }
+
+  /**
+   * Forgets the bound file and falls back to whatever this environment can do
+   * instead. The file on disk is left alone.
+   */
+  async unbindSaveFile(): Promise<string> {
+    const adapter = this.singleFile();
+    if (!adapter) return 'No file was bound.';
+    const name = adapter.info().filename ?? BUNDLE_FILENAME;
+    await adapter.unbind();
+    this.boundProbe = null;
+    if (this.adapter instanceof SingleFileAdapter) {
+      const result = await detectAdapter();
+      this.adapter = result.adapter;
+      this.detection = result.considered;
+      this.applyAdapterToState();
+      this.patch({ considered: result.considered });
+      this.tracker.markAll(FILE_COLLECTIONS);
+      this.patch({ dirtyCollections: this.tracker.snapshot(), status: 'unsaved' });
+    }
+    this.refreshBoundTarget();
+    return `${name} is no longer bound. Your data is untouched, and it is still on disk exactly as it was last saved.`;
+  }
+
+  /* ---------------------------------------------------------------- */
+  /* The one Save                                                      */
+  /* ---------------------------------------------------------------- */
+
+  /**
+   * What the Save button and Ctrl/Cmd+S both call. One entry point, because
+   * "what does Save do here" is a storage-layer question, not a component's.
+   *
+   *  - bound file / server / folder -> writes in place, silently;
+   *  - manual mode -> hands over exactly `lifeos.json`, and on first use in a
+   *    browser that supports it, offers to bind that file permanently.
+   */
+  async save(): Promise<{ ok: boolean; mode: 'in-place' | 'shared' | 'downloaded'; message: string }> {
+    if (this.state.canAutoSave) {
+      const ok = await this.flush();
+      const where = this.state.boundTarget?.filename ?? this.state.target;
+      return {
+        ok,
+        mode: 'in-place',
+        message: ok
+          ? `Saved. ${where} was overwritten in place.`
+          : this.state.lastError ?? 'The save failed.',
+      };
+    }
+
+    // Bind-on-first-save: where the browser can bind a file, a manual Save
+    // should not produce yet another download. Pick the file once, through
+    // the same click, and every later Save overwrites it.
+    if (SingleFileAdapter.isAvailable()) {
+      const bound = await this.bindSaveFile();
+      if (bound.ok) return { ok: true, mode: 'in-place', message: bound.message };
+      if (bound.info && bound.info.status !== 'unbound') {
+        return { ok: false, mode: 'in-place', message: bound.message };
+      }
+      // Picker cancelled or unusable — fall through to the hand-off path
+      // rather than losing the click.
+    }
+
+    const how = await this.saveBundleToFile(BUNDLE_FILENAME);
+    return {
+      ok: true,
+      mode: how,
+      message:
+        how === 'shared'
+          ? `${BUNDLE_FILENAME} is in the share sheet — pick your file manager and choose Replace.`
+          : `${BUNDLE_FILENAME} was saved. Confirm replacing the existing copy; the name never changes, so there is only ever one.`,
+    };
+  }
+
   /**
    * Manual-mode save: hands the user a real file. This is the *only* way data
    * becomes durable when `canAutoSave` is false, so it also clears the dirty
    * flag and the before-unload prompt.
+   *
+   * The filename is deliberately fixed: a timestamped name is what produces
+   * `lifeos (1).json`, `lifeos (2).json` and a folder the user has to police.
    */
-  async saveBundleToFile(filename = BUNDLE_FILENAME): Promise<'shared' | 'downloaded'> {
+  async saveBundleToFile(filename = BUNDLE_FILENAME): Promise<SaveOutcome> {
     const text = await this.buildBundleText();
     const result = await saveTextAsFile(filename, text);
     // Mirror into the cache too, so a refresh does not lose the work.

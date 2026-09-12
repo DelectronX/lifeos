@@ -23,4 +23,11 @@ export { MemoryAdapter } from './adapters/memoryAdapter';
 export { IndexedDbAdapter } from './adapters/indexedDbAdapter';
 export { HttpFileAdapter } from './adapters/httpFileAdapter';
 export { FileSystemAccessAdapter, hasStoredFolderHandle } from './adapters/fileSystemAccessAdapter';
-export { DownloadUploadAdapter, saveTextAsFile } from './adapters/downloadUploadAdapter';
+export {
+  canShareFiles, DownloadUploadAdapter, requestPersistentStorage, saveTextAsFile,
+} from './adapters/downloadUploadAdapter';
+export type { SaveOutcome } from './adapters/downloadUploadAdapter';
+export { SingleFileAdapter } from './adapters/singleFileAdapter';
+export type {
+  BoundTargetInfo, BoundTargetStatus, FsBoundFileHandle, SaveFilePicker,
+} from './adapters/singleFileAdapter';

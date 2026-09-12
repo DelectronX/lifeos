@@ -44,9 +44,7 @@ export function installUnsavedGuard(): () => void {
   const onKeyDown = (event: KeyboardEvent) => {
     if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 's') return;
     event.preventDefault();
-    const state = storage.getState();
-    if (state.canAutoSave) void storage.flush();
-    else void storage.saveBundleToFile();
+    void storage.save();
   };
 
   window.addEventListener('beforeunload', onBeforeUnload);

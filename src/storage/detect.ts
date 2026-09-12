@@ -1,4 +1,5 @@
 import { DownloadUploadAdapter } from './adapters/downloadUploadAdapter';
+import { SingleFileAdapter } from './adapters/singleFileAdapter';
 import { FileSystemAccessAdapter } from './adapters/fileSystemAccessAdapter';
 import { HttpFileAdapter } from './adapters/httpFileAdapter';
 import { IndexedDbAdapter } from './adapters/indexedDbAdapter';
@@ -9,13 +10,20 @@ import type { AdapterId, StorageAdapter } from './types';
  * Adapter selection.
  *
  * The ranking is "most automatic and most file-like first", because the whole
- * point of this change is that the user's data should be real files they can
+ * point of this layer is that the user's data should be real files they can
  * see and sync, and they should not have to think about saving:
  *
- *   1. http      — the server accepts PUT, so files are rewritten silently.
- *   2. fsaccess  — a folder was already granted, so files are written silently.
- *   3. download  — manual mode: real files, but only when the user says Save.
- *   4. memory    — nothing else works (no IndexedDB either); volatile.
+ *   1. http       — the server accepts PUT, so files are rewritten silently.
+ *   2. singlefile — the user bound ONE lifeos.json and the grant is live, so
+ *                   every save overwrites that same file in place. Ranked
+ *                   below http only because http needs no permission at all;
+ *                   ranked above fsaccess because it is the flow the user
+ *                   actually asked for ("save once, then keep pressing Save").
+ *   3. fsaccess   — a folder was already granted; one file per collection.
+ *   4. download   — manual mode: real files, but only when the user says Save.
+ *                   This is what iOS webviews get, and it is a first-class
+ *                   path, not an apology.
+ *   5. memory     — nothing else works (no IndexedDB either); volatile.
  *
  * `indexeddb` is never selected as the *primary* adapter: it is the local
  * cache that backs manual mode. Choosing it as primary would put us straight
@@ -27,6 +35,8 @@ export interface DetectionEnvironment {
   protocol: string;
   /** Overridden in tests to avoid touching real globals. */
   hasFileSystemAccess: boolean;
+  /** `showSaveFilePicker` — present on desktop Chromium, absent on iOS. */
+  hasSaveFilePicker: boolean;
   hasIndexedDb: boolean;
 }
 
@@ -42,6 +52,7 @@ export interface DetectionOverrides {
   /** Injected factories, for tests. */
   makeHttp?: () => StorageAdapter;
   makeFsAccess?: () => StorageAdapter;
+  makeSingleFile?: () => StorageAdapter;
   makeCache?: () => StorageAdapter;
 }
 
@@ -50,6 +61,7 @@ export function readEnvironment(): DetectionEnvironment {
   return {
     protocol: loc?.protocol ?? 'file:',
     hasFileSystemAccess: FileSystemAccessAdapter.isAvailable(),
+    hasSaveFilePicker: SingleFileAdapter.isAvailable(),
     hasIndexedDb: IndexedDbAdapter.isAvailable(),
   };
 }
@@ -82,9 +94,10 @@ export async function detectAdapter(
     return ready ? adapter : null;
   };
 
+  const defaultOrder: AdapterId[] = ['http', 'singlefile', 'fsaccess', 'download'];
   const order: AdapterId[] = overrides.prefer
-    ? [overrides.prefer, ...(['http', 'fsaccess', 'download'] as AdapterId[]).filter((i) => i !== overrides.prefer)]
-    : ['http', 'fsaccess', 'download'];
+    ? [overrides.prefer, ...defaultOrder.filter((i) => i !== overrides.prefer)]
+    : defaultOrder;
 
   for (const id of order) {
     let candidate: StorageAdapter | null = null;
@@ -96,6 +109,21 @@ export async function detectAdapter(
         'The page is not served over http(s), so there is no server to write to.',
         () => overrides.makeHttp?.() ?? new HttpFileAdapter(),
       );
+    } else if (id === 'singlefile') {
+      candidate = await tryAdapter(
+        'singlefile',
+        env.hasSaveFilePicker,
+        'This browser cannot bind a single save file — it has no File System Access API.',
+        () => overrides.makeSingleFile?.() ?? new SingleFileAdapter(),
+      );
+      if (!candidate) {
+        // ensureReady() said no for a specific, fixable reason. Replace the
+        // generic "refused the write test" line with the real one.
+        const entry = considered[considered.length - 1];
+        if (entry?.id === 'singlefile' && env.hasSaveFilePicker) {
+          entry.reason = 'Supported, but no file is bound yet (or its write permission lapsed).';
+        }
+      }
     } else if (id === 'fsaccess') {
       candidate = await tryAdapter(
         'fsaccess',

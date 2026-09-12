@@ -38,7 +38,7 @@ export function BarChart({
 
   return (
     <div className={cn('w-full', className)}>
-      <div className="flex items-end gap-1" style={{ height }}>
+      <div className="flex items-stretch gap-1" style={{ height }}>
         {data.map((d, i) => {
           const pct = (d.value / max) * 100;
           const refPct = d.reference !== undefined ? (d.reference / max) * 100 : null;
@@ -53,7 +53,10 @@ export function BarChart({
                 />
               ) : null}
               <div
-                className={cn('relative rounded-t-sm transition-[height] duration-500 ease-calm', palette.bar)}
+                className={cn(
+                  'relative mt-auto w-full rounded-t-sm opacity-80 transition-[height] duration-500 ease-calm group-hover:opacity-100',
+                  palette.bar,
+                )}
                 style={{ height: `${Math.max(pct, d.value > 0 ? 2 : 0)}%` }}
               />
               <span className="pointer-events-none absolute -top-6 left-1/2 z-10 hidden -translate-x-1/2 whitespace-nowrap rounded-md border border-line bg-surface-raised px-1.5 py-0.5 text-2xs text-ink shadow-card group-hover:block">

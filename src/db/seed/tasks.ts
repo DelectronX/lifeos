@@ -1,7 +1,7 @@
 import { buildTask, type TaskDraft } from '@/services/taskService';
 import { dateKeyToDate } from '@/lib/date';
 import type { DateKey, Intensity, Task, TaskStatus, TaskType, TimeWindow } from '@/types';
-import type { DemoContext } from './world';
+import { HISTORY_DAYS, type DemoContext } from './world';
 import {
   FITNESS_TRACKERS, PERSONAL_TRACKERS, SKILL_TRACKERS, STUDY_SUBJECTS,
 } from './trackers';
@@ -58,6 +58,15 @@ const BANKS: TopicBank[] = [
       'Vectors — 3D geometry set', 'Differential equations practice',
       'Complex numbers revision drill', 'Permutations and combinations',
       'Continuity and differentiability', 'Application of derivatives',
+    ],
+  },
+  {
+    trackerId: 'trk_demo_maths', type: 'practice', intensity: 'medium', window: 'afternoon',
+    minutes: [30, 60], goalId: 'gol_demo_maths_hours',
+    titles: [
+      'Timed maths drill — 45 minutes', 'Past-paper maths section',
+      'Mixed revision: algebra + calculus', 'Speed practice: objective questions',
+      'Error log review — maths',
     ],
   },
   {
@@ -226,6 +235,17 @@ function draftFrom(ctx: DemoContext, bank: TopicBank, dueDate: DateKey | null): 
   };
 }
 
+/**
+ * `buildTask` is the real constructor, which is the point — but it mints ids
+ * with `newId`, which is time + `Math.random`. Re-stamping the id from the
+ * context's counter is what makes the dataset byte-identical across runs.
+ */
+function build(ctx: DemoContext, draft: TaskDraft, createdAt: number): Task {
+  const task = buildTask(draft, createdAt);
+  task.id = ctx.id('tsk');
+  return task;
+}
+
 /** Attaches a milestone when the task's goal has an open one on that date. */
 function milestoneFor(ctx: DemoContext, goalId: string | null, day: DateKey): string | null {
   if (!goalId) return null;
@@ -278,17 +298,23 @@ export function seedTasks(ctx: DemoContext): void {
     const count = weekend ? ctx.rng.int(2, 4) : ctx.rng.int(3, 6);
     for (let slot = 0; slot < count; slot++) {
       const bank = pickBank(ctx, day, slot);
-      const createdAt = ctx.at(day, 7 * 60) - ctx.rng.int(1, 5) * 86_400_000;
-      const task = buildTask({ ...draftFrom(ctx, bank, day), status: 'planned' }, createdAt);
+      const createdAt = Math.max(
+        ctx.at(ctx.day(-HISTORY_DAYS), 7 * 60),
+        ctx.at(day, 7 * 60) - ctx.rng.int(1, 5) * 86_400_000,
+      );
+      const task = build(ctx, { ...draftFrom(ctx, bank, day), status: 'planned' }, createdAt);
       task.milestoneId = milestoneFor(ctx, task.goalId, day);
       task.sortOrder = createdAt + slot;
 
       const status = ctx.rng.weighted<TaskStatus>([
-        ['completed', 74],
+        ['completed', 78],
         ['skipped', 8],
         ['rescheduled', 7],
         ['cancelled', 4],
-        ['planned', 7],
+        // A small residue of past work that was never closed out — this is
+        // what the overdue list and auto-reschedule feed on. Kept low on
+        // purpose: a demo drowning in 60 overdue items reads as broken.
+        ['planned', 3],
       ]);
       applyStatus(ctx, task, status, day, bank.window === 'morning' ? 9 : bank.window === 'afternoon' ? 14 : 19);
       tasks.push(task);
@@ -298,7 +324,8 @@ export function seedTasks(ctx: DemoContext): void {
   /* --- today: a live mix so Home is never empty ------------------------ */
   for (let slot = 0; slot < 6; slot++) {
     const bank = pickBank(ctx, ctx.today, slot);
-    const task = buildTask(
+    const task = build(
+      ctx,
       { ...draftFrom(ctx, bank, ctx.today), status: 'planned' },
       ctx.at(ctx.day(-ctx.rng.int(1, 4)), 8 * 60),
     );
@@ -315,7 +342,8 @@ export function seedTasks(ctx: DemoContext): void {
     const count = weekend ? ctx.rng.int(1, 3) : ctx.rng.int(2, 4);
     for (let slot = 0; slot < count; slot++) {
       const bank = pickBank(ctx, day, slot);
-      const task = buildTask(
+      const task = build(
+        ctx,
         { ...draftFrom(ctx, bank, day), status: 'planned' },
         ctx.at(ctx.day(-ctx.rng.int(0, 6)), 9 * 60),
       );
@@ -332,7 +360,8 @@ export function seedTasks(ctx: DemoContext): void {
   for (let i = 0; i < 5; i++) {
     const bank = ctx.rng.pick(STUDY_BANKS);
     const dueOffset = -ctx.rng.int(2, 9);
-    const task = buildTask(
+    const task = build(
+      ctx,
       { ...draftFrom(ctx, bank, ctx.day(dueOffset)), status: 'planned', basePriority: 4 },
       ctx.at(ctx.day(dueOffset - 3), 9 * 60),
     );
@@ -356,7 +385,8 @@ export function seedTasks(ctx: DemoContext): void {
   ];
   for (const title of inboxTitles) {
     const bank = ctx.rng.pick(BANKS);
-    const task = buildTask(
+    const task = build(
+      ctx,
       {
         title,
         trackerId: bank.trackerId,

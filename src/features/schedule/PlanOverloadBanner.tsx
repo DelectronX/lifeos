@@ -58,7 +58,7 @@ export function PlanOverloadBanner({
       )}
       role="status"
     >
-      <div className="flex items-start gap-2.5">
+      <div className="flex flex-wrap items-start gap-2.5 sm:flex-nowrap">
         <AlertTriangle className={cn('mt-0.5 h-4 w-4 shrink-0', critical ? 'text-critical' : 'text-caution')} />
         <div className="min-w-0 flex-1">
           <div className="text-sm font-medium text-ink">
@@ -78,7 +78,7 @@ export function PlanOverloadBanner({
           ) : null}
         </div>
 
-        <div className="flex shrink-0 items-center gap-1.5">
+        <div className="flex w-full shrink-0 items-center gap-1.5 sm:w-auto">
           {onFix ? (
             <Button size="sm" iconLeft={<Wand2 className="h-3.5 w-3.5" />} onClick={onFix}>
               Rebalance

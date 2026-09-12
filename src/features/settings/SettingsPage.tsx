@@ -14,6 +14,7 @@ import {
 } from './SchedulingSettings';
 import { DataSettings, NotificationSettings } from './DataSettings';
 import { StorageSettings } from './StorageSettings';
+import { DemoDataSettings } from './DemoDataSettings';
 import type { DeepPartial, SchedulingConfig, Settings, ThemeMode } from '@/types';
 
 type Tab = 'general' | 'scheduling' | 'revision' | 'notifications' | 'resources' | 'data';
@@ -157,6 +158,7 @@ export function SettingsPage() {
         <>
           <StorageSettings settings={settings} />
           <DataSettings settings={settings} onPatch={patch} />
+          <DemoDataSettings settings={settings} />
         </>
       ) : null}
     </Page>

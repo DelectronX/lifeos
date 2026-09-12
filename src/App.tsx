@@ -19,6 +19,7 @@ import { TrackersPage } from '@/features/trackers/TrackersPage';
 import { AnalyticsPage } from '@/features/analytics/AnalyticsPage';
 import { AchievementsPage } from '@/features/achievements/AchievementsPage';
 import { SettingsPage } from '@/features/settings/SettingsPage';
+import { FirstRunDemoPrompt } from '@/features/settings/DemoDataSettings';
 import { DailyReviewPage } from '@/features/review/DailyReviewPage';
 import { WeeklyReviewPage } from '@/features/review/WeeklyReviewPage';
 
@@ -104,6 +105,7 @@ export default function App() {
         </Route>
       </Routes>
       <Toaster />
+      <FirstRunDemoPrompt />
     </>
   );
 }

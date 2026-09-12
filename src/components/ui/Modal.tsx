@@ -47,7 +47,7 @@ export function Modal({ open, onClose, title, description, children, footer, siz
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:p-6">
       <div
-        className="fixed inset-0 bg-slate-900/25 backdrop-blur-[2px] animate-in-fade dark:bg-slate-950/60"
+        className="fixed inset-0 bg-[rgb(0_0_0/0.55)] animate-in-fade"
         onClick={persistent ? undefined : onClose}
       />
       <div
@@ -113,7 +113,7 @@ export function ConfirmDialog({
             type="button"
             onClick={() => { onConfirm(); onClose(); }}
             className={cn(
-              'h-9 rounded-lg px-3.5 text-sm font-medium text-white dark:text-slate-950',
+              'h-9 rounded-lg px-3.5 text-sm font-medium text-accent-contrast',
               danger ? 'bg-critical hover:bg-critical/90' : 'bg-accent hover:bg-accent/90',
             )}
           >

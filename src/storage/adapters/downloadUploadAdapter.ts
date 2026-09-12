@@ -1,20 +1,28 @@
-import type { AdapterCapabilities, StorageAdapter } from '../types';
+import { BUNDLE_FILENAME, type AdapterCapabilities, type StorageAdapter } from '../types';
 import { MemoryAdapter } from './memoryAdapter';
 
 /**
- * DownloadUploadAdapter — the universal fallback, and the only mode that is
- * guaranteed to work everywhere (including `file://` with no server at all).
+ * DownloadUploadAdapter — the universal fallback, and the mode the target
+ * device actually runs in.
  *
- * Reads and writes go to a local cache (IndexedDB when available, memory
- * otherwise) so the app is fully functional and survives a refresh. What it
- * *cannot* do is put bytes on disk by itself: a webview may not write to
- * arbitrary paths without the user choosing a destination. So durability here
- * is an explicit act — the user exports `lifeos.json` (a download / share
- * sheet) and imports it back later.
+ * The confirmed environment is an iOS FTP client's sandboxed `file://`
+ * webview: no HTTP server to PUT to, and no File System Access API, so
+ * nothing can write to disk on its own. Durability there is an explicit act —
+ * the user presses Save, the share sheet (or a download) hands them
+ * `lifeos.json`, and they replace the copy in their file manager.
+ *
+ * Two deliberate choices make that survivable rather than chaotic:
+ *
+ *  - the filename is ALWAYS `lifeos.json`, never timestamped or numbered, so
+ *    the file manager offers "Replace" instead of accumulating
+ *    `lifeos (1).json`;
+ *  - reads and writes go to a local cache (IndexedDB when available, memory
+ *    otherwise) so the app is fully functional and survives a refresh between
+ *    manual saves.
  *
  * The repository treats `canAutoSave: false` as "there are unsaved changes
- * until the user exports", which is what drives the save indicator, the
- * keyboard shortcut and the before-unload prompt.
+ * until the user saves", which drives the save indicator, Ctrl/Cmd+S and the
+ * before-unload prompt.
  */
 export class DownloadUploadAdapter implements StorageAdapter {
   readonly id = 'download' as const;
@@ -24,13 +32,13 @@ export class DownloadUploadAdapter implements StorageAdapter {
     producesRealFiles: true,
     label: 'Manual file',
     description:
-      'This environment will not let the app write files on its own. Your work is kept safe in a local cache, but to get a real file you must press Save — that downloads lifeos.json, which you then keep in your file manager and import again later.',
+      `This environment cannot write files on its own. Your work is kept in a local cache so a refresh will not lose it, but to get a real file you press Save: that hands you ${BUNDLE_FILENAME} — always that exact name — and you choose Replace over the copy in your file manager.`,
   };
 
   constructor(private readonly cache: StorageAdapter = new MemoryAdapter()) {}
 
   target(): string {
-    return 'lifeos.json (downloaded by hand)';
+    return `${BUNDLE_FILENAME} (saved by hand, always the same filename)`;
   }
 
   async ensureReady(): Promise<boolean> {
@@ -54,12 +62,36 @@ export class DownloadUploadAdapter implements StorageAdapter {
   }
 }
 
+/** How the bytes actually reached the user. */
+export type SaveOutcome = 'shared' | 'downloaded';
+
+/** True when the Web Share API can hand this environment a real file. */
+export function canShareFiles(): boolean {
+  if (typeof File === 'undefined') return false;
+  const nav = globalThis.navigator as (Navigator & {
+    canShare?: (data: { files?: File[] }) => boolean;
+    share?: (data: { files?: File[] }) => Promise<void>;
+  }) | undefined;
+  if (!nav?.canShare || !nav.share) return false;
+  try {
+    return nav.canShare({ files: [new File([''], BUNDLE_FILENAME, { type: 'application/json' })] });
+  } catch {
+    return false;
+  }
+}
+
 /**
- * Saves text as a file the user's environment can keep. Uses the Web Share API
- * where a share sheet is the only way to reach a file manager (iOS), and falls
- * back to a plain anchor download everywhere else.
+ * Saves text as a file the user's environment can keep.
+ *
+ * The Web Share API is tried FIRST on purpose: on iOS the share sheet is the
+ * only route that reaches a file manager and lets the user save straight back
+ * over the existing file. An anchor download is the fallback everywhere else.
+ *
+ * `filename` defaults to the stable bundle name and callers should leave it
+ * alone — a timestamped name is exactly the duplicate-accumulating behaviour
+ * this exists to avoid.
  */
-export async function saveTextAsFile(filename: string, text: string): Promise<'shared' | 'downloaded'> {
+export async function saveTextAsFile(filename: string, text: string): Promise<SaveOutcome> {
   const blob = new Blob([text], { type: 'application/json' });
 
   const nav = globalThis.navigator as Navigator & {
@@ -68,13 +100,19 @@ export async function saveTextAsFile(filename: string, text: string): Promise<'s
   };
   if (typeof File !== 'undefined' && nav?.canShare && nav.share) {
     const file = new File([blob], filename, { type: 'application/json' });
-    if (nav.canShare({ files: [file] })) {
+    let shareable = false;
+    try {
+      shareable = nav.canShare({ files: [file] });
+    } catch {
+      shareable = false;
+    }
+    if (shareable) {
       try {
         await nav.share({ files: [file], title: filename });
         return 'shared';
       } catch {
-        // User dismissed the sheet, or sharing is not permitted here — fall
-        // through to the download path rather than losing the click.
+        // Sheet dismissed, or sharing not permitted here — fall through to the
+        // download path rather than losing the click.
       }
     }
   }
@@ -88,4 +126,25 @@ export async function saveTextAsFile(filename: string, text: string): Promise<'s
   anchor.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
   return 'downloaded';
+}
+
+/**
+ * Asks the browser to keep this origin's storage rather than evicting it.
+ *
+ * Matters most exactly where it is least reliable: iOS evicts data for sites
+ * that are not on the Home Screen after a period of disuse, which would take
+ * the local cache with it. Returns what the browser actually decided so the
+ * UI can tell the truth instead of reassuring the user.
+ */
+export async function requestPersistentStorage(): Promise<'persisted' | 'denied' | 'unsupported'> {
+  const storageManager = (globalThis.navigator as Navigator | undefined)?.storage as
+    | { persist?: () => Promise<boolean>; persisted?: () => Promise<boolean> }
+    | undefined;
+  if (!storageManager?.persist) return 'unsupported';
+  try {
+    if (await storageManager.persisted?.()) return 'persisted';
+    return (await storageManager.persist()) ? 'persisted' : 'denied';
+  } catch {
+    return 'unsupported';
+  }
 }

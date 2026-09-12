@@ -1,3 +1,4 @@
+import { deleteHandle, getHandle, HANDLE_KEYS, putHandle } from '../handleStore';
 import type { AdapterCapabilities, StorageAdapter } from '../types';
 
 /**
@@ -17,10 +18,6 @@ interface FsDirectoryHandle {
   requestPermission?(descriptor: { mode: 'read' | 'readwrite' }): Promise<PermissionState>;
   values?(): AsyncIterable<{ kind: 'file' | 'directory'; name: string }>;
 }
-
-const HANDLE_DB = 'lifeos-fs';
-const HANDLE_STORE = 'handles';
-const HANDLE_KEY = 'dataDir';
 
 /**
  * FileSystemAccessAdapter — real files in a real folder the user picked.
@@ -149,52 +146,25 @@ export class FileSystemAccessAdapter implements StorageAdapter {
 }
 
 /* ------------------------------------------------------------------ */
-/* Handle persistence (handles are structured-cloneable, so IDB holds   */
-/* them; localStorage cannot).                                          */
+/* Handle persistence — shared with the single-file adapter.           */
 /* ------------------------------------------------------------------ */
 
-function openHandleDb(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(HANDLE_DB, 1);
-    request.onupgradeneeded = () => {
-      if (!request.result.objectStoreNames.contains(HANDLE_STORE)) {
-        request.result.createObjectStore(HANDLE_STORE);
-      }
-    };
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
-}
-
 async function saveHandle(handle: FsDirectoryHandle): Promise<void> {
-  if (typeof indexedDB === 'undefined') return;
   try {
-    const db = await openHandleDb();
-    await new Promise<void>((resolve, reject) => {
-      const tx = db.transaction(HANDLE_STORE, 'readwrite');
-      tx.objectStore(HANDLE_STORE).put(handle, HANDLE_KEY);
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-    });
+    await putHandle(HANDLE_KEYS.directory, handle);
   } catch { /* best effort — worst case the user picks the folder again */ }
 }
 
 async function loadHandle(): Promise<FsDirectoryHandle | null> {
-  if (typeof indexedDB === 'undefined') return null;
-  try {
-    const db = await openHandleDb();
-    return await new Promise<FsDirectoryHandle | null>((resolve) => {
-      const tx = db.transaction(HANDLE_STORE, 'readonly');
-      const request = tx.objectStore(HANDLE_STORE).get(HANDLE_KEY);
-      request.onsuccess = () => resolve((request.result as FsDirectoryHandle) ?? null);
-      request.onerror = () => resolve(null);
-    });
-  } catch {
-    return null;
-  }
+  return getHandle<FsDirectoryHandle>(HANDLE_KEYS.directory);
 }
 
 /** True when a folder was chosen at some point, even if permission lapsed. */
 export async function hasStoredFolderHandle(): Promise<boolean> {
   return (await loadHandle()) !== null;
+}
+
+/** Forgets the chosen folder. The folder itself is untouched. */
+export async function forgetFolderHandle(): Promise<void> {
+  await deleteHandle(HANDLE_KEYS.directory);
 }

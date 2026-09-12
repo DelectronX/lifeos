@@ -19,7 +19,9 @@ export function Page({
           <h1 className="t-display">{title}</h1>
           {subtitle ? <p className="t-muted mt-1">{subtitle}</p> : null}
         </div>
-        {actions ? <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div> : null}
+        {actions ? (
+          <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2 sm:justify-end">{actions}</div>
+        ) : null}
       </header>
       {toolbar ? <div className="mb-5">{toolbar}</div> : null}
       {children}

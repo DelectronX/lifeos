@@ -208,7 +208,7 @@ export function GoalDetailPage() {
                       onClick={() => void toggleMilestone(node.milestone.id)}
                       className={
                         node.milestone.completedAt
-                          ? 'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-positive text-white'
+                          ? 'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-positive text-accent-contrast'
                           : 'mt-0.5 h-5 w-5 shrink-0 rounded-full border-2 border-line-strong hover:border-accent'
                       }
                     >
