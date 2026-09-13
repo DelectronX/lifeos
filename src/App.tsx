@@ -23,6 +23,7 @@ import { AnalyticsPage } from '@/features/analytics/AnalyticsPage';
 import { AchievementsPage } from '@/features/achievements/AchievementsPage';
 import { SettingsPage } from '@/features/settings/SettingsPage';
 import { PracticePage } from '@/features/practice/PracticePage';
+import { FileViewerPage } from '@/features/practice/FileViewerPage';
 import { FirstRunDemoPrompt } from '@/features/settings/DemoDataSettings';
 import { DailyReviewPage } from '@/features/review/DailyReviewPage';
 import { WeeklyReviewPage } from '@/features/review/WeeklyReviewPage';
@@ -113,6 +114,7 @@ export default function App() {
           <Route path="review/daily" element={<DailyReviewPage />} />
           <Route path="review/weekly" element={<WeeklyReviewPage />} />
           <Route path="practice" element={<PracticePage />} />
+          <Route path="practice/resource/:resourceId" element={<FileViewerPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

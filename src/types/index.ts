@@ -745,6 +745,53 @@ export interface Attachment extends BaseEntity {
 }
 
 /* ------------------------------------------------------------------ */
+/* Resource viewer: annotations + playback progress                    */
+/* ------------------------------------------------------------------ */
+
+export type AnnotationKind = 'highlight' | 'underline' | 'freehand' | 'note';
+
+/** A normalised [0,1] rectangle relative to the rendered PDF page. */
+export interface AnnotationRect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/** A normalised [0,1] point relative to the rendered PDF page. */
+export interface AnnotationPoint {
+  x: number;
+  y: number;
+}
+
+export interface Annotation extends BaseEntity {
+  resourceId: ID;
+  /** 1-indexed PDF page number this annotation belongs to. */
+  page: number;
+  kind: AnnotationKind;
+  color: string;
+  /** highlight/underline: one or more normalised rects (multi-line selections). */
+  rects?: AnnotationRect[];
+  /** freehand: a normalised point path, stroke width in page-fraction units. */
+  points?: AnnotationPoint[];
+  strokeWidth?: number;
+  /** note: free text attached at a point. */
+  text?: string;
+  anchor?: AnnotationPoint;
+}
+
+/** Per-resource playback/reading progress, keyed 1:1 by resourceId. */
+export interface ViewerProgress extends BaseEntity {
+  resourceId: ID;
+  /** Video/audio resume position, seconds. */
+  positionSeconds?: number;
+  /** PDF last-viewed page (1-indexed). */
+  lastPage?: number;
+  /** PDF last zoom level. */
+  zoom?: number;
+}
+
+/* ------------------------------------------------------------------ */
 /* Habits                                                              */
 /* ------------------------------------------------------------------ */
 

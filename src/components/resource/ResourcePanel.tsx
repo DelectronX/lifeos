@@ -11,6 +11,8 @@ import { Badge } from '@/components/ui/Badge';
 import { toast } from '@/state/toastStore';
 import { useTrackers } from '@/state/useLiveData';
 import { formatBytes } from '@/services/backupService';
+import { isNativePlatform } from '@/lib/nativeBridge';
+import { pickNativeFiles } from '@/lib/filePicker';
 import {
   attachResource, createLinkResource, deleteResource, detachResource, downloadResource,
   getResourcesFor, importFiles, openResourceInNewTab, renameResource,
@@ -46,18 +48,30 @@ export function ResourcePanel({
 
   useEffect(() => { void refresh(); }, [refresh]);
 
-  const onFiles = async (files: FileList | null) => {
-    if (!files || files.length === 0) return;
+  const onFiles = async (files: File[] | FileList | null) => {
+    const list = files ? [...files] : [];
+    if (!list.length) return;
     setBusy(true);
     const target = ownerKind === 'task'
       ? { taskId: ownerId }
       : ownerKind === 'block' ? { blockId: ownerId } : { goalId: ownerId };
-    const { imported, errors } = await importFiles([...files], { trackerId, ...target });
+    const { imported, errors } = await importFiles(list, { trackerId, ...target });
     for (const r of imported) await attachResource(r.id, ownerKind, ownerId);
     setBusy(false);
     if (imported.length) toast.success(`Attached ${imported.length} file${imported.length === 1 ? '' : 's'}`, 'Stored locally in this browser.');
     for (const e of errors) toast.error('Could not import', e);
     await refresh();
+  };
+
+  const onImportClick = async () => {
+    if (isNativePlatform()) {
+      const picked = await pickNativeFiles();
+      if (picked === null) { fileRef.current?.click(); return; }
+      if (picked.length === 0) return; // cancelled
+      await onFiles(picked);
+      return;
+    }
+    fileRef.current?.click();
   };
 
   return (
@@ -72,7 +86,7 @@ export function ResourcePanel({
             size="xs"
             iconLeft={<Upload className="h-3 w-3" />}
             loading={busy}
-            onClick={() => fileRef.current?.click()}
+            onClick={() => void onImportClick()}
           >
             File
           </Button>
@@ -164,12 +178,13 @@ const TYPE_ICONS: Record<ResourceType, typeof FileText> = {
 };
 
 export function ResourceRow({
-  resource, onRename, onRemove, onDetach,
+  resource, onRename, onRemove, onDetach, onOpen,
 }: {
   resource: Resource;
   onRename?: () => void;
   onRemove?: () => void;
   onDetach?: () => void;
+  onOpen?: () => void;
 }) {
   const Icon = TYPE_ICONS[resource.type] ?? Paperclip;
   const isFile = Boolean(resource.attachmentId);
@@ -177,7 +192,15 @@ export function ResourceRow({
   return (
     <li className="flex items-center gap-2 rounded-md border border-line bg-surface px-2.5 py-1.5">
       <Icon className="h-4 w-4 shrink-0 text-ink-faint" />
-      <div className="min-w-0 flex-1">
+      <button
+        type="button"
+        className={cn(
+          'min-w-0 flex-1 text-left',
+          onOpen && 'cursor-pointer rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-accent',
+        )}
+        onClick={onOpen}
+        disabled={!onOpen}
+      >
         <div className="truncate text-sm text-ink">{resource.title}</div>
         <div className="flex flex-wrap items-center gap-1.5">
           <Badge tone="neutral">{resource.type}</Badge>
@@ -188,7 +211,7 @@ export function ResourceRow({
             <span className="truncate text-2xs text-ink-faint">{resource.url}</span>
           ) : null}
         </div>
-      </div>
+      </button>
       <div className="flex shrink-0 items-center gap-0.5">
         <IconButton
           label="Open"

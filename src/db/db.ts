@@ -1,14 +1,14 @@
 import Dexie, { type Table } from 'dexie';
 import type {
-  Achievement, Activity, AnalyticsSnapshot, Attachment, BackupSnapshot, Goal, Habit, Milestone,
-  CustomReward, Paper, PlanRun, Question, QuestionAttempt, RecurringRule, Resource,
+  Achievement, Activity, AnalyticsSnapshot, Annotation, Attachment, BackupSnapshot, Goal, Habit,
+  Milestone, CustomReward, Paper, PlanRun, Question, QuestionAttempt, RecurringRule, Resource,
   RewardEarning,
   RevisionEntry, RevisionPlan, ScheduleBlock, ScheduleTemplate, Settings,
-  Task, TimerSession, Tracker, UserProfile, XPTransaction,
+  Task, TimerSession, Tracker, UserProfile, ViewerProgress, XPTransaction,
 } from '@/types';
 
 /** Bumped whenever the Dexie stores definition changes. Also written into exports. */
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 
 /**
  * Index design notes (this app must stay fast with years of history):
@@ -51,6 +51,8 @@ export class LifeOSDatabase extends Dexie {
   backups!: Table<BackupSnapshot, string>;
   rewards!: Table<CustomReward, string>;
   rewardEarnings!: Table<RewardEarning, string>;
+  annotations!: Table<Annotation, string>;
+  viewerProgress!: Table<ViewerProgress, string>;
 
   constructor(name = 'lifeos') {
     super(name);
@@ -131,6 +133,16 @@ export class LifeOSDatabase extends Dexie {
       rewards: 'id, archived, sortOrder, updatedAt, [archived+sortOrder]',
       rewardEarnings: 'id, rewardId, at, date, claimedAt, &[rewardId+periodKey], [rewardId+at]',
     });
+
+    /**
+     * v5 (in-app resource viewers): PDF annotations keyed by resource + page,
+     * and a tiny per-resource viewer-progress table (video resume position /
+     * last PDF page+zoom). Every other store carries forward untouched.
+     */
+    this.version(5).stores({
+      annotations: 'id, resourceId, page, kind, [resourceId+page], createdAt',
+      viewerProgress: 'id, &resourceId, updatedAt',
+    });
   }
 }
 
@@ -165,6 +177,8 @@ export function tableByName(name: string): Table<any, string> | null {
     backups: db.backups,
     rewards: db.rewards,
     rewardEarnings: db.rewardEarnings,
+    annotations: db.annotations,
+    viewerProgress: db.viewerProgress,
   };
   return map[name] ?? null;
 }
@@ -175,6 +189,7 @@ export const EXPORTABLE_TABLES = [
   'templates', 'recurringRules', 'sessions', 'papers', 'questions', 'attempts',
   'revisionPlans', 'revisionEntries', 'resources', 'habits', 'activities',
   'xp', 'achievements', 'snapshots', 'planRuns', 'rewards', 'rewardEarnings',
+  'annotations', 'viewerProgress',
 ] as const;
 
 export type ExportableTable = (typeof EXPORTABLE_TABLES)[number];

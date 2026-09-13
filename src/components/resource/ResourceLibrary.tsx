@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FixedSizeList, type ListChildComponentProps } from 'react-window';
 import { Search, Upload } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -9,6 +10,8 @@ import { EmptyState } from '@/components/ui/Card';
 import { toast } from '@/state/toastStore';
 import { useTrackers } from '@/state/useLiveData';
 import { deleteResource, importFiles } from '@/services/resourceService';
+import { isNativePlatform } from '@/lib/nativeBridge';
+import { pickNativeFiles } from '@/lib/filePicker';
 import { ResourceRow, AddLinkModal } from './ResourcePanel';
 import type { Resource, ResourceType } from '@/types';
 
@@ -23,6 +26,7 @@ const VIRTUALISE_ABOVE = 40;
  * `attachments` and are only read when something is opened).
  */
 export function ResourceLibrary({ className }: { className?: string }) {
+  const navigate = useNavigate();
   const trackers = useTrackers();
   const [query, setQuery] = useState('');
   const [type, setType] = useState<ResourceType | 'all'>('all');
@@ -44,13 +48,25 @@ export function ResourceLibrary({ className }: { className?: string }) {
     });
   }, [resources, query, type]);
 
-  const onFiles = async (files: FileList | null) => {
-    if (!files?.length) return;
+  const onFiles = async (files: File[] | FileList | null) => {
+    const list = files ? [...files] : [];
+    if (!list.length) return;
     const trackerId = trackers[0]?.id;
     if (!trackerId) { toast.error('No tracker available', 'Create a tracker first.'); return; }
-    const { imported, errors } = await importFiles([...files], { trackerId });
+    const { imported, errors } = await importFiles(list, { trackerId });
     if (imported.length) toast.success(`Imported ${imported.length} file${imported.length === 1 ? '' : 's'}`);
     for (const e of errors) toast.error('Could not import', e);
+  };
+
+  const onImportClick = async () => {
+    if (isNativePlatform()) {
+      const picked = await pickNativeFiles();
+      if (picked === null) { fileRef.current?.click(); return; }
+      if (picked.length === 0) return; // cancelled
+      await onFiles(picked);
+      return;
+    }
+    fileRef.current?.click();
   };
 
   const Row = ({ index, style }: ListChildComponentProps) => {
@@ -58,7 +74,11 @@ export function ResourceLibrary({ className }: { className?: string }) {
     return (
       <div style={style} className="pb-1.5">
         <ul>
-          <ResourceRow resource={resource} onRemove={() => void remove(resource)} />
+          <ResourceRow
+            resource={resource}
+            onOpen={() => navigate(`/practice/resource/${resource.id}`)}
+            onRemove={() => void remove(resource)}
+          />
         </ul>
       </div>
     );
@@ -91,7 +111,7 @@ export function ResourceLibrary({ className }: { className?: string }) {
             <option key={t} value={t}>{t}</option>
           ))}
         </Select>
-        <Button iconLeft={<Upload className="h-4 w-4" />} onClick={() => fileRef.current?.click()}>
+        <Button iconLeft={<Upload className="h-4 w-4" />} onClick={() => void onImportClick()}>
           Import files
         </Button>
         <Button onClick={() => setAddOpen(true)}>Add link</Button>
@@ -126,7 +146,12 @@ export function ResourceLibrary({ className }: { className?: string }) {
       ) : (
         <ul className="space-y-1.5">
           {filtered.map((r) => (
-            <ResourceRow key={r.id} resource={r} onRemove={() => void remove(r)} />
+            <ResourceRow
+              key={r.id}
+              resource={r}
+              onOpen={() => navigate(`/practice/resource/${r.id}`)}
+              onRemove={() => void remove(r)}
+            />
           ))}
         </ul>
       )}

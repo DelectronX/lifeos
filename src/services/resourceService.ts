@@ -359,25 +359,31 @@ export async function deleteResource(resourceId: ID): Promise<void> {
   const resource = await db.resources.get(resourceId);
   if (!resource) return;
 
-  await db.transaction('rw', [db.resources, db.attachments, db.tasks, db.blocks], async () => {
-    if (resource.attachmentId) await db.attachments.delete(resource.attachmentId);
-    for (const taskId of resource.taskIds ?? []) {
-      const task = await db.tasks.get(taskId);
-      if (task) {
-        await db.tasks.update(taskId, {
-          resourceIds: task.resourceIds.filter((id) => id !== resourceId),
-          updatedAt: Date.now(),
-        });
+  await db.transaction(
+    'rw',
+    [db.resources, db.attachments, db.tasks, db.blocks, db.annotations, db.viewerProgress],
+    async () => {
+      if (resource.attachmentId) await db.attachments.delete(resource.attachmentId);
+      await db.annotations.where('resourceId').equals(resourceId).delete();
+      await db.viewerProgress.where('resourceId').equals(resourceId).delete();
+      for (const taskId of resource.taskIds ?? []) {
+        const task = await db.tasks.get(taskId);
+        if (task) {
+          await db.tasks.update(taskId, {
+            resourceIds: task.resourceIds.filter((id) => id !== resourceId),
+            updatedAt: Date.now(),
+          });
+        }
       }
-    }
-    for (const blockId of resource.blockIds ?? []) {
-      const block = await db.blocks.get(blockId);
-      if (block?.resourceId === resourceId) {
-        await db.blocks.update(blockId, { resourceId: null, updatedAt: Date.now() });
+      for (const blockId of resource.blockIds ?? []) {
+        const block = await db.blocks.get(blockId);
+        if (block?.resourceId === resourceId) {
+          await db.blocks.update(blockId, { resourceId: null, updatedAt: Date.now() });
+        }
       }
-    }
-    await db.resources.delete(resourceId);
-  });
+      await db.resources.delete(resourceId);
+    },
+  );
 }
 
 export async function archiveResource(resourceId: ID, archived: boolean): Promise<void> {

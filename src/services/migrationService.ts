@@ -107,7 +107,27 @@ const V3_TO_V4: Migration = {
   }),
 };
 
-export const MIGRATIONS: Migration[] = [V1_TO_V2, V2_TO_V3, V3_TO_V4];
+/**
+ * v4 -> v5: adds PDF annotations and per-resource viewer progress (video
+ * resume position / last PDF page+zoom). Older bundles have neither table;
+ * they arrive as empty arrays, same pattern as the v3->v4 rewards migration.
+ */
+const V4_TO_V5: Migration = {
+  from: 4,
+  to: 5,
+  description: 'Adds PDF annotations and per-resource viewer progress.',
+  migrate: (bundle) => ({
+    ...bundle,
+    schemaVersion: 5,
+    tables: {
+      ...bundle.tables,
+      annotations: bundle.tables.annotations ?? [],
+      viewerProgress: bundle.tables.viewerProgress ?? [],
+    },
+  }),
+};
+
+export const MIGRATIONS: Migration[] = [V1_TO_V2, V2_TO_V3, V3_TO_V4, V4_TO_V5];
 
 export interface MigrationOutcome {
   bundle: ExportBundle;
