@@ -18,6 +18,12 @@ export function useLiveSettings(): Settings | undefined {
   return useLiveQuery(() => db.settings.get('settings'), []);
 }
 
+/** The personalized app/space name, falling back to "LifeOS". */
+export function useSpaceName(): string {
+  const settings = useLiveSettings();
+  return settings?.spaceName?.trim() || 'LifeOS';
+}
+
 export function useSchedulingConfig(): SchedulingConfig {
   const settings = useLiveSettings();
   return useMemo(() => mergeSchedulingConfig(settings?.scheduling), [settings?.scheduling]);

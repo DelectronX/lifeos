@@ -6,8 +6,9 @@ import { Button } from '@/components/ui/Button';
 import { toast } from '@/state/toastStore';
 import { useLiveSettings, useSchedulingConfig } from '@/state/useLiveData';
 import { setTheme, updateSchedulingConfig, updateSettings } from '@/services/settingsService';
-import { DEFAULT_SCHEDULING_CONFIG } from '@/config/schedulingConfig';
-import { ResourceLibrary } from '@/components/resource/ResourceLibrary';
+import { ProfileSettings } from './ProfileSettings';
+import { FocusPasswordSettings } from './FocusPasswordSettings';
+import { AboutSettings } from './AboutSettings';
 import { AppearanceSettings, TimerSettings, WorkingHoursSettings } from './GeneralSettings';
 import {
   ProtectedTimeSettings, ReschedulingSettings, RevisionSettings, SchedulingSettings, XPSettings,
@@ -19,18 +20,26 @@ import { DemoDataSettings } from './DemoDataSettings';
 import { MaintenanceSettings } from './MaintenanceSettings';
 import type { DeepPartial, SchedulingConfig, Settings, ThemeMode } from '@/types';
 
-type Tab = 'general' | 'scheduling' | 'revision' | 'notifications' | 'resources' | 'data';
+type Tab = 'profile' | 'focus' | 'planning' | 'appearance' | 'data' | 'about';
 
 /**
- * Settings. Every control on this page writes to the persisted Settings row
- * and is read back by the rest of the app — there are no display-only toggles.
- * Scheduling numbers land in `settings.scheduling` as a partial override that
- * is merged over DEFAULT_SCHEDULING_CONFIG wherever an engine runs.
+ * Settings, reorganized into iOS-style grouped sections. Every control here
+ * writes to the persisted Settings row (or the profile row, or the focus-lock
+ * store) and is read back live by the rest of the app — nothing is
+ * display-only, and nothing here is decorative (no stat cards, no charts).
+ *
+ *   Profile      — display name, space name, working hours (study prefs)
+ *   Focus        — Focus Mode password, timer/pomodoro defaults
+ *   Planning     — scheduling, rescheduling, revision & XP, protected time,
+ *                  notifications (auto-plan rule builder lands here later)
+ *   Appearance   — theme, density, clock format, motion
+ *   Data         — storage, export/import, snapshots, demo data
+ *   About        — version, blurb, reset to defaults
  */
 export function SettingsPage() {
   const settings = useLiveSettings();
   const config = useSchedulingConfig();
-  const [tab, setTab] = useState<Tab>('general');
+  const [tab, setTab] = useState<Tab>('profile');
 
   const patch = useMemo(
     () => async (next: Partial<Omit<Settings, 'id'>>) => {
@@ -77,30 +86,39 @@ export function SettingsPage() {
           value={tab}
           onChange={setTab}
           items={[
-            { value: 'general' as const, label: 'General' },
-            { value: 'scheduling' as const, label: 'Scheduling' },
-            { value: 'revision' as const, label: 'Revision & XP' },
-            { value: 'notifications' as const, label: 'Notifications' },
-            { value: 'resources' as const, label: 'Resources' },
+            { value: 'profile' as const, label: 'Profile' },
+            { value: 'focus' as const, label: 'Focus' },
+            { value: 'planning' as const, label: 'Planning' },
+            { value: 'appearance' as const, label: 'Appearance' },
             { value: 'data' as const, label: 'Data' },
+            { value: 'about' as const, label: 'About' },
           ]}
         />
       }
     >
-      {tab === 'general' ? (
+      {tab === 'profile' ? (
         <>
-          <AppearanceSettings settings={settings} onPatch={patch} onTheme={changeTheme} />
+          <ProfileSettings settings={settings} onPatch={patch} />
           <WorkingHoursSettings settings={settings} onPatch={patch} />
+        </>
+      ) : null}
+
+      {tab === 'focus' ? (
+        <>
+          <FocusPasswordSettings />
           <TimerSettings settings={settings} onPatch={patch} />
         </>
       ) : null}
 
-      {tab === 'scheduling' ? (
+      {tab === 'planning' ? (
         <>
           <SchedulingSettings config={config} onPatch={patchConfig} />
           <AutoRescheduleModeSettings settings={settings} onPatch={patch} />
           <ReschedulingSettings config={config} onPatch={patchConfig} />
           <ProtectedTimeSettings />
+          <RevisionSettings config={config} onPatch={patchConfig} />
+          <XPSettings config={config} onPatch={patchConfig} />
+          <NotificationSettings settings={settings} onPatch={patch} />
           <Card>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="min-w-0">
@@ -124,37 +142,8 @@ export function SettingsPage() {
         </>
       ) : null}
 
-      {tab === 'revision' ? (
-        <>
-          <RevisionSettings config={config} onPatch={patchConfig} />
-          <XPSettings config={config} onPatch={patchConfig} />
-          <Card>
-            <div className="t-section">How these numbers are used</div>
-            <p className="t-muted mt-1">
-              Revision intervals seed each new RevisionPlan's ladder; the SM-2 ease factor then
-              adapts per plan from your recall quality. XP awards are applied once per real event
-              with a dedupe key, and both the per-event and daily ceilings are enforced at write
-              time — the default daily ceiling is {DEFAULT_SCHEDULING_CONFIG.xp.dailyTotalCap} XP.
-            </p>
-          </Card>
-        </>
-      ) : null}
-
-      {tab === 'notifications' ? (
-        <NotificationSettings settings={settings} onPatch={patch} />
-      ) : null}
-
-      {tab === 'resources' ? (
-        <Card>
-          <div className="mb-3">
-            <div className="t-section">Resource library</div>
-            <p className="t-muted mt-0.5">
-              Every file and link you have attached anywhere. Files are held as Blobs in this
-              browser's IndexedDB — nothing is ever uploaded.
-            </p>
-          </div>
-          <ResourceLibrary />
-        </Card>
+      {tab === 'appearance' ? (
+        <AppearanceSettings settings={settings} onPatch={patch} onTheme={changeTheme} />
       ) : null}
 
       {tab === 'data' ? (
@@ -165,6 +154,8 @@ export function SettingsPage() {
           <DemoDataSettings settings={settings} />
         </>
       ) : null}
+
+      {tab === 'about' ? <AboutSettings /> : null}
     </Page>
   );
 }

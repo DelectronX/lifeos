@@ -1,5 +1,5 @@
 import {
-  BarChart3, CalendarDays, CheckSquare, ClipboardList, Home, ListTodo,
+  BarChart3, BookOpen, CalendarDays, CheckSquare, ClipboardList, Home, ListTodo,
   RotateCcw, Settings as SettingsIcon, Target, Timer, Trophy,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -55,6 +55,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       { to: '/review/daily', label: 'Daily review', icon: ClipboardList, keywords: 'reflect journal end of day shutdown' },
       { to: '/review/weekly', label: 'Weekly review', icon: ClipboardList, keywords: 'reflect week retrospective planning' },
       { to: '/achievements', label: 'Achievements', icon: Trophy, keywords: 'badges xp level streaks rewards' },
+      { to: '/practice', label: 'Practice', icon: BookOpen, keywords: 'resources library files links pdf notes' },
     ],
   },
   {
@@ -78,7 +79,7 @@ export const MOBILE_OVERFLOW: readonly NavDestination[] = NAV_DESTINATIONS.filte
  * The module title shown in the window chrome for a pathname.
  * Falls back to the longest matching prefix so detail routes stay labelled.
  */
-export function moduleTitleFor(pathname: string): string {
+export function moduleTitleFor(pathname: string, fallback = 'LifeOS'): string {
   if (pathname === '/') return 'Home';
   let best: NavDestination | null = null;
   for (const d of NAV_DESTINATIONS) {
@@ -87,5 +88,5 @@ export function moduleTitleFor(pathname: string): string {
       if (!best || d.to.length > best.to.length) best = d;
     }
   }
-  return best?.label ?? 'LifeOS';
+  return best?.label ?? fallback;
 }

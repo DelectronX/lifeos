@@ -4,6 +4,7 @@ import { cn } from '@/lib/cn';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { NAV_GROUPS, type NavDestination } from './navigation';
 import { useShell } from './ShellContext';
+import { useSpaceName } from '@/state/useLiveData';
 
 /**
  * SidebarRail — system navigation.
@@ -59,6 +60,8 @@ export function SidebarRail({
 }
 
 function Brand({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
+  const spaceName = useSpaceName();
+  const initial = spaceName.trim().slice(0, 1).toUpperCase() || 'L';
   return (
     <div
       className={cn(
@@ -75,7 +78,7 @@ function Brand({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => vo
             onClick={onToggle}
             className="group flex h-7 w-7 items-center justify-center rounded-[var(--r-sm)] bg-accent text-[0.6875rem] font-bold text-accent-contrast transition-colors duration-base ease-calm hover:bg-accent/85"
           >
-            <span className="group-hover:hidden">L</span>
+            <span className="group-hover:hidden">{initial}</span>
             <PanelLeft className="hidden h-3.5 w-3.5 group-hover:block" />
           </button>
         </Tooltip>
@@ -85,10 +88,10 @@ function Brand({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => vo
             aria-hidden
             className="flex h-6 w-6 shrink-0 items-center justify-center rounded-[var(--r-sm)] bg-accent text-[0.6875rem] font-bold text-accent-contrast"
           >
-            L
+            {initial}
           </div>
           <span className="truncate text-[0.8125rem] font-semibold tracking-[-0.012em] text-ink">
-            LifeOS
+            {spaceName}
           </span>
           <span className="flex-1" />
           <Tooltip label="Collapse sidebar" side="right">

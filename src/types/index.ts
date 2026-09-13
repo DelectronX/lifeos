@@ -133,6 +133,15 @@ export interface Settings extends BaseEntity {
    * commands, last maintenance run). Free-form because it is not behavioural.
    */
   uiState?: Record<string, unknown>;
+
+  /**
+   * The personalized app/study-space name shown in the sidebar brand, the
+   * window chrome fallback title and anywhere else "LifeOS" would otherwise
+   * be hardcoded. Empty/absent falls back to "LifeOS". `displayName` for
+   * greetings lives on `UserProfile`, not here — that one is the person,
+   * this one is the space.
+   */
+  spaceName?: string;
 }
 
 /** How and where the app persists its JSON files. */

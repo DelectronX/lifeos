@@ -10,6 +10,7 @@ import { WindowChrome } from './WindowChrome';
 import { MobileMoreSheet, MobileTabBar, MobileTopBar } from './MobileShell';
 import { ShellContext, type ShellContextValue } from './ShellContext';
 import { NAV_DESTINATIONS, moduleTitleFor } from './navigation';
+import { useSpaceName } from '@/state/useLiveData';
 
 /**
  * AppShell — the LifeOS window.
@@ -86,6 +87,7 @@ export function AppShell() {
   }, [navigate, openCommandPalette, railCollapsed, setRailCollapsed]);
 
   const title = useMemo(() => moduleTitleFor(location.pathname), [location.pathname]);
+  const spaceName = useSpaceName();
 
   const ctx: ShellContextValue = useMemo(
     () => ({
@@ -98,6 +100,10 @@ export function AppShell() {
     }),
     [openCommandPalette, closeCommandPalette, paletteOpen, railCollapsed, setRailCollapsed, isMobile],
   );
+
+  useEffect(() => {
+    document.title = title === 'Home' ? spaceName : `${title} — ${spaceName}`;
+  }, [title, spaceName]);
 
   return (
     <ShellContext.Provider value={ctx}>
