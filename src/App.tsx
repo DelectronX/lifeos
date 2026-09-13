@@ -5,6 +5,9 @@ import { Toaster } from '@/components/ui/Toaster';
 import { ensureSeeded } from '@/db/seed';
 import { applyTheme, getSettings, readCachedTheme, watchSystemTheme } from '@/services/settingsService';
 import { runStartupMaintenance } from '@/services/maintenanceService';
+import { startNotificationLoop, stopNotificationLoop } from '@/services/notificationService';
+import { useAutoRescheduleStore } from '@/state/autoRescheduleStore';
+import { AutoRescheduleReviewDialog } from '@/features/schedule/AutoRescheduleReview';
 
 import { HomePage } from '@/features/home/HomePage';
 import { SchedulePage } from '@/features/schedule/SchedulePage';
@@ -27,6 +30,8 @@ export default function App() {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const runStartupCheck = useAutoRescheduleStore((s) => s.runStartupCheck);
+
   useEffect(() => {
     let cancelled = false;
     // The pre-paint script in index.html has already applied the stored theme
@@ -42,14 +47,20 @@ export default function App() {
         // Materialise recurring rules / mark missed revisions / roll snapshots.
         await runStartupMaintenance();
         if (!cancelled) setReady(true);
+        // Auto-reschedule: off/suggest/automatic per settings — see SPEC §40,
+        // nothing here may move a task without eventually telling the user.
+        void runStartupCheck();
+        // Local reminders. No permission is requested here — the loop is a
+        // silent no-op until the user opts in from Settings.
+        startNotificationLoop();
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : String(e));
       }
     })();
 
     const unwatch = watchSystemTheme(() => readCachedTheme());
-    return () => { cancelled = true; unwatch(); };
-  }, []);
+    return () => { cancelled = true; unwatch(); stopNotificationLoop(); };
+  }, [runStartupCheck]);
 
   if (error) {
     return (
@@ -106,6 +117,7 @@ export default function App() {
       </Routes>
       <Toaster />
       <FirstRunDemoPrompt />
+      <AutoRescheduleReviewDialog />
     </>
   );
 }

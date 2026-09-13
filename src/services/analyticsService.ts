@@ -261,6 +261,29 @@ export async function rollSnapshots(today: DateKey = todayKey()): Promise<string
   return written;
 }
 
+/**
+ * Retention for rolled snapshots. Day snapshots accumulate one per day and
+ * week snapshots one per ISO week; without a cap they would grow forever, so
+ * only the newest `keepDay`/`keepWeek` per scope are kept. Snapshots are pure
+ * cache (see {@link writeSnapshot}), so deleting old ones is always safe.
+ */
+export async function pruneSnapshots(
+  { keepDay = 90, keepWeek = 60 }: { keepDay?: number; keepWeek?: number } = {},
+): Promise<number> {
+  const all = await db.snapshots.toArray();
+  const toDelete: string[] = [];
+
+  for (const [scope, keep] of [['day', keepDay], ['week', keepWeek]] as const) {
+    const rows = all
+      .filter((s) => s.scope === scope)
+      .sort((a, b) => b.periodKey.localeCompare(a.periodKey));
+    if (rows.length > keep) toDelete.push(...rows.slice(keep).map((r) => r.id));
+  }
+
+  if (toDelete.length) await db.snapshots.bulkDelete(toDelete);
+  return toDelete.length;
+}
+
 function daysBetween(a: DateKey, b: DateKey): number {
   const [ay, am, ad] = a.split('-').map(Number);
   const [by, bm, bd] = b.split('-').map(Number);

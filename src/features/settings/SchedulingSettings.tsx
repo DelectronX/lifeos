@@ -9,7 +9,8 @@ import { toast } from '@/state/toastStore';
 import { formatDuration, formatTime, relativeDayLabel } from '@/lib/date';
 import { setBlockLocked, setBlockProtected, deleteBlock } from '@/services/scheduleService';
 import { SettingRow, SettingsSection, clampNumber } from './SettingsSection';
-import type { DeepPartial, RescheduleStrategy, SchedulingConfig } from '@/types';
+import { readAutoReschedulePreferences } from '@/state/autoRescheduleStore';
+import type { AutoRescheduleMode, DeepPartial, RescheduleStrategy, SchedulingConfig, Settings } from '@/types';
 
 export type ConfigPatch = (patch: DeepPartial<SchedulingConfig>) => void | Promise<void>;
 
@@ -199,6 +200,70 @@ export function ReschedulingSettings({
           ))}
         </ul>
       </div>
+    </SettingsSection>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Auto-reschedule mode                                                */
+/* ------------------------------------------------------------------ */
+
+const MODE_LABELS: Record<AutoRescheduleMode, string> = {
+  off: 'Off',
+  suggest: 'Suggest — always ask first',
+  automatic: 'Automatic — apply, then explain',
+};
+
+const MODE_HINTS: Record<AutoRescheduleMode, string> = {
+  off: 'Nothing runs automatically. Use the manual "Review slipped tasks" action any time.',
+  suggest: 'On app start, slipped tasks are found and a preview is shown for you to accept, edit, or dismiss. Nothing moves until you say so.',
+  automatic: 'Slipped tasks are rescheduled immediately as one undoable change, then a notice explains exactly what moved and why — with a one-click Undo.',
+};
+
+export function AutoRescheduleModeSettings({
+  settings, onPatch,
+}: {
+  settings: Settings;
+  onPatch: (patch: Partial<Omit<Settings, 'id'>>) => void | Promise<void>;
+}) {
+  const prefs = readAutoReschedulePreferences(settings);
+
+  const setMode = (mode: AutoRescheduleMode) => void onPatch({ autoReschedule: { ...prefs, mode } });
+
+  return (
+    <SettingsSection
+      title="Auto-reschedule"
+      description="What happens to work that slipped — was skipped, ran over, or is overdue. See SPEC §40: nothing may move invisibly."
+    >
+      <div className="space-y-1.5">
+        {(['off', 'suggest', 'automatic'] as const).map((mode) => (
+          <label
+            key={mode}
+            className="flex cursor-pointer items-start gap-2.5 rounded-md border border-line bg-surface px-3 py-2.5 has-[:checked]:border-accent/50 has-[:checked]:bg-accent/5"
+          >
+            <input
+              type="radio"
+              name="auto-reschedule-mode"
+              className="mt-1"
+              checked={prefs.mode === mode}
+              onChange={() => setMode(mode)}
+            />
+            <span className="min-w-0">
+              <span className="block text-sm font-medium text-ink">{MODE_LABELS[mode]}</span>
+              <span className="t-meta mt-0.5 block">{MODE_HINTS[mode]}</span>
+            </span>
+          </label>
+        ))}
+      </div>
+
+      {prefs.mode !== 'off' ? (
+        <Toggle
+          label="Also check while the app is open"
+          description="Not just at startup — re-check on an interval so a task that slips mid-session is caught the same day."
+          checked={prefs.runWhileOpen}
+          onChange={(v) => void onPatch({ autoReschedule: { ...prefs, runWhileOpen: v } })}
+        />
+      ) : null}
     </SettingsSection>
   );
 }

@@ -11,10 +11,12 @@ import { ResourceLibrary } from '@/components/resource/ResourceLibrary';
 import { AppearanceSettings, TimerSettings, WorkingHoursSettings } from './GeneralSettings';
 import {
   ProtectedTimeSettings, ReschedulingSettings, RevisionSettings, SchedulingSettings, XPSettings,
+  AutoRescheduleModeSettings,
 } from './SchedulingSettings';
 import { DataSettings, NotificationSettings } from './DataSettings';
 import { StorageSettings } from './StorageSettings';
 import { DemoDataSettings } from './DemoDataSettings';
+import { MaintenanceSettings } from './MaintenanceSettings';
 import type { DeepPartial, SchedulingConfig, Settings, ThemeMode } from '@/types';
 
 type Tab = 'general' | 'scheduling' | 'revision' | 'notifications' | 'resources' | 'data';
@@ -96,6 +98,7 @@ export function SettingsPage() {
       {tab === 'scheduling' ? (
         <>
           <SchedulingSettings config={config} onPatch={patchConfig} />
+          <AutoRescheduleModeSettings settings={settings} onPatch={patch} />
           <ReschedulingSettings config={config} onPatch={patchConfig} />
           <ProtectedTimeSettings />
           <Card>
@@ -158,6 +161,7 @@ export function SettingsPage() {
         <>
           <StorageSettings settings={settings} />
           <DataSettings settings={settings} onPatch={patch} />
+          <MaintenanceSettings settings={settings} />
           <DemoDataSettings settings={settings} />
         </>
       ) : null}

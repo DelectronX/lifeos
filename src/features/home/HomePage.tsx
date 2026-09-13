@@ -22,6 +22,7 @@ import { QuickAddTask } from '@/features/tasks/TaskDialog';
 import { TaskRow, type TaskRowActions } from '@/features/tasks/TaskRow';
 import { ScheduleTaskModal } from '@/features/tasks/ScheduleTaskModal';
 import { TaskDialog } from '@/features/tasks/TaskDialog';
+import { SlippedTasksBanner } from '@/features/schedule/AutoRescheduleReview';
 import type { Task } from '@/types';
 
 /**
@@ -106,6 +107,8 @@ export function HomePage() {
 
   return (
     <Page title={greeting} subtitle={formatDateKeyLong(today)}>
+      <SlippedTasksBanner className="mb-6" />
+
       {/* Now / Next */}
       <div className="mb-6 grid gap-4 lg:grid-cols-[1fr_18rem]">
         <Card>

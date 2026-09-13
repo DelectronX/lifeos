@@ -2,6 +2,9 @@ import { db } from '@/db/db';
 import { addDaysToKey, todayKey } from '@/lib/date';
 import { materialiseAllRules } from './recurrenceService';
 import { getUiState, setUiState } from './uiStateStore';
+import { pruneSnapshots, rollSnapshots } from './analyticsService';
+import { getSettings, updateSettings } from './settingsService';
+import { DEFAULT_ANALYTICS_MAINTENANCE } from '@/types';
 
 /**
  * Startup maintenance. Runs once per app load, guarded so a second load on the
@@ -65,6 +68,27 @@ export const MAINTENANCE_STEPS: MaintenanceStep[] = [
       if (!stale.length) return null;
       await db.planRuns.bulkDelete(stale.map((r) => r.id));
       return `Pruned ${stale.length} reverted plan runs.`;
+    },
+  },
+  {
+    name: 'roll-analytics-snapshot',
+    // Caches yesterday's and last week's headline metrics so long-range
+    // analytics views do not replay the whole event log. Disabled via
+    // settings.analytics.rollSnapshots; prunes old snapshots afterwards so the
+    // table does not grow forever.
+    run: async (today) => {
+      const settings = await getSettings();
+      const prefs = { ...DEFAULT_ANALYTICS_MAINTENANCE, ...(settings.analytics ?? {}) };
+      if (prefs.rollSnapshots === false) return null;
+
+      const written = await rollSnapshots(today);
+      const pruned = await pruneSnapshots();
+      await updateSettings({ analytics: { ...prefs, lastRolledAt: Date.now() } });
+
+      const parts: string[] = [];
+      if (written.length) parts.push(`Rolled ${written.length} snapshot${written.length === 1 ? '' : 's'} (${written.join(', ')}).`);
+      if (pruned) parts.push(`Pruned ${pruned} old snapshot${pruned === 1 ? '' : 's'}.`);
+      return parts.length ? parts.join(' ') : null;
     },
   },
 ];
