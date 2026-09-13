@@ -26,7 +26,7 @@ export function SidebarRail({
       data-collapsed={railCollapsed}
       style={{ width: railCollapsed ? 'var(--rail-w-collapsed)' : 'var(--rail-w)' }}
       className={cn(
-        'hidden shrink-0 flex-col border-r border-line bg-surface lg:flex',
+        'hidden shrink-0 flex-col border-r border-line bg-surface pt-safe lg:flex',
         'transition-[width] duration-slow ease-calm',
       )}
     >

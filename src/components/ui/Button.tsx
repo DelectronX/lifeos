@@ -116,7 +116,18 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
       type={type}
       aria-label={label}
       title={label}
-      className={cn(BASE, 'shrink-0 p-0', VARIANTS[variant], ICON_BOX[size], className)}
+      className={cn(
+        BASE,
+        'relative shrink-0 p-0',
+        // Invisible hit-area expansion so small icon buttons still meet the
+        // ~44px iOS touch-target minimum without changing their visual size
+        // on desktop. `before` covers the padding, pointer-events pass
+        // through to the button itself since it's the button's own box.
+        "before:absolute before:inset-[-6px] before:content-['']",
+        VARIANTS[variant],
+        ICON_BOX[size],
+        className,
+      )}
       {...rest}
     >
       {children}

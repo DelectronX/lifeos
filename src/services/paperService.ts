@@ -2,7 +2,7 @@ import { db } from '@/db/db';
 import { newId } from '@/lib/id';
 import { toDateKey, todayKey } from '@/lib/date';
 import { logActivity } from './activityService';
-import { awardXP } from './timerService';
+import { awardXP as awardXPRaw } from './xpService';
 import { getUiState, setUiState } from './uiStateStore';
 import { analysePaper, type PaperAnalytics } from '@/engines/paperAnalytics';
 import type {
@@ -423,13 +423,13 @@ export async function submitPaper(
     },
   });
 
-  const award = await awardXP({
+  const award = await awardXPRaw({
     reason: 'paper_submitted',
     sourceType: 'paper',
     sourceId: paperId,
     minutes: session.workMs / 60_000,
     description: `${paper.title} — ${analytics.totals.score}/${analytics.totals.maxScore}`,
-  }, activity.id);
+  }, { activityId: activity.id });
 
   clearRunState(paperId);
 

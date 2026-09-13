@@ -3,3 +3,8 @@ dist
 *.tsbuildinfo
 build.log
 browser-out.txt
+
+# Future native Capacitor platform projects — generated later on macOS via
+# `npx cap add ios` / `npx cap add android`. Never commit them from here.
+ios/
+android/

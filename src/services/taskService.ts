@@ -2,6 +2,7 @@ import { db } from '@/db/db';
 import { newId } from '@/lib/id';
 import { toDateKey, todayKey, diffDays } from '@/lib/date';
 import { logActivity } from './activityService';
+import { awardXP, revokeXPFor } from './xpService';
 import type {
   DateKey, ID, Intensity, Task, TaskFlexibility, TaskStatus, TaskType, TimeWindow,
 } from '@/types';
@@ -138,6 +139,18 @@ export async function setTaskStatus(
   await db.tasks.update(id, patch);
   const updated = { ...task, ...patch } as Task;
 
+  // Leaving 'completed' (reopen/uncomplete/cancel-after-completion) must undo
+  // the reward: remove the completion Activity and revoke any XP tied to it,
+  // so a complete -> reopen -> complete cycle cannot double-award.
+  if (task.status === 'completed' && to !== 'completed') {
+    const rows = await db.activities
+      .where('taskId').equals(id)
+      .filter((a) => a.type === 'task_completed')
+      .toArray();
+    await db.activities.bulkDelete(rows.map((r) => r.id));
+    await revokeXPFor('task', id);
+  }
+
   // Keep the schedule consistent with the task's outcome.
   if (to === 'completed' || to === 'cancelled' || to === 'skipped') {
     const blocks = await db.blocks.where('taskId').equals(id).toArray();
@@ -150,17 +163,18 @@ export async function setTaskStatus(
   }
 
   if (to === 'completed') {
-    await logActivity({
+    const actualMinutes = patch.actualMinutes ?? task.actualMinutes;
+    const activity = await logActivity({
       type: 'task_completed',
       title: task.title,
       at,
       trackerId: task.trackerId,
       taskId: task.id,
       goalId: task.goalId,
-      durationMs: (patch.actualMinutes ?? task.actualMinutes) * 60_000,
+      durationMs: actualMinutes * 60_000,
       meta: {
         estimatedMinutes: task.estimatedMinutes,
-        actualMinutes: patch.actualMinutes ?? task.actualMinutes,
+        actualMinutes,
         basePriority: task.basePriority,
         intensity: task.intensity,
         taskType: task.type,
@@ -168,6 +182,20 @@ export async function setTaskStatus(
         createdAt: task.createdAt,
       },
     });
+
+    // Single centralized XP write path. `awardXP`'s dedupe key
+    // (task_completed:task:<id>) makes reopening and re-completing the same
+    // task a safe no-op — it never pays out twice for one task.
+    await awardXP({
+      reason: 'task_completed',
+      sourceType: 'task',
+      sourceId: task.id,
+      minutes: actualMinutes,
+      intensity: task.intensity,
+      basePriority: task.basePriority,
+      recordAgeSeconds: Math.max(0, (at - task.createdAt) / 1000),
+      description: task.title,
+    }, { activityId: activity.id, at });
   } else if (to === 'skipped') {
     await logActivity({
       type: 'task_skipped', title: task.title, at,

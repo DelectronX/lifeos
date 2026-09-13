@@ -3,6 +3,7 @@ import { newId } from '@/lib/id';
 import { dateKeyToTimestamp, MINUTE_MS, snapToGrid, toDateKey } from '@/lib/date';
 import { logActivity } from './activityService';
 import { setTaskStatus } from './taskService';
+import { awardXP, revokeXPFor } from './xpService';
 import type {
   BlockKind, BlockOrigin, BlockStatus, DateKey, ID, ScheduleBlock, Task, Timestamp,
 } from '@/types';
@@ -191,6 +192,15 @@ export async function completeBlock(id: ID, options: { at?: number; alsoComplete
     durationMs,
     meta: { plannedMs: block.end - block.start, kind: block.kind, createdAt: block.createdAt },
   });
+
+  await awardXP({
+    reason: 'block_completed',
+    sourceType: 'block',
+    sourceId: block.id,
+    minutes: durationMs / MINUTE_MS,
+    recordAgeSeconds: Math.max(0, (at - block.createdAt) / 1000),
+    description: block.title,
+  }, { at });
 
   if (block.taskId) {
     const task = await db.tasks.get(block.taskId);
@@ -423,6 +433,7 @@ export async function reopenBlock(id: ID): Promise<void> {
   const rows = await db.activities.where('blockId').equals(id).toArray();
   const doomed = rows.filter((a) => a.type === 'block_completed' || a.type === 'block_skipped');
   await db.activities.bulkDelete(doomed.map((a) => a.id));
+  await revokeXPFor('block', id);
 
   await db.blocks.update(id, { status: 'planned', actualStart: null, actualEnd: null, updatedAt: at });
 }

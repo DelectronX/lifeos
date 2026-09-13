@@ -101,7 +101,7 @@ export function AppShell() {
 
   return (
     <ShellContext.Provider value={ctx}>
-      <div className="flex h-full min-h-screen bg-surface-base">
+      <div className="flex h-full min-h-screen bg-surface-base pl-safe pr-safe">
         <SidebarRail identity={<IdentityBlock collapsed={railCollapsed} />} />
 
         <div className="flex min-w-0 flex-1 flex-col">

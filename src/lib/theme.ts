@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { getPersistedTheme, onUiStateHydrated, persistTheme } from '@/services/uiStateStore';
+import { syncStatusBarTheme } from '@/lib/nativeBridge';
 import type { ThemeMode } from '@/types';
 
 /**
@@ -65,6 +66,8 @@ export function applyThemeMode(mode: ThemeMode): ResolvedTheme {
   } catch {
     /* private mode — the DOM class is still correct for this session */
   }
+  // No-op outside a native iOS/Android WebView (see nativeBridge.ts).
+  void syncStatusBarTheme(resolved);
   return resolved;
 }
 

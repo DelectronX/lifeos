@@ -165,3 +165,62 @@ first save.
 - `ScheduleTaskModal` doesn't report its result, so the manual-scheduling path
   reads blocks back from Dexie to report accurately. Works, but a return value
   would be cleaner.
+
+---
+
+## iOS / Capacitor readiness
+
+The web project is Capacitor-ready but **no native platform has been added**.
+That step needs Xcode on a macOS machine and was intentionally not run here.
+
+**Installed / configured now:**
+- `@capacitor/core`, `@capacitor/cli` (dev dep).
+- Plugins installed but not deeply wired yet: `@capacitor/preferences`,
+  `@capacitor/filesystem`, `@capacitor/status-bar`, `@capacitor/keyboard`,
+  `@capacitor/haptics`, `@capacitor/app`, `@capacitor/share`.
+- `capacitor.config.ts` at the repo root — `appId: com.lifeos.app`,
+  `webDir: 'dist'`, dark background colour, `webContentsDebuggingEnabled`
+  for dev builds.
+- `.gitignore` excludes future `ios/` and `android/` platform directories.
+- `src/lib/nativeBridge.ts` — a guarded wrapper (`isNativePlatform()`,
+  `syncStatusBarTheme()`) that no-ops outside a real native WebView. Wired
+  into `src/lib/theme.ts` so the status bar follows the app's theme once a
+  native shell exists.
+- Safe-area (`env(safe-area-inset-*)`) support: `viewport-fit=cover` in
+  `index.html`, `--safe-*` CSS vars + `.pt/.pb/.pl/.pr-safe` utilities in
+  `index.css`, applied to `AppShell`, `SidebarRail`, `MobileTopBar`,
+  `MobileTabBar`/`MobileMoreSheet` (already had bottom insets), and `Modal`.
+- Touch targets: `IconButton` now has an invisible `before:inset-[-6px]`
+  hit-area on every size so small icon buttons meet the ~44px iOS minimum
+  without changing their visual size. Mobile top-bar search button and the
+  "More" sheet close button bumped to real 44px/36px hit boxes.
+- Hover-only affordance fixed: `TaskRow`'s "Schedule" icon button no longer
+  disappears with no touch fallback — it's visible by default and only
+  hides on hover-capable (desktop) pointers via `[@media(hover:hover)]`.
+
+**Commands the user runs later, on a Mac:**
+```bash
+npm install                # if not already
+npm run build               # produces dist/, which webDir points at
+npx cap add ios             # generates the ios/ Xcode project (needs Xcode)
+npx cap sync ios            # copies web build + plugins into the native project
+npx cap open ios            # opens Xcode to build/run/sign
+```
+Re-run `npm run build && npx cap sync ios` after every web change before
+testing on device/simulator.
+
+**Native plugin wiring still to do** (by whichever feature wave needs it):
+- `@capacitor/filesystem` — back file attachments / a future PDF viewer with
+  native file access (currently IndexedDB blobs only).
+- `@capacitor/preferences` — only for tiny OS-level flags if ever needed; the
+  app's own JSON/IndexedDB storage layer (`src/storage/`) stays authoritative
+  for real data, do not use Preferences for bulk data.
+- `@capacitor/haptics` — light haptic feedback on task/timer completion.
+- `@capacitor/share` — share exported JSON bundles via the iOS share sheet.
+- `@capacitor/app` — handle background/foreground app-state transitions to
+  keep timers accurate (coordinate with whoever owns `timerService.ts`).
+- `@capacitor/keyboard` — not yet imported; current keyboard-safety relies on
+  the browser's native behaviour (modals already avoid pinning to the
+  viewport bottom without safe padding). Revisit once running in a real
+  WKWebView, where keyboard resize behaviour differs from Safari.
+

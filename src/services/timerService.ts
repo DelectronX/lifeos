@@ -1,14 +1,14 @@
 import { db } from '@/db/db';
 import { newId } from '@/lib/id';
-import { toDateKey, todayKey, MINUTE_MS } from '@/lib/date';
+import { toDateKey, MINUTE_MS } from '@/lib/date';
 import { logActivity } from './activityService';
-import { getSettings, getSchedulingConfig } from './settingsService';
+import { getSettings } from './settingsService';
 import { getUiState, setUiState } from './uiStateStore';
-import { applyDailyCaps, computeXPAward, levelProgress, nextStreak, type XPEventInput } from '@/engines/xp';
-import { diffDays } from '@/lib/date';
+import { awardXP as xpServiceAwardXP } from './xpService';
+import type { XPEventInput } from '@/engines/xp';
 import { DEFAULT_TIMER_PREFERENCES } from '@/types';
 import type {
-  ID, PomodoroPhase, TimerMode, TimerPreferences, TimerSegment, TimerSession, XPTransaction,
+  ID, PomodoroPhase, TimerMode, TimerPreferences, TimerSegment, TimerSession,
 } from '@/types';
 
 /**
@@ -466,86 +466,22 @@ export interface AwardResult {
 /**
  * Shared XP write path for the Focus/Paper modules.
  *
- * Applies the engine's award maths, then the daily caps against XP already
- * earned today, then writes an XPTransaction whose unique `dedupeKey` makes a
- * second award for the same real event impossible.
+ * This is a thin adapter over the ONE centralized award entrypoint,
+ * `xpService.awardXP` — every feature (tasks, blocks, timers, papers,
+ * revisions, habits) routes through that single function so the dedupe
+ * ledger, daily caps and level/streak bookkeeping can never diverge between
+ * call sites. This file used to carry its own duplicate copy of that write
+ * path; it now only adapts the richer `XPAwardOutcome` shape to the smaller
+ * `AwardResult` shape the Focus/Paper UIs already consume.
  */
 export async function awardXP(input: XPEventInput, activityId: ID | null = null): Promise<AwardResult> {
-  let level = 1;
-  try {
-    const profile = await db.profile.get('profile');
-    const config = (await getSchedulingConfig()).xp;
-    level = levelProgress(profile?.totalXP ?? 0, config).level;
-    const today = todayKey();
-    const award = computeXPAward({ ...input, streakDays: profile?.currentStreak ?? 0 }, config);
-    if (award.amount <= 0) {
-      return { amount: 0, note: award.rejected, levelUp: false, level };
-    }
-
-    const todays = await db.xp.where('date').equals(today).toArray();
-    const byReason: Record<string, number> = {};
-    let total = 0;
-    for (const t of todays) {
-      byReason[t.reason] = (byReason[t.reason] ?? 0) + t.amount;
-      total += t.amount;
-    }
-    const capped = applyDailyCaps(award.amount, award.reason, { earnedTodayByReason: byReason, earnedTodayTotal: total }, config);
-    if (capped.amount <= 0) return { amount: 0, note: capped.capReason, levelUp: false, level };
-
-    const balanceAfter = (profile?.totalXP ?? 0) + capped.amount;
-    const tx: XPTransaction = {
-      id: newId('xp'),
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-      at: Date.now(),
-      date: today,
-      amount: capped.amount,
-      reason: award.reason,
-      description: award.description,
-      sourceType: input.sourceType,
-      sourceId: input.sourceId,
-      activityId,
-      dedupeKey: award.dedupeKey,
-      balanceAfter,
-    };
-    await db.xp.add(tx);
-
-    const config2 = config;
-    const before = levelProgress(profile?.totalXP ?? 0, config2);
-    const after = levelProgress(balanceAfter, config2);
-
-    if (profile) {
-      const streak = nextStreak(profile.currentStreak, profile.longestStreak, profile.lastActiveDate, today, diffDays);
-      await db.profile.update('profile', {
-        totalXP: balanceAfter,
-        level: after.level,
-        currentStreak: streak.currentStreak,
-        longestStreak: streak.longestStreak,
-        lastActiveDate: today,
-        updatedAt: Date.now(),
-      });
-    }
-
-    if (after.level > before.level) {
-      await logActivity({
-        type: 'level_up',
-        title: `Reached level ${after.level}`,
-        value: after.level,
-        meta: { totalXP: balanceAfter },
-      });
-    }
-
-    return {
-      amount: capped.amount,
-      note: capped.capped ? capped.capReason : undefined,
-      levelUp: after.level > before.level,
-      level: after.level,
-    };
-  } catch (e) {
-    // A duplicate dedupeKey (unique index) means this event already paid out.
-    console.warn('[timerService] XP award skipped', e);
-    return { amount: 0, note: 'Already awarded for this event.', levelUp: false, level };
-  }
+  const outcome = await xpServiceAwardXP(input, { activityId });
+  return {
+    amount: outcome.amount,
+    note: outcome.note,
+    levelUp: outcome.levelUp,
+    level: outcome.level,
+  };
 }
 
 /* ------------------------------------------------------------------ */

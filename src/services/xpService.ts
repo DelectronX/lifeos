@@ -3,6 +3,7 @@ import { newId } from '@/lib/id';
 import { diffDays, todayKey } from '@/lib/date';
 import { getSchedulingConfig } from './settingsService';
 import { logActivity } from './activityService';
+import { createDefaultProfile } from '@/db/seed';
 import {
   applyDailyCaps, computeXPAward, levelProgress, nextStreak,
   type LevelProgress, type XPEventInput,
@@ -93,19 +94,22 @@ export async function awardXP(
   }
 
   const after = levelProgress(balanceAfter, config);
-  if (profile) {
-    const streak = nextStreak(
-      profile.currentStreak, profile.longestStreak, profile.lastActiveDate, date, diffDays,
-    );
-    await db.profile.update('profile', {
-      totalXP: balanceAfter,
-      level: after.level,
-      currentStreak: streak.currentStreak,
-      longestStreak: streak.longestStreak,
-      lastActiveDate: date,
-      updatedAt: at,
-    });
-  }
+  const streak = nextStreak(
+    profile?.currentStreak ?? 0, profile?.longestStreak ?? 0, profile?.lastActiveDate ?? null, date, diffDays,
+  );
+  // Always keep the cached profile balance in exact sync with the ledger —
+  // upsert rather than update-only, so a missing/never-seeded profile row
+  // can never leave totalXP undefined while real XPTransactions exist.
+  const nextProfile = {
+    ...(profile ?? createDefaultProfile(at)),
+    totalXP: balanceAfter,
+    level: after.level,
+    currentStreak: streak.currentStreak,
+    longestStreak: streak.longestStreak,
+    lastActiveDate: date,
+    updatedAt: at,
+  };
+  await db.profile.put(nextProfile);
 
   if (after.level > before.level) {
     await logActivity({

@@ -87,6 +87,51 @@ describe('timer core — wall-clock elapsed', () => {
   });
 });
 
+describe('timer core — survives app close/reopen (timestamp-only reconstruction)', () => {
+  it('reconstructs the exact same reading from a snapshot round-tripped through storage after the app was closed mid-session', () => {
+    // Simulates: user starts a focus session, works 8 minutes, closes the
+    // app entirely (no JS runs, no interval ticks), then reopens 45 minutes
+    // later. Nothing but the persisted snapshot (JSON-serializable
+    // timestamps) is available to reconstruct elapsed time.
+    let live = snap();
+    live = pauseSnapshot(live, T0 + 8 * MIN);   // still "open" — user closes app while paused... actually simulate closing while RUNNING:
+    live = resumeSnapshot(live, T0 + 8 * MIN);
+
+    // Serialize exactly as `saveSnapshot` -> localStorage -> `loadSnapshot` would.
+    const persisted = JSON.parse(JSON.stringify(live)) as TimerSnapshot;
+
+    // "45 minutes pass" with the app fully closed: no timers, no intervals ran.
+    const reopenedAt = T0 + 8 * MIN + 45 * MIN;
+    const reading = readTimer(persisted, reopenedAt);
+
+    // Elapsed reflects real wall-clock time entirely from startedAt/segments,
+    // not from any counter that would have been reset by closing the app.
+    expect(reading.workMs).toBe(53 * MIN);
+    expect(reading.state).toBe('running');
+  });
+
+  it('a session paused right before the app closes stays frozen at the paused amount after reopening, however long the app was closed', () => {
+    let live = snap();
+    live = pauseSnapshot(live, T0 + 12 * MIN); // user pauses, then closes the app
+    const persisted = JSON.parse(JSON.stringify(live)) as TimerSnapshot;
+
+    // App stays closed for 3 hours — still correctly frozen on reopen.
+    const reading = readTimer(persisted, T0 + 12 * MIN + 3 * 60 * MIN);
+    expect(reading.workMs).toBe(12 * MIN);
+    expect(reading.state).toBe('paused');
+  });
+
+  it('multiple close/reopen cycles across pause/resume never lose or duplicate time', () => {
+    let live = snap();
+    live = pauseSnapshot(live, T0 + 5 * MIN);                 // close #1 (paused)
+    live = JSON.parse(JSON.stringify(live));                   // reopen #1
+    live = resumeSnapshot(live, T0 + 40 * MIN);                 // idle 35 min not counted
+    live = JSON.parse(JSON.stringify(live));                   // close/reopen #2 (running)
+    const reading = readTimer(live, T0 + 47 * MIN);             // +7 min after reopen
+    expect(reading.workMs).toBe(12 * MIN);
+  });
+});
+
 describe('timer core — pomodoro phases', () => {
   const pom = (over: Partial<TimerSnapshot> = {}) => snap({ plannedMs: null, ...over }, 'pomodoro');
 

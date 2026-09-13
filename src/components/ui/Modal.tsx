@@ -45,7 +45,7 @@ export function Modal({ open, onClose, title, description, children, footer, siz
   if (!open) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:p-6">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-6">
       <div
         className="fixed inset-0 bg-[rgb(0_0_0/0.55)] animate-in-fade"
         onClick={persistent ? undefined : onClose}

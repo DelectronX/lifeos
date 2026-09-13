@@ -34,7 +34,7 @@ export function MobileTopBar({ title, actions }: { title: string; actions?: Reac
         type="button"
         aria-label="Search commands"
         onClick={() => openCommandPalette()}
-        className="rounded-[var(--r-md)] p-2 text-ink-muted transition-colors duration-base ease-calm hover:bg-surface-raised hover:text-ink"
+        className="flex h-11 w-11 items-center justify-center rounded-[var(--r-md)] text-ink-muted transition-colors duration-base ease-calm hover:bg-surface-raised hover:text-ink"
       >
         <Search className="h-[1.125rem] w-[1.125rem]" />
       </button>
@@ -150,7 +150,7 @@ export function MobileMoreSheet({ open, onClose }: { open: boolean; onClose: () 
             type="button"
             aria-label="Close"
             onClick={onClose}
-            className="rounded-[var(--r-sm)] p-1.5 text-ink-faint hover:text-ink"
+            className="relative flex h-9 w-9 items-center justify-center rounded-[var(--r-sm)] text-ink-faint before:absolute before:inset-[-6px] before:content-[''] hover:text-ink"
           >
             <X className="h-4 w-4" />
           </button>

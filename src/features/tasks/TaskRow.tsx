@@ -186,7 +186,7 @@ export function TaskRow({
         <IconButton
           label="Schedule task"
           size="xs"
-          className="opacity-0 transition-opacity group-hover:opacity-100 focus:opacity-100"
+          className="opacity-100 transition-opacity [@media(hover:hover)]:opacity-0 group-hover:opacity-100 focus:opacity-100"
           onClick={() => actions.onSchedule(task)}
         >
           <CalendarPlus className="h-3.5 w-3.5" />
