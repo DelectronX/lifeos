@@ -2,13 +2,13 @@ import Dexie, { type Table } from 'dexie';
 import type {
   Achievement, Activity, AnalyticsSnapshot, Annotation, Attachment, BackupSnapshot, Goal, Habit,
   Milestone, CustomReward, Paper, PlanRun, Question, QuestionAttempt, RecurringRule, Resource,
-  RewardEarning,
+  RewardEarning, ScheduleRule,
   RevisionEntry, RevisionPlan, ScheduleBlock, ScheduleTemplate, Settings,
   Task, TimerSession, Tracker, UserProfile, ViewerProgress, XPTransaction,
 } from '@/types';
 
 /** Bumped whenever the Dexie stores definition changes. Also written into exports. */
-export const SCHEMA_VERSION = 5;
+export const SCHEMA_VERSION = 7;
 
 /**
  * Index design notes (this app must stay fast with years of history):
@@ -53,6 +53,7 @@ export class LifeOSDatabase extends Dexie {
   rewardEarnings!: Table<RewardEarning, string>;
   annotations!: Table<Annotation, string>;
   viewerProgress!: Table<ViewerProgress, string>;
+  scheduleRules!: Table<ScheduleRule, string>;
 
   constructor(name = 'lifeos') {
     super(name);
@@ -143,6 +144,36 @@ export class LifeOSDatabase extends Dexie {
       annotations: 'id, resourceId, page, kind, [resourceId+page], createdAt',
       viewerProgress: 'id, &resourceId, updatedAt',
     });
+
+    /**
+     * v6 (Focus Mode inside the file viewer): timer sessions gained an
+     * optional `resourceId` link so a Focus session started from a PDF/video/
+     * image/text file in the Practice viewer shows up against that resource's
+     * history. Every other store carries forward untouched; existing session
+     * rows are simply missing the field until Dexie's upgrade hook backfills
+     * it to null below (Dexie does not index a key that's absent on old rows).
+     */
+    this.version(6)
+      .stores({
+        sessions:
+          'id, date, mode, taskId, blockId, trackerId, goalId, paperId, resourceId, startedAt, endedAt, ' +
+          '[date+mode], [trackerId+date], [taskId+date], [resourceId+date]',
+      })
+      .upgrade(async (tx) => {
+        await tx.table('sessions').toCollection().modify((row: { resourceId?: unknown }) => {
+          if (row.resourceId === undefined) row.resourceId = null;
+        });
+      });
+
+    /**
+     * v7 (Rule-based Auto Plan): user-defined HARD subject/day/time-window
+     * rules that constrain — but never themselves materialise — the
+     * scheduling engine's placement of tasks belonging to a tracker. Every
+     * other store carries forward untouched.
+     */
+    this.version(7).stores({
+      scheduleRules: 'id, trackerId, active, [trackerId+active]',
+    });
   }
 }
 
@@ -179,6 +210,7 @@ export function tableByName(name: string): Table<any, string> | null {
     rewardEarnings: db.rewardEarnings,
     annotations: db.annotations,
     viewerProgress: db.viewerProgress,
+    scheduleRules: db.scheduleRules,
   };
   return map[name] ?? null;
 }
@@ -189,7 +221,7 @@ export const EXPORTABLE_TABLES = [
   'templates', 'recurringRules', 'sessions', 'papers', 'questions', 'attempts',
   'revisionPlans', 'revisionEntries', 'resources', 'habits', 'activities',
   'xp', 'achievements', 'snapshots', 'planRuns', 'rewards', 'rewardEarnings',
-  'annotations', 'viewerProgress',
+  'annotations', 'viewerProgress', 'scheduleRules',
 ] as const;
 
 export type ExportableTable = (typeof EXPORTABLE_TABLES)[number];

@@ -3,13 +3,13 @@ import type {
 } from '@/types';
 import type {
   AvailabilityInput, DayAvailability, FreeSlot, ProposedBlock,
-  SchedulingPreferences, UnplacedTask, UnplacedReasonCode,
+  SchedulingPreferences, SubjectWindowRule, UnplacedTask, UnplacedReasonCode,
 } from '@/types/scheduling';
 import {
   MINUTE_MS, addDaysToKey, atMinute, dateKeyRange, diffDays,
   minuteOfDay, snapUp, toDateKey,
 } from '@/lib/date';
-import { subtractIntervals, type Interval } from '@/lib/intervals';
+import { intersectIntervals, subtractIntervals, type Interval } from '@/lib/intervals';
 import { comparePriority, isFinished, scoreTasks, type PriorityScore } from './priorityScoring';
 
 /**
@@ -140,6 +140,13 @@ export interface PlanScheduleInput {
   ignoreBlockIds?: readonly ID[];
   /** Stable prefix for generated tempIds so previews are reproducible. */
   runId?: string;
+  /**
+   * HARD subject/day/time-window constraints (Auto Plan rule builder). A
+   * task whose tracker has one or more active rules here is NEVER placed
+   * outside the union of its rules' windows — this is enforced as a
+   * rejection, not a scoring preference, unlike `Task.preferredWindow`.
+   */
+  subjectWindowRules?: readonly SubjectWindowRule[];
 }
 
 export interface TaskPlacement {
@@ -168,6 +175,34 @@ interface MutableSlot {
   date: DateKey;
   start: Timestamp;
   end: Timestamp;
+}
+
+/**
+ * Absolute-timestamp windows (across the whole planning horizon) that a
+ * tracker's tasks are HARD-limited to, derived from `SubjectWindowRule`s.
+ * Returns `null` when the tracker has no active rules (unconstrained —
+ * every existing free slot is fair game, exactly as before this feature).
+ */
+function resolveAllowedWindows(
+  trackerId: ID,
+  rules: readonly SubjectWindowRule[] | undefined,
+  from: DateKey,
+  to: DateKey,
+): Interval[] | null {
+  const matching = (rules ?? []).filter((r) => r.trackerId === trackerId);
+  if (matching.length === 0) return null;
+
+  const out: Interval[] = [];
+  for (const date of dateKeyRange(from, to)) {
+    const dayOfWeek = new Date(atMinute(date, 0)).getDay();
+    for (const rule of matching) {
+      if (!rule.days.includes(dayOfWeek)) continue;
+      const start = atMinute(date, rule.startMinute);
+      const end = atMinute(date, rule.endMinute);
+      if (end > start) out.push({ start, end });
+    }
+  }
+  return out; // may legitimately be empty — every day is disallowed
 }
 
 export function planSchedule(
@@ -257,6 +292,11 @@ export function planSchedule(
       Math.min(task.maxSessionMinutes || config.slots.maxSessionMinutes, config.slots.maxSessionMinutes),
     );
 
+    // -- HARD subject/day/time-window constraint (Auto Plan rule builder) --
+    // `null` means unconstrained; an array (possibly empty) means the task's
+    // tracker has active rules and it may ONLY be placed inside their union.
+    const allowedWindows = resolveAllowedWindows(task.trackerId, input.subjectWindowRules, from, to);
+
     let remaining = needed;
     const taskBlocks: ProposedBlock[] = [];
     const reasons: string[] = [];
@@ -276,6 +316,7 @@ export function planSchedule(
         loadByDate, existingLoad,
         lastIntensiveEnd,
         originTs: atMinute(from, 0),
+        allowedWindows,
       });
 
       if (!pick) break;
@@ -323,8 +364,16 @@ export function planSchedule(
     }
 
     if (taskBlocks.length === 0) {
-      unplaced.push(reject(task, noSlotCode(task, dueTs, slots, config),
-        noSlotReason(task, dueTs, slots, config), remaining));
+      if (allowedWindows !== null) {
+        unplaced.push(reject(task, 'outside_allowed_window',
+          allowedWindows.length === 0
+            ? 'This subject has an active rule but no window falls inside the planning horizon (check its days/times).'
+            : `No free time falls inside this subject's allowed window${allowedWindows.length === 1 ? '' : 's'} — it can only ever be scheduled there.`,
+          remaining));
+      } else {
+        unplaced.push(reject(task, noSlotCode(task, dueTs, slots, config),
+          noSlotReason(task, dueTs, slots, config), remaining));
+      }
       continue;
     }
 
@@ -399,6 +448,14 @@ interface PickArgs {
   lastIntensiveEnd: Record<DateKey, Timestamp>;
   /** Local midnight of the first planned day — the earliness origin. */
   originTs: Timestamp;
+  /**
+   * HARD constraint: when non-null, every candidate start/end must fall
+   * entirely inside one of these absolute-timestamp windows. `null` means
+   * unconstrained (the historical behaviour); an empty array means the
+   * subject has active rules but none apply in this horizon, so nothing
+   * may be placed at all.
+   */
+  allowedWindows: Interval[] | null;
 }
 
 interface Pick { index: number; start: Timestamp; minutes: number; score: number }
@@ -452,7 +509,7 @@ function candidateStarts(
  * hours, earliness, fragmentation) merely score.
  */
 function pickSlot(args: PickArgs): Pick | null {
-  const { slots, want, floor, task, dueTs, config, preferences } = args;
+  const { slots, want, floor, task, dueTs, config, preferences, allowedWindows } = args;
   let best: Pick | null = null;
 
   for (let i = 0; i < slots.length; i++) {
@@ -460,8 +517,8 @@ function pickSlot(args: PickArgs): Pick | null {
 
     // Break padding after an intensive session on the same day.
     const padUntil = args.lastIntensiveEnd[slot.date] ?? 0;
-    const earliest = snapUp(Math.max(slot.start, padUntil), config.slots.granularityMinutes);
-    if (earliest >= slot.end) continue;
+    const earliestBase = snapUp(Math.max(slot.start, padUntil), config.slots.granularityMinutes);
+    if (earliestBase >= slot.end) continue;
 
     // Daily ceiling.
     const dayLoad = (args.loadByDate[slot.date] ?? 0) + (args.existingLoad[slot.date] ?? 0);
@@ -469,17 +526,32 @@ function pickSlot(args: PickArgs): Pick | null {
     if (dayRoom < floor) continue;
 
     // Hard deadline: the session must END by the deadline.
-    const hardEnd = dueTs !== null && task.deadlineHard ? Math.min(slot.end, dueTs) : slot.end;
-    const avail = Math.floor((hardEnd - earliest) / MINUTE_MS);
-    if (avail < floor) continue;
+    const hardEndBase = dueTs !== null && task.deadlineHard ? Math.min(slot.end, dueTs) : slot.end;
+    if (hardEndBase <= earliestBase) continue;
 
-    const minutes = Math.min(want, avail, dayRoom);
-    if (minutes < floor) continue;
+    // HARD subject window constraint: clip this slot down to the portions
+    // that actually overlap an allowed window. A `null` allowedWindows
+    // means unconstrained — use the whole [earliestBase, hardEndBase) as
+    // before. An empty array means nothing is ever allowed here.
+    const usableRanges: Interval[] = allowedWindows === null
+      ? [{ start: earliestBase, end: hardEndBase }]
+      : intersectIntervals([{ start: earliestBase, end: hardEndBase }], allowedWindows);
 
-    for (const start of candidateStarts(slot, earliest, minutes, task, config, preferences)) {
-      if (start + minutes * MINUTE_MS > hardEnd) continue;
-      const score = scoreSlot(start, minutes, slot, task, config, preferences, dueTs, args.originTs);
-      if (!best || score > best.score) best = { index: i, start, minutes, score };
+    for (const range of usableRanges) {
+      const earliest = range.start;
+      const hardEnd = range.end;
+      const avail = Math.floor((hardEnd - earliest) / MINUTE_MS);
+      if (avail < floor) continue;
+
+      const minutes = Math.min(want, avail, dayRoom);
+      if (minutes < floor) continue;
+
+      const rangeSlot: MutableSlot = { date: slot.date, start: earliest, end: hardEnd };
+      for (const start of candidateStarts(rangeSlot, earliest, minutes, task, config, preferences)) {
+        if (start + minutes * MINUTE_MS > hardEnd) continue;
+        const score = scoreSlot(start, minutes, slot, task, config, preferences, dueTs, args.originTs);
+        if (!best || score > best.score) best = { index: i, start, minutes, score };
+      }
     }
   }
 

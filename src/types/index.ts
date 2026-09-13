@@ -535,6 +535,35 @@ export interface RecurringRule extends BaseEntity {
   overrides?: Record<DateKey, RecurrenceOverride>;
 }
 
+/* ------------------------------------------------------------------ */
+/* Auto Plan — subject/day/time-window rules                          */
+/* ------------------------------------------------------------------ */
+
+/**
+ * A HARD scheduling constraint the user defines for one subject (Tracker):
+ * "Mathematics may only be scheduled Mon-Fri, 4pm-6pm". Unlike a
+ * `RecurringRule` (which materialises its OWN blocks/tasks on a cadence),
+ * a `ScheduleRule` never creates anything by itself — it constrains WHERE
+ * the scheduling engine (`planSchedule`) is allowed to place every existing
+ * task belonging to `trackerId`. See `src/services/scheduleRuleService.ts`
+ * for the adapter that turns active rules into `SubjectWindowRule[]`
+ * (src/types/scheduling.ts) fed into the engine.
+ */
+export interface ScheduleRule extends BaseEntity {
+  /** The subject this rule constrains (a Tracker, typically a study subject). */
+  trackerId: ID;
+  /** 0 = Sunday .. 6 = Saturday. Must contain at least one day when active. */
+  days: number[];
+  startMinute: MinuteOfDay;
+  endMinute: MinuteOfDay;
+  /** Session shape used within the window; falls back to task defaults if unset. */
+  minSessionMinutes: number;
+  maxSessionMinutes: number;
+  /** 1 (lowest) .. 5 (highest) — used only to explain conflicts, never overridden by engine math. */
+  priority: 1 | 2 | 3 | 4 | 5;
+  active: boolean;
+}
+
 /** A single-occurrence override of a recurring block. */
 export interface RecurrenceOverride {
   title?: string;
@@ -571,6 +600,8 @@ export interface TimerSession extends BaseEntity {
   goalId: ID | null;
   trackerId: ID;
   paperId: ID | null;
+  /** Resource (PDF/video/image/txt) this session was started from, if any. */
+  resourceId: ID | null;
   startedAt: Timestamp;
   endedAt: Timestamp | null;
   /** Sum of segment durations that count as work, in ms. */

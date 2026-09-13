@@ -200,6 +200,7 @@ export function seedPapers(ctx: DemoContext): void {
       goalId: null,
       trackerId: sections[0]!.trackerId,
       paperId: paper.id,
+      resourceId: null,
       startedAt,
       endedAt: submittedAt,
       workMs: submittedAt - startedAt,

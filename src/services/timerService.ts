@@ -45,6 +45,8 @@ export interface TimerSnapshot {
   blockId: ID | null;
   goalId: ID | null;
   paperId: ID | null;
+  /** Resource (PDF/video/image/txt) this session was started from, if any. */
+  resourceId: ID | null;
   /** Wall-clock time the timer was first started. */
   startedAt: number;
   /** Closed run segments. Open time is tracked by `runningSince`. */
@@ -236,6 +238,8 @@ export interface StartTimerInput {
   blockId?: ID | null;
   goalId?: ID | null;
   paperId?: ID | null;
+  /** Resource (PDF/video/image/txt) this session is started from, if any. */
+  resourceId?: ID | null;
   /** Target minutes for focus/countdown. Ignored by stopwatch. */
   targetMinutes?: number | null;
   label?: string;
@@ -269,6 +273,7 @@ export function buildSnapshot(input: StartTimerInput, prefs: TimerPreferences): 
     blockId: input.blockId ?? null,
     goalId: input.goalId ?? null,
     paperId: input.paperId ?? null,
+    resourceId: input.resourceId ?? null,
     startedAt: now,
     segments: [],
     runningSince: now,
@@ -363,6 +368,7 @@ export async function finishTimer(
     goalId: closed.goalId,
     trackerId: closed.trackerId,
     paperId: closed.paperId,
+    resourceId: closed.resourceId,
     startedAt: closed.startedAt,
     endedAt: now,
     workMs: Math.round(reading.workMs),
@@ -391,6 +397,7 @@ export async function finishTimer(
     blockId: session.blockId,
     sessionId: session.id,
     paperId: session.paperId,
+    resourceId: session.resourceId,
     durationMs: session.workMs,
     value: Math.round(workMinutes),
     unit: 'minutes',

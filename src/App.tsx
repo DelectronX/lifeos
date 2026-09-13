@@ -8,6 +8,7 @@ import { runStartupMaintenance } from '@/services/maintenanceService';
 import { startNotificationLoop, stopNotificationLoop } from '@/services/notificationService';
 import { useAutoRescheduleStore } from '@/state/autoRescheduleStore';
 import { AutoRescheduleReviewDialog } from '@/features/schedule/AutoRescheduleReview';
+import { LockedFocusOverlay } from '@/features/focus/LockedFocusOverlay';
 
 import { HomePage } from '@/features/home/HomePage';
 import { SchedulePage } from '@/features/schedule/SchedulePage';
@@ -27,6 +28,7 @@ import { FileViewerPage } from '@/features/practice/FileViewerPage';
 import { FirstRunDemoPrompt } from '@/features/settings/DemoDataSettings';
 import { DailyReviewPage } from '@/features/review/DailyReviewPage';
 import { WeeklyReviewPage } from '@/features/review/WeeklyReviewPage';
+import { RuleBuilderPage } from '@/features/planning/RuleBuilderPage';
 
 export default function App() {
   const [ready, setReady] = useState(false);
@@ -116,12 +118,14 @@ export default function App() {
           <Route path="practice" element={<PracticePage />} />
           <Route path="practice/resource/:resourceId" element={<FileViewerPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="planning/rules" element={<RuleBuilderPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
       <Toaster />
       <FirstRunDemoPrompt />
       <AutoRescheduleReviewDialog />
+      <LockedFocusOverlay />
     </>
   );
 }

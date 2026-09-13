@@ -24,6 +24,7 @@ function snap(over: Partial<TimerSnapshot> = {}, mode: TimerMode = 'focus'): Tim
     blockId: null,
     goalId: null,
     paperId: null,
+    resourceId: null,
     startedAt: T0,
     segments: [],
     runningSince: T0,
@@ -178,7 +179,7 @@ describe('timer core — pomodoro phases', () => {
 describe('timer core — session rollups', () => {
   const session = (over: Partial<TimerSession>): TimerSession => ({
     id: 's', createdAt: T0, updatedAt: T0, mode: 'focus', taskId: null, blockId: null,
-    goalId: null, trackerId: 'trk_study', paperId: null, startedAt: T0, endedAt: T0 + MIN,
+    goalId: null, trackerId: 'trk_study', paperId: null, resourceId: null, startedAt: T0, endedAt: T0 + MIN,
     workMs: MIN, breakMs: 0, plannedMs: null, segments: [], pomodoroCount: 0,
     interruptions: 0, completed: true, date: '2026-03-02', ...over,
   });

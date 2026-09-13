@@ -1,6 +1,6 @@
 import {
   BarChart3, BookOpen, CalendarDays, CheckSquare, ClipboardList, Home, ListTodo,
-  RotateCcw, Settings as SettingsIcon, Target, Timer, Trophy,
+  RotateCcw, Settings as SettingsIcon, SlidersHorizontal, Target, Timer, Trophy,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -56,6 +56,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       { to: '/review/weekly', label: 'Weekly review', icon: ClipboardList, keywords: 'reflect week retrospective planning' },
       { to: '/achievements', label: 'Achievements', icon: Trophy, keywords: 'badges xp level streaks rewards' },
       { to: '/practice', label: 'Practice', icon: BookOpen, keywords: 'resources library files links pdf notes' },
+      { to: '/planning/rules', label: 'Auto Plan rules', icon: SlidersHorizontal, keywords: 'rule builder subject window time constraint hard schedule' },
     ],
   },
   {

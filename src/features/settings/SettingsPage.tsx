@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Page } from '@/components/layout/Page';
 import { Tabs } from '@/components/ui/Tabs';
 import { Card } from '@/components/ui/Card';
@@ -40,6 +41,7 @@ export function SettingsPage() {
   const settings = useLiveSettings();
   const config = useSchedulingConfig();
   const [tab, setTab] = useState<Tab>('profile');
+  const navigate = useNavigate();
 
   const patch = useMemo(
     () => async (next: Partial<Omit<Settings, 'id'>>) => {
@@ -119,6 +121,18 @@ export function SettingsPage() {
           <RevisionSettings config={config} onPatch={patchConfig} />
           <XPSettings config={config} onPatch={patchConfig} />
           <NotificationSettings settings={settings} onPatch={patch} />
+          <Card>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="t-section">Auto Plan rules</div>
+                <p className="t-muted mt-0.5">
+                  Define hard subject/day/time-window rules — e.g. Mathematics only 4–6 PM,
+                  Mon–Fri. The planner will never place that subject outside its window.
+                </p>
+              </div>
+              <Button onClick={() => navigate('/planning/rules')}>Open rule builder</Button>
+            </div>
+          </Card>
           <Card>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="min-w-0">

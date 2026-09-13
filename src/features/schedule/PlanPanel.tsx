@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Sparkles, Undo2 } from 'lucide-react';
+import { RefreshCw, Sparkles, Undo2 } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Field, Select } from '@/components/ui/Input';
@@ -29,6 +29,7 @@ export function PlanPanel({
   onApplied?: () => void;
 }) {
   const [days, setDays] = useState(1);
+  const [regenerate, setRegenerate] = useState(false);
   const [preview, setPreview] = useState<AutoPlanPreview | null>(null);
   const [loading, setLoading] = useState(false);
   const [applying, setApplying] = useState(false);
@@ -39,7 +40,7 @@ export function PlanPanel({
     setLoading(true);
     setError(null);
     try {
-      const result = await previewAutoPlan({ from: date, days });
+      const result = await previewAutoPlan({ from: date, days, regenerate });
       setPreview(result);
       reset(result.result.proposals.map((p) => p.tempId));
     } catch (e) {
@@ -50,7 +51,7 @@ export function PlanPanel({
     }
     // `reset` is a stable-enough setter wrapper; re-running on it would loop.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [date, days]);
+  }, [date, days, regenerate]);
 
   useEffect(() => {
     if (open) void run();
@@ -62,12 +63,14 @@ export function PlanPanel({
     setApplying(true);
     try {
       const result = await applyAutoPlan(preview, [...selected]);
-      if (result.created === 0) {
+      if (result.created === 0 && result.deleted === 0) {
         toast.warning('Nothing applied', 'No proposals were selected.');
       } else {
         toast.withAction(
           `Scheduled ${result.created} block${result.created === 1 ? '' : 's'}`,
-          preview.summary,
+          result.deleted > 0
+            ? `${result.deleted} previous auto-planned block${result.deleted === 1 ? '' : 's'} replaced. ${preview.summary}`
+            : preview.summary,
           {
             label: 'Undo',
             onClick: async () => {
@@ -115,7 +118,7 @@ export function PlanPanel({
             variant="primary"
             onClick={() => void accept()}
             loading={applying}
-            disabled={selected.size === 0 || loading}
+            disabled={(selected.size === 0 && (preview?.releaseBlocks.length ?? 0) === 0) || loading}
           >
             Accept plan
           </Button>
@@ -131,9 +134,19 @@ export function PlanPanel({
             <option value="14">14 days</option>
           </Select>
         </Field>
+        <Button
+          size="sm"
+          iconLeft={<RefreshCw className="h-3.5 w-3.5" />}
+          variant={regenerate ? 'primary' : 'secondary'}
+          onClick={() => setRegenerate((v) => !v)}
+          title="Replace this range's own previously auto-planned blocks instead of only filling gaps"
+        >
+          {regenerate ? 'Regenerating' : 'Regenerate plan'}
+        </Button>
         <p className="t-meta flex-1 pb-1.5">
-          Tasks already on the calendar are left alone. Placement respects protected and locked
-          blocks, hard deadlines, your working hours, preferred windows and the daily load ceiling.
+          {regenerate
+            ? 'This run will replace its own previously auto-planned blocks, not stack new ones on top. Manually moved or locked blocks are never touched.'
+            : 'Tasks already on the calendar are left alone. Placement respects protected and locked blocks, hard deadlines, your working hours, preferred windows, active Auto Plan rules, and the daily load ceiling.'}
         </p>
       </div>
 

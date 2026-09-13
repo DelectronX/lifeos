@@ -150,6 +150,7 @@ export function makeSession(overrides: Partial<TimerSession> = {}): TimerSession
     goalId: null,
     trackerId: TRACKER_STUDY,
     paperId: null,
+    resourceId: null,
     startedAt: at(DAY, 9),
     endedAt: at(DAY, 10),
     workMs: 60 * 60_000,

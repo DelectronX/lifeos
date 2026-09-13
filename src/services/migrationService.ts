@@ -127,7 +127,50 @@ const V4_TO_V5: Migration = {
   }),
 };
 
-export const MIGRATIONS: Migration[] = [V1_TO_V2, V2_TO_V3, V3_TO_V4, V4_TO_V5];
+/**
+ * v5 -> v6: timer sessions gained an optional `resourceId` link (Focus Mode
+ * started from the in-app file viewer). Older session rows simply had no
+ * resource association; they backfill to null, same pattern as every prior
+ * optional-field migration in this file.
+ */
+const V5_TO_V6: Migration = {
+  from: 5,
+  to: 6,
+  description: 'Adds resourceId to timer sessions (Focus Mode from the file viewer).',
+  migrate: (bundle) => ({
+    ...bundle,
+    schemaVersion: 6,
+    tables: {
+      ...bundle.tables,
+      sessions: (bundle.tables.sessions ?? []).map((row) => ({
+        resourceId: null,
+        ...(row as Record<string, unknown>),
+      })),
+    },
+  }),
+};
+
+/**
+ * v6 -> v7: rule-based Auto Plan gained a `scheduleRules` table (user-defined
+ * HARD subject/day/time-window constraints). Older bundles have no such
+ * table; they arrive as an empty array, same pattern as every prior
+ * new-table migration in this file.
+ */
+const V6_TO_V7: Migration = {
+  from: 6,
+  to: 7,
+  description: 'Adds rule-based Auto Plan schedule rules.',
+  migrate: (bundle) => ({
+    ...bundle,
+    schemaVersion: 7,
+    tables: {
+      ...bundle.tables,
+      scheduleRules: bundle.tables.scheduleRules ?? [],
+    },
+  }),
+};
+
+export const MIGRATIONS: Migration[] = [V1_TO_V2, V2_TO_V3, V3_TO_V4, V4_TO_V5, V5_TO_V6, V6_TO_V7];
 
 export interface MigrationOutcome {
   bundle: ExportBundle;

@@ -389,6 +389,7 @@ export async function submitPaper(
     goalId: null,
     trackerId: paper.sections[0]?.trackerId ?? 'trk_study',
     paperId,
+    resourceId: null,
     startedAt,
     endedAt: now,
     workMs: Math.round(Math.max(workMs, analytics.totals.totalTimeMs)),

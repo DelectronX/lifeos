@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Link2 } from 'lucide-react';
+import { ArrowLeft, Link2, Timer } from 'lucide-react';
 import { db } from '@/db/db';
 import { IconButton } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/Card';
@@ -9,6 +9,11 @@ import { VideoViewer } from './viewers/VideoViewer';
 import { ImageViewer } from './viewers/ImageViewer';
 import { TxtViewer } from './viewers/TxtViewer';
 import { UnsupportedFormatViewer } from './viewers/UnsupportedFormatViewer';
+import { StartFocusFromResource } from '@/features/focus/StartFocusFromResource';
+import { ActiveTimerPanel } from '@/features/focus/ActiveTimerPanel';
+import { useTimerReading } from '@/state/useTimer';
+import { useFocusLockStore } from '@/state/focusLockStore';
+import { useTrackerMap } from '@/state/useLiveData';
 import type { Attachment, Resource } from '@/types';
 
 type Kind = 'pdf' | 'video' | 'image' | 'txt' | 'unsupported' | 'link';
@@ -37,6 +42,10 @@ export function FileViewerPage() {
   const [resource, setResource] = useState<Resource | null | undefined>(undefined);
   const [attachment, setAttachment] = useState<Attachment | null>(null);
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
+  const [focusDialogOpen, setFocusDialogOpen] = useState(false);
+  const trackerMap = useTrackerMap();
+  const { snapshot } = useTimerReading();
+  const lockedSessionId = useFocusLockStore((s) => s.lockedSessionId);
 
   useEffect(() => {
     let cancelled = false;
@@ -67,6 +76,10 @@ export function FileViewerPage() {
     return kindFor(attachment.mime, attachment.name);
   }, [attachment]);
 
+  const sessionForThisResource = snapshot && snapshot.resourceId === resourceId ? snapshot : null;
+  const tracker = resource ? trackerMap[resource.trackerId] : undefined;
+  const focusLabel = resource ? (tracker ? `${resource.title} · ${tracker.name}` : resource.title) : '';
+
   if (resource === undefined) return null; // brief loading tick, avoids a flash of "not found"
 
   return (
@@ -79,7 +92,18 @@ export function FileViewerPage() {
           <div className="truncate text-sm font-medium text-ink">{resource?.title ?? 'Resource'}</div>
           {info ? <div className="t-meta">{info.label}</div> : null}
         </div>
+        {resource && !sessionForThisResource ? (
+          <IconButton label="Start focus session" size="md" onClick={() => setFocusDialogOpen(true)}>
+            <Timer className="h-4 w-4" />
+          </IconButton>
+        ) : null}
       </header>
+
+      {sessionForThisResource && lockedSessionId !== sessionForThisResource.id ? (
+        <div className="border-b border-line bg-surface-raised px-3 py-3">
+          <ActiveTimerPanel />
+        </div>
+      ) : null}
 
       <div className="min-h-0 flex-1">
         {resource === null ? (
@@ -118,6 +142,16 @@ export function FileViewerPage() {
           <UnsupportedFormatViewer resource={resource} blob={attachment.blob} extLabel={info.label} />
         )}
       </div>
+
+      {resource ? (
+        <StartFocusFromResource
+          open={focusDialogOpen}
+          onClose={() => setFocusDialogOpen(false)}
+          resourceId={resource.id}
+          resourceTitle={focusLabel}
+          trackerId={resource.trackerId}
+        />
+      ) : null}
     </div>
   );
 }

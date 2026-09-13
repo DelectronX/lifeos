@@ -141,7 +141,25 @@ export type UnplacedReasonCode =
   | 'not_splittable_no_contiguous_slot'
   | 'daily_capacity_reached'
   | 'deadline_passed'
-  | 'zero_duration';
+  | 'zero_duration'
+  | 'outside_allowed_window';
+
+/**
+ * A HARD time-window constraint for every task belonging to one subject
+ * (Tracker). Derived from an active `ScheduleRule` — see
+ * `src/services/scheduleRuleService.ts`. Unlike `Task.preferredWindow` (a
+ * soft scoring preference), the scheduling engine treats these as
+ * unbreakable: a task whose tracker has active rules is NEVER placed on a
+ * day that is not in `days`, or outside `[startMinute, endMinute)` on a day
+ * that is.
+ */
+export interface SubjectWindowRule {
+  trackerId: ID;
+  /** 0 = Sunday .. 6 = Saturday. */
+  days: readonly number[];
+  startMinute: MinuteOfDay;
+  endMinute: MinuteOfDay;
+}
 
 export interface UnplacedTask {
   taskId: ID;

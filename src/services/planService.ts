@@ -3,6 +3,7 @@ import { newId } from '@/lib/id';
 import { MINUTE_MS, addDaysToKey, todayKey, toDateKey } from '@/lib/date';
 import { getSchedulingConfig, getSettings } from './settingsService';
 import { logActivity } from './activityService';
+import { loadSubjectWindowRules } from './scheduleRuleService';
 import { planSchedule, type PlanScheduleResult } from '@/engines/scheduling';
 import {
   autoReschedule, buildRescheduleOptions, computeRemainingWork, detectOverload,
@@ -173,6 +174,13 @@ export interface AutoPlanPreview {
   dates: DateKey[];
   /** One-line human summary shown at the top of the preview. */
   summary: string;
+  /**
+   * Previously auto-generated blocks that `applyAutoPlan` will delete before
+   * writing the new proposals — set only when `regenerate: true` was passed.
+   * Manually-edited or locked blocks are never included here, so a
+   * regenerate can never clobber something the user arranged by hand.
+   */
+  releaseBlocks: ScheduleBlock[];
 }
 
 export interface AutoPlanOptions {
@@ -183,6 +191,13 @@ export interface AutoPlanOptions {
   /** Restrict planning to these tasks. Defaults to every open task. */
   taskIds?: readonly ID[];
   now?: Date;
+  /**
+   * Replace this range's own previously auto-generated (scheduler-origin,
+   * unlocked, still-planned) blocks with a fresh plan instead of only
+   * filling gaps. Prevents "Regenerate Plan" from stacking duplicate blocks
+   * on top of the ones from the last run.
+   */
+  regenerate?: boolean;
 }
 
 /**
@@ -197,16 +212,33 @@ export async function previewAutoPlan(options: AutoPlanOptions = {}): Promise<Au
     ? context.tasks.filter((t) => options.taskIds!.includes(t.id))
     : context.tasks;
 
+  // Regenerating releases this range's own auto-generated, still-untouched
+  // blocks so their time becomes available again — never a locked block and
+  // never one the user has moved/edited by hand (origin would no longer be
+  // 'scheduler', or it would be locked).
+  const releaseBlocks = options.regenerate
+    ? context.blocks.filter((b) => b.origin === 'scheduler' && b.status === 'planned' && !b.locked)
+    : [];
+  const releaseBlockIds = new Set(releaseBlocks.map((b) => b.id));
+  const releasedTaskIds = new Set(releaseBlocks.map((b) => b.taskId).filter((x): x is ID => !!x));
+
   // A task that already has planned time on the horizon is not re-planned;
   // auto-plan fills gaps, it does not silently rebuild what the user arranged.
+  // Exception: a task whose ONLY planned time is a block we are about to
+  // release (regenerate mode) is still a valid candidate.
   const alreadyScheduled = new Set(
     context.blocks
-      .filter((b) => b.taskId && (b.status === 'planned' || b.status === 'in_progress'))
+      .filter((b) =>
+        b.taskId
+        && (b.status === 'planned' || b.status === 'in_progress')
+        && !releaseBlockIds.has(b.id))
       .map((b) => b.taskId!),
   );
-  const candidates = pool.filter((t) => !alreadyScheduled.has(t.id));
+  const candidates = pool.filter((t) => !alreadyScheduled.has(t.id) || releasedTaskIds.has(t.id));
 
   const goals = await db.goals.toArray();
+
+  const subjectWindowRules = await loadSubjectWindowRules();
 
   const result = planSchedule(
     {
@@ -218,6 +250,8 @@ export async function previewAutoPlan(options: AutoPlanOptions = {}): Promise<Au
       from: context.from,
       to: context.to,
       runId: 'autoplan',
+      subjectWindowRules,
+      ignoreBlockIds: [...releaseBlockIds],
     },
     context.config,
   );
@@ -232,6 +266,7 @@ export async function previewAutoPlan(options: AutoPlanOptions = {}): Promise<Au
     proposedMinutes,
     dates,
     summary: buildPlanSummary(result, proposedMinutes, dates, days),
+    releaseBlocks,
   };
 }
 
@@ -275,7 +310,8 @@ export async function applyAutoPlan(
     ? preview.result.proposals.filter((p) => acceptedTempIds.includes(p.tempId))
     : preview.result.proposals;
 
-  if (accepted.length === 0) {
+  const releaseBlocks = preview.releaseBlocks ?? [];
+  if (accepted.length === 0 && releaseBlocks.length === 0) {
     return { planRunId: '', created: 0, updated: 0, deleted: 0, explanation: [] };
   }
 
@@ -287,6 +323,15 @@ export async function applyAutoPlan(
   const touchedTaskIds = [...new Set(accepted.map((p) => p.taskId).filter((x): x is ID => !!x))];
 
   await db.transaction('rw', [db.blocks, db.tasks, db.planRuns], async () => {
+    // Regenerating: remove this run's own previous scheduler-origin blocks
+    // FIRST, so a "Regenerate Plan" click replaces rather than stacks.
+    for (const stale of releaseBlocks) {
+      const fresh = await db.blocks.get(stale.id);
+      if (!fresh) continue;
+      await db.blocks.delete(fresh.id);
+      set.remove('blocks', fresh.id, fresh);
+    }
+
     for (const block of blocks) {
       await db.blocks.add(block);
       set.create('blocks', block.id, block);
@@ -323,11 +368,12 @@ export async function applyAutoPlan(
     await db.planRuns.add(run);
   });
 
+
   await logActivity({
     type: 'task_rescheduled',
     title: `Auto-planned ${accepted.length} block${accepted.length === 1 ? '' : 's'}`,
     at: now,
-    meta: { planRunId, kind: 'auto_schedule', blocks: accepted.length },
+    meta: { planRunId, kind: 'auto_schedule', blocks: accepted.length, regenerated: releaseBlocks.length },
   });
 
   const run = await db.planRuns.get(planRunId);
@@ -335,7 +381,7 @@ export async function applyAutoPlan(
     planRunId,
     created: blocks.length,
     updated: touchedTaskIds.length,
-    deleted: 0,
+    deleted: releaseBlocks.length,
     explanation: run?.explanation ?? [],
   };
 }
