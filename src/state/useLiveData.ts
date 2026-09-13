@@ -3,7 +3,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { db } from '@/db/db';
 import { mergeSchedulingConfig } from '@/config/schedulingConfig';
 import { addDaysToKey, todayKey } from '@/lib/date';
-import type { DateKey, Goal, ScheduleBlock, SchedulingConfig, Settings, Task, Tracker, UserProfile } from '@/types';
+import type {
+  DashboardWidgetConfig, DateKey, Goal, ScheduleBlock, SchedulingConfig, Settings, Task, Tracker, UserProfile,
+} from '@/types';
 
 /**
  * Thin live-query hooks. Every read in the UI goes through one of these, so
@@ -16,6 +18,12 @@ export function useLiveProfile(): UserProfile | undefined {
 
 export function useLiveSettings(): Settings | undefined {
   return useLiveQuery(() => db.settings.get('settings'), []);
+}
+
+/** The user's customized Home dashboard layout, empty until they add a widget. */
+export function useDashboardLayout(): DashboardWidgetConfig[] {
+  const settings = useLiveSettings();
+  return settings?.dashboardLayout ?? [];
 }
 
 /** The personalized app/space name, falling back to "LifeOS". */

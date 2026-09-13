@@ -6,6 +6,7 @@ import {
 } from './uiStateStore';
 import {
   DEFAULT_STORAGE_PREFERENCES,
+  type DashboardWidgetConfig,
   type DeepPartial, type SchedulingConfig, type Settings, type StoragePreferences, type ThemeMode,
 } from '@/types';
 
@@ -47,6 +48,19 @@ function mergeDeep(a: Record<string, any>, b: Record<string, any>): Record<strin
     }
   }
   return out;
+}
+
+/* ------------------------------------------------------------------ */
+/* Home dashboard layout                                               */
+/* ------------------------------------------------------------------ */
+
+export async function getDashboardLayout(): Promise<DashboardWidgetConfig[]> {
+  const settings = await getSettings();
+  return settings.dashboardLayout ?? [];
+}
+
+export async function setDashboardLayout(layout: DashboardWidgetConfig[]): Promise<void> {
+  await updateSettings({ dashboardLayout: layout });
 }
 
 /* ------------------------------------------------------------------ */

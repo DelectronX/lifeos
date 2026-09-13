@@ -78,6 +78,35 @@ export type DeepPartial<T> = {
       : T[K];
 };
 
+/* ------------------------------------------------------------------ */
+/* Home dashboard widgets                                              */
+/* ------------------------------------------------------------------ */
+
+export type DashboardWidgetType =
+  | 'today_tasks'
+  | 'today_schedule'
+  | 'focus_time_today'
+  | 'xp_progress'
+  | 'study_streak'
+  | 'weekly_study_time'
+  | 'subject_progress'
+  | 'upcoming_deadlines'
+  | 'recent_material'
+  | 'continue_studying'
+  | 'achievement_progress';
+
+export type DashboardWidgetSize = 'small' | 'medium' | 'large';
+
+/** One instance of a widget placed on Home. Order in the array is display order. */
+export interface DashboardWidgetConfig {
+  id: ID;
+  type: DashboardWidgetType;
+  size: DashboardWidgetSize;
+  /** Widget-specific config, e.g. { trackerId: 'all' } for Subject Progress. */
+  settings?: Record<string, unknown>;
+  hidden?: boolean;
+}
+
 export interface Settings extends BaseEntity {
   /** Singleton row id. */
   id: 'settings';
@@ -133,6 +162,13 @@ export interface Settings extends BaseEntity {
    * commands, last maintenance run). Free-form because it is not behavioural.
    */
   uiState?: Record<string, unknown>;
+
+  /**
+   * Home dashboard layout, user-customized. Undefined/empty means the user
+   * has not customized Home yet — it shows the onboarding empty state, never
+   * a default set of widgets the user didn't choose.
+   */
+  dashboardLayout?: DashboardWidgetConfig[];
 
   /**
    * The personalized app/study-space name shown in the sidebar brand, the
