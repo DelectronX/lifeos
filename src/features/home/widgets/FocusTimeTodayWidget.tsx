@@ -1,3 +1,4 @@
+import { Timer } from 'lucide-react';
 import { WidgetShell } from './WidgetShell';
 import { useTodayActivities } from '@/state/useLiveData';
 import { formatDuration } from '@/lib/date';
@@ -12,7 +13,7 @@ export function FocusTimeTodayWidget(_props: WidgetComponentProps) {
     .reduce((s, a) => s + a.durationMs / 60_000, 0);
 
   return (
-    <WidgetShell title="Focus Time Today">
+    <WidgetShell icon={Timer} tone="violet" href="/focus" title="Focus Time Today">
       <Stat
         label="Tracked"
         value={minutes > 0 ? formatDuration(minutes) : '0m'}
