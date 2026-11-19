@@ -314,7 +314,7 @@ export function computePlannedVsActual(
   to: DateKey,
 ): PlannedVsActual {
   const scoped = blocks.filter(
-    (b) => inRange(b.date, from, to) && !b.protected && b.kind !== 'sleep' && b.kind !== 'meal',
+    (b) => inRange(b.date, from, to) && !b.protected && !b.optional && b.kind !== 'sleep' && b.kind !== 'meal' && b.kind !== 'break',
   );
   const plannedMinutes = scoped.reduce((s, b) => s + (b.end - b.start) / 60_000, 0);
   const actualMinutes = activities
@@ -1365,7 +1365,7 @@ export function computeDailyReview(input: AnalyticsInput, date: DateKey, xpEarne
     }))
     .sort((a, b) => b.minutes - a.minutes);
 
-  const workBlocks = dayBlocks.filter((b) => !b.protected && b.kind !== 'sleep' && b.kind !== 'meal');
+  const workBlocks = dayBlocks.filter((b) => !b.protected && !b.optional && b.kind !== 'sleep' && b.kind !== 'meal' && b.kind !== 'break');
 
   return {
     date,
