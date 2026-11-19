@@ -2,20 +2,20 @@ import { Link } from 'react-router-dom';
 import { Trophy } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { WidgetShell, WidgetEmpty } from './WidgetShell';
-import { evaluateAchievements } from '@/services/achievementService';
+import { readAchievements } from '@/services/achievementService';
 import { ProgressBar } from '@/components/ui/Progress';
 import type { WidgetComponentProps } from './types';
 
 /** The one or two locked achievements nearest to their unlock threshold. */
 export function AchievementProgressWidget(_props: WidgetComponentProps) {
-  const evaluation = useLiveQuery(() => evaluateAchievements(), []);
+  const evaluation = useLiveQuery(() => readAchievements(), []);
   const nearest = (evaluation?.views ?? [])
     .filter((v) => !v.unlocked)
     .sort((a, b) => b.progress - a.progress)
     .slice(0, 2);
 
   return (
-    <WidgetShell title="Achievement Progress">
+    <WidgetShell icon={Trophy} tone="caution" href="/achievements" title="Achievement Progress">
       {evaluation === undefined ? (
         <p className="t-meta py-2">Loading…</p>
       ) : nearest.length === 0 ? (
