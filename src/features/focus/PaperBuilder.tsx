@@ -131,7 +131,7 @@ export function PaperBuilder({
 
           <div className="space-y-3">
             {effectiveSections.map((s, i) => (
-              <div key={i} className="rounded-lg border border-line bg-surface-sunken p-3">
+              <div key={i} className="rounded-[var(--r-lg)] bg-surface-sunken p-3">
                 <div className="mb-3 flex items-center gap-2">
                   <Input
                     value={s.name}
@@ -179,7 +179,7 @@ export function PaperBuilder({
           </div>
         </div>
 
-        <div className="rounded-lg border border-line px-3 py-2.5">
+        <div className="rounded-[var(--r-lg)] px-3 py-2.5 bg-surface-sunken/50">
           <div className="t-meta">
             {totalQuestions(draft)} questions · {totalMarks(draft)} marks ·{' '}
             {formatDuration(draft.durationMinutes)} ·{' '}
