@@ -46,7 +46,7 @@ export function RecurringRulesManager({ open, onClose }: { open: boolean; onClos
               const tpl = rule.blockTemplate;
               const tracker = tpl ? trackerMap[tpl.trackerId] : undefined;
               return (
-                <div key={rule.id} className="rounded-lg border border-line px-3 py-3">
+                <div key={rule.id} className="rounded-[var(--r-lg)] px-3 py-3 bg-surface-sunken/50">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
