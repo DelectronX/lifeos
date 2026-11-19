@@ -19,18 +19,18 @@ export type BadgeTone = 'neutral' | 'accent' | 'positive' | 'caution' | 'critica
 export type BadgeSize = 'sm' | 'md';
 
 const TONES: Record<BadgeTone, string> = {
-  neutral: 'border-line bg-surface-overlay text-ink-muted',
-  accent: 'border-accent/25 bg-accent/12 text-accent-ink',
-  positive: 'border-positive/25 bg-positive/12 text-positive',
-  caution: 'border-caution/25 bg-caution/12 text-caution',
-  critical: 'border-critical/25 bg-critical/12 text-critical',
+  neutral: 'border-transparent bg-surface-sunken text-ink-muted',
+  accent: 'border-transparent bg-accent/15 text-accent-ink',
+  positive: 'border-transparent bg-positive/15 text-positive',
+  caution: 'border-transparent bg-caution/15 text-caution',
+  critical: 'border-transparent bg-critical/15 text-critical',
   outline: 'border-line-strong bg-transparent text-ink-muted',
   solid: 'border-transparent bg-accent text-accent-contrast',
 };
 
 const SIZES: Record<BadgeSize, string> = {
-  sm: 'h-[1.125rem] px-1.5 text-[0.625rem]',
-  md: 'h-5 px-2 text-2xs',
+  sm: 'h-[1.125rem] px-1.5 text-[0.6875rem]',
+  md: 'h-[1.375rem] px-2.5 text-xs',
 };
 
 export function Badge({
