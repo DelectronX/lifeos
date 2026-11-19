@@ -156,7 +156,7 @@ export function RewardEditor({ open, onClose, onSubmit, metrics, initial, title 
           <ConditionBuilder value={condition} onChange={setCondition} traceById={traceById} />
         </div>
 
-        <div className="rounded-lg border border-line bg-surface-sunken/50 p-3">
+        <div className="rounded-[var(--r-lg)] bg-surface-sunken/50 p-3">
           <div className="mb-1.5 flex items-center gap-2">
             <span className="t-label">Right now</span>
             {evaluation ? (
