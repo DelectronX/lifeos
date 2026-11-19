@@ -443,6 +443,8 @@ export async function finishTimer(
     sourceId: session.id,
     minutes: workMinutes,
     description: `${closed.label} — ${Math.round(workMinutes)} min`,
+    trackerId: session.trackerId,
+    workUnitKey: session.taskId ? `task:${session.taskId}` : session.blockId ? `block:${session.blockId}` : `session:${session.id}`,
   }, activity.id);
 
   return {
