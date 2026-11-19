@@ -10,6 +10,7 @@ import { useWeeklyReview } from '@/services/analyticsService';
 import {
   addDaysToKey, formatDateKeyShort, formatDuration, isoWeekKey, startOfWeekKey, todayKey,
 } from '@/lib/date';
+import { WeeklyReflectionCard } from './WeeklyReflectionCard';
 import { DaySeries, MetricTile, MinutesBars, NoDataNotice, PeriodNav, TrendPill, VerdictCard } from './ReviewParts';
 import type { WeeklyReviewMetrics } from '@/engines/analytics';
 
@@ -81,6 +82,9 @@ export function WeeklyReviewPage() {
       ) : (
         <WeeklyBody metrics={metrics} />
       )}
+      <div className="mt-8">
+        <WeeklyReflectionCard weekStart={from} />
+      </div>
     </Page>
   );
 }
