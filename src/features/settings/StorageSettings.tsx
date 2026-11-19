@@ -271,7 +271,7 @@ export function StorageSettings({ settings }: { settings: Settings }) {
         ) : null}
 
         {!state.canAutoSave ? (
-          <div className="space-y-2 rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink-muted">
+          <div className="space-y-2 rounded-[var(--r-md)] bg-surface-sunken/60 px-3 py-2 text-sm text-ink-muted">
             <div className="flex items-start gap-2">
               <HardDriveDownload className="mt-0.5 h-4 w-4 shrink-0" />
               <div className="space-y-1">
@@ -316,10 +316,10 @@ export function StorageSettings({ settings }: { settings: Settings }) {
           </div>
         ) : null}
 
-        <details className="rounded-md border border-line bg-surface px-3 py-2 text-sm">
+        <details className="rounded-[var(--r-md)] bg-surface-sunken/60 px-3 py-2 text-sm">
           <summary className="cursor-pointer text-ink-muted">Paste JSON instead of picking a file</summary>
           <textarea
-            className="mt-2 h-28 w-full rounded-md border border-line bg-surface-raised p-2 font-mono text-xs text-ink"
+            className="mt-2 h-28 w-full rounded-[var(--r-md)] p-2 font-mono text-xs text-ink surface-card"
             placeholder={`Paste the contents of ${BUNDLE_FILENAME} here, then press Restore.`}
             value={pasted}
             onChange={(event) => setPasted(event.target.value)}
@@ -394,7 +394,7 @@ function BoundTargetSection({
         title="Bound save file"
         description="On a desktop browser, LifeOS can bind one JSON file and overwrite it in place on every Save."
       >
-        <div className="flex items-start gap-2 rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink-muted">
+        <div className="flex items-start gap-2 rounded-[var(--r-md)] bg-surface-sunken/60 px-3 py-2 text-sm text-ink-muted">
           <Link2 className="mt-0.5 h-4 w-4 shrink-0" />
           <span>
             Not available here. This browser has no File System Access API, so nothing can be
