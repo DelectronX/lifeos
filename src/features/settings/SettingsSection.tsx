@@ -2,7 +2,10 @@ import type { ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 import { Card } from '@/components/ui/Card';
 
-/** Consistent chrome for every settings section. */
+/**
+ * iOS Settings-style inset grouped section: header and description sit
+ * outside the cell group; each child is a row separated by an inset hairline.
+ */
 export function SettingsSection({
   title, description, children, className, action,
 }: {
@@ -13,16 +16,18 @@ export function SettingsSection({
   action?: ReactNode;
 }) {
   return (
-    <Card className={cn('mb-4', className)}>
-      <div className="mb-3 flex items-start justify-between gap-3">
+    <section className={cn('mb-9', className)}>
+      <div className="mb-2 flex items-end justify-between gap-3 px-1">
         <div className="min-w-0">
-          <h3 className="t-section">{title}</h3>
-          {description ? <p className="t-muted mt-0.5">{description}</p> : null}
+          <h3 className="t-title3">{title}</h3>
+          {description ? <p className="t-meta mt-1 max-w-2xl">{description}</p> : null}
         </div>
         {action ? <div className="shrink-0">{action}</div> : null}
       </div>
-      <div className="space-y-3">{children}</div>
-    </Card>
+      <Card padded={false} className="overflow-hidden [&>*+*]:border-t [&>*+*]:border-line-faint [&>*]:px-5 [&>*]:py-3.5">
+        {children}
+      </Card>
+    </section>
   );
 }
 
@@ -36,12 +41,12 @@ export function SettingRow({
   className?: string;
 }) {
   return (
-    <div className={cn('flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4', className)}>
+    <div className={cn('flex min-h-[2.75rem] flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-6', className)}>
       <div className="min-w-0 sm:flex-1">
-        <div className="text-sm font-medium text-ink">{label}</div>
+        <div className="text-[0.9375rem] text-ink">{label}</div>
         {hint ? <div className="t-meta mt-0.5">{hint}</div> : null}
       </div>
-      <div className="shrink-0 sm:w-48">{children}</div>
+      <div className="shrink-0 sm:w-56">{children}</div>
     </div>
   );
 }
