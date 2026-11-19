@@ -4,13 +4,19 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="description" content="LifeOS - offline-first personal productivity and growth system." />
-    <meta name="theme-color" content="#0B0D10" />
+    <meta name="theme-color" content="#0A0A0B" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="LifeOS" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <title>LifeOS</title>
     <script>
       // Paint the correct theme before React mounts to avoid a flash.
       // Dark is the default: absent an explicit stored preference we stay dark.
       (function () {
         try {
+          try { var ac = localStorage.getItem('lifeos.accent'); if (ac && ac !== 'blue') document.documentElement.setAttribute('data-accent', ac); } catch (e) {}
           var m = localStorage.getItem('lifeos.theme') || 'dark';
           var dark =
             m === 'dark' ||
@@ -20,9 +26,46 @@
         } catch (e) {}
       })();
     </script>
+      <style>.lo-boot{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:radial-gradient(120% 90% at 50% 40%,transparent 55%,rgba(0,0,0,.55) 100%),#0A0A0B;color:#8F8F98;font:13px -apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-serif;letter-spacing:-.01em;overflow:hidden}
+.lo-boot-art{width:min(560px,92vw);display:flex;justify-content:center;opacity:.9;margin-bottom:8px;-webkit-mask-image:radial-gradient(ellipse 60% 60% at 50% 50%,#000 45%,transparent 100%);mask-image:radial-gradient(ellipse 60% 60% at 50% 50%,#000 45%,transparent 100%)}
+.lo-boot-art ascii-art{color:#F4F4F6}
+.lo-boot-title{margin:0;color:#F4F4F6;font:600 22px/1.1 -apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif;letter-spacing:-.02em}
+.lo-boot-msg{margin:0;color:#8F8F98}
+.lo-boot-dots::after{content:'';display:inline-block;width:1.2em;text-align:left;animation:lo-boot-dots 1.4s steps(4,end) infinite}
+@keyframes lo-boot-dots{0%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}}
+@media (prefers-reduced-motion:reduce){.lo-boot-dots::after{animation:none;content:'…'}}</style>
+    <!-- ASCII Magic runtime (MIT), self-hosted in /public/ascii so it works offline. Loaded once. -->
+    <script type="module" src="/ascii/ascii.js"></script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Static splash: visible before any JavaScript runs, so the screen is never just black. -->
+      <div id="lo-splash" class="lo-boot" role="status" aria-live="polite">
+        <div class="lo-boot-art" aria-hidden="true"><ascii-art piece="spiral-galaxy" look="dots" size="7"></ascii-art></div>
+        <h1 class="lo-boot-title">LifeOS</h1>
+        <div id="lo-splash-msg" class="lo-boot-msg">Starting LifeOS<span class="lo-boot-dots" aria-hidden="true"></span></div>
+      </div>
+    </div>
+    <script>
+      // Watchdog (plain script, runs even if the app bundle cannot): if the app
+      // has not mounted after 15 s, say why and offer a way out — never a silent black page.
+      (function () {
+        var errors = [];
+        window.addEventListener('error', function (e) { errors.push((e && e.message) || 'Script error'); });
+        window.addEventListener('unhandledrejection', function (e) { errors.push(String(e && e.reason)); });
+        setTimeout(function () {
+          if (window.__lifeosMounted) return;
+          var msg = document.getElementById('lo-splash-msg');
+          if (!msg) return;
+          msg.innerHTML =
+            '<div style="max-width:420px;text-align:center;line-height:1.5">' +
+            '<div style="color:#EDE9E2;font-weight:600;margin-bottom:6px">LifeOS is taking too long to start</div>' +
+            'Your data is not deleted. Close LifeOS completely (swipe it away) and open it again.' +
+            (errors.length ? '<pre style="white-space:pre-wrap;text-align:left;font-size:12px;margin-top:10px;color:#E2766C">' + errors.slice(0, 3).join('\n').replace(/</g, '&lt;') + '</pre>' : '') +
+            '<button onclick="location.reload()" style="margin-top:12px;padding:10px 18px;border:0;border-radius:10px;background:#0071E3;color:#fff;font-weight:600">Reload</button></div>';
+        }, 15000);
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
