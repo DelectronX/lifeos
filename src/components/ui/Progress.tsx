@@ -24,7 +24,7 @@ export function ProgressBar({
           <span className="t-num text-2xs font-medium text-ink-muted">{Math.round(pct)}%</span>
         </div>
       )}
-      <div className={cn('w-full overflow-hidden rounded-full bg-line/70', h)}>
+      <div className={cn('w-full overflow-hidden rounded-full bg-surface-sunken', h)}>
         <div
           className={cn('h-full rounded-full transition-[width] duration-500 ease-calm', p.bar)}
           style={{ width: `${pct}%` }}
@@ -55,7 +55,7 @@ export function Ring({
   return (
     <div className={cn('relative inline-flex items-center justify-center', className)} style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90">
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgb(var(--c-line))" strokeWidth={stroke} />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={strokeColor} strokeOpacity={0.18} strokeWidth={stroke} />
         <circle
           cx={size / 2} cy={size / 2} r={r} fill="none"
           stroke={strokeColor}
@@ -63,7 +63,7 @@ export function Ring({
           strokeLinecap="round"
           strokeDasharray={c}
           strokeDashoffset={c * (1 - pct)}
-          style={{ transition: 'stroke-dashoffset 600ms cubic-bezier(0.22,1,0.36,1)' }}
+          style={{ transition: 'stroke-dashoffset 900ms cubic-bezier(0.22,1,0.36,1)' }}
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">{children}</div>
@@ -85,7 +85,7 @@ export function Stat({
       <div className="t-label">{label}</div>
       <div
         className={cn(
-          't-num mt-1 text-xl font-semibold tracking-[-0.02em]',
+          't-num t-rounded mt-1 text-[1.5rem] font-semibold leading-tight tracking-[-0.02em]',
           tone === 'positive' ? 'text-positive' : tone === 'critical' ? 'text-critical' : 'text-ink',
         )}
       >
