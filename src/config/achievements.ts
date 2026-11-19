@@ -103,9 +103,18 @@ export interface AchievementDefinition {
   description: string;
   category: AchievementCategory;
   tier: 1 | 2 | 3;
-  stat: AchievementStatKey;
+  /** Built-in definitions: the one stat thresholded against `target`. */
+  stat?: AchievementStatKey;
   target: number;
   xpReward: number;
+  /**
+   * Data-defined (user/imported) definitions: a ConditionEngine AST over
+   * built-in stats and customMetrics keys. Unlocks when the condition holds.
+   */
+  condition?: unknown;
+  /** Display unit for custom definitions, e.g. 'minutes'. */
+  unit?: string;
+  source?: 'builtin' | 'custom';
 }
 
 export const ACHIEVEMENT_DEFINITIONS: AchievementDefinition[] = [
@@ -224,6 +233,12 @@ export const ACHIEVEMENT_CATEGORY_LABELS: Record<AchievementCategory, string> = 
   revision: 'Revision',
   focus: 'Focus',
   planning: 'Planning',
+  academic: 'Academic',
+  projects: 'Projects',
+  discipline: 'Discipline',
+  meta: 'Meta',
+  research: 'Research',
+  earning: 'Earning',
 };
 
 /** Display labels for every measurable stat — reused by the reward builder. */
