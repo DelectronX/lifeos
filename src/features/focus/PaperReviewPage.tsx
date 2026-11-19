@@ -240,7 +240,7 @@ function QuestionRow({
 }) {
   const canClassify = row.status === 'incorrect';
   return (
-    <li className="rounded-lg border border-line">
+    <li className="rounded-[var(--r-lg)] bg-surface-sunken/50">
       <button
         type="button"
         onClick={onToggle}
