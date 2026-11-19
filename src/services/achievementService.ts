@@ -2,6 +2,7 @@ import { db } from '@/db/db';
 import { newId } from '@/lib/id';
 import { toDateKey, diffDays, dateKeyToDate, monthKey, startOfWeekKey, addDaysToKey } from '@/lib/date';
 import { levelProgress } from '@/engines/xp';
+import { mintForXP } from './currencyService';
 import { getSchedulingConfig } from './settingsService';
 import { logActivity } from './activityService';
 import {
@@ -13,9 +14,16 @@ import {
   type AchievementStatKey,
   type AchievementStats,
 } from '@/config/achievements';
-import type { DailyMetricPoint, MetricMeta, MetricSource } from '@/engines/conditionEngine';
+import {
+  evaluateCondition, isLeaf, isValidCondition,
+  type Condition, type DailyMetricPoint, type MetricMeta, type MetricSource,
+} from '@/engines/conditionEngine';
+import {
+  buildContext, collectMetricKeys, isCustomMetricKey, readCustomMetric,
+  type CustomMetricContext, type CustomMetricInput,
+} from '@/engines/customMetrics';
 import type {
-  Achievement, AchievementCategory, Activity, Habit, Paper, Pillar, QuestionAttempt,
+  Achievement, AchievementCategory, Activity, CycleDefinition, Goal, Habit, Paper, Pillar, QuestionAttempt,
   RevisionEntry, ScheduleBlock, Task, TimerSession, Tracker, UserProfile,
 } from '@/types';
 
@@ -359,7 +367,7 @@ export function computeStatsDetailed(data: AchievementSourceData): StatComputati
       blocksCompleted++;
       daily.add(b.date, 'blocksCompleted', 1);
     }
-    if (b.protected || b.kind === 'sleep' || b.kind === 'meal') continue;
+    if (b.protected || b.optional || b.kind === 'sleep' || b.kind === 'meal' || b.kind === 'break' || b.kind === 'buffer') continue;
     const list = blocksByDay.get(b.date) ?? [];
     list.push(b);
     blocksByDay.set(b.date, list);
@@ -606,11 +614,13 @@ export interface AchievementView {
 export function buildViews(
   stats: AchievementStats,
   records: readonly Achievement[],
+  custom?: CustomEvaluationInput,
 ): AchievementView[] {
   const byKey = new Map(records.map((r) => [r.key, r]));
-  return ACHIEVEMENT_DEFINITIONS.map((def) => {
+  const builtinKeys = new Set(ACHIEVEMENT_DEFINITIONS.map((d) => d.key));
+  const builtin = ACHIEVEMENT_DEFINITIONS.map((def) => {
     const record = byKey.get(def.key);
-    const current = stats[def.stat];
+    const current = def.stat ? stats[def.stat] : 0;
     const target = def.target;
     const progress = target > 0 ? Math.min(1, current / target) : 0;
     const unlocked = Boolean(record?.unlockedAt) || current >= target;
@@ -625,9 +635,87 @@ export function buildViews(
       progressLabel: formatProgress(def, current, target),
     };
   });
+
+  // Data-defined achievements: rows with a condition, evaluated generically.
+  const customViews: AchievementView[] = [];
+  if (custom) {
+    for (const record of records) {
+      if (record.source !== 'custom' || record.archived || builtinKeys.has(record.key) || !record.condition) continue;
+      const def = definitionFromRecord(record);
+      const { current, met } = measureCustom(def, stats, custom);
+      const target = def.target;
+      customViews.push({
+        definition: def,
+        record,
+        current,
+        target,
+        progress: met ? 1 : target > 0 ? Math.min(1, current / target) : 0,
+        unlocked: Boolean(record.unlockedAt) || met,
+        unlockedAt: record.unlockedAt ?? null,
+        progressLabel: formatProgress(def, current, target),
+      });
+    }
+  }
+  return [...builtin, ...customViews];
+}
+
+/** A stored custom achievement row IS its definition. */
+export function definitionFromRecord(record: Achievement): AchievementDefinition {
+  return {
+    key: record.key,
+    title: record.title,
+    description: record.description,
+    category: record.category,
+    tier: record.tier,
+    target: record.target,
+    xpReward: record.xpReward,
+    condition: record.condition,
+    unit: record.unit,
+    source: 'custom',
+  };
+}
+
+export interface CustomEvaluationInput {
+  context: CustomMetricContext;
+  now: Date;
+}
+
+/**
+ * Evaluates a data-defined condition. Leaves may reference any built-in stat
+ * or any customMetrics key. `current` is the measured value for single-leaf
+ * conditions, and the fraction of `target` reached for compound ones.
+ */
+export function measureCustom(
+  def: AchievementDefinition,
+  stats: AchievementStats,
+  custom: CustomEvaluationInput,
+): { current: number; met: boolean } {
+  const condition = def.condition as Condition | undefined;
+  if (!condition || typeof condition !== 'object') return { current: 0, met: false };
+  const totals: Record<string, number> = { ...(stats as unknown as Record<string, number>) };
+  for (const key of collectMetricKeys(condition)) {
+    if (isCustomMetricKey(key)) totals[key] = readCustomMetric(key, custom.context) ?? 0;
+  }
+  const source: MetricSource = {
+    totals,
+    daily: [],
+    meta: Object.fromEntries(Object.keys(totals).map((k) => [k, { aggregation: 'snapshot', windowable: false } as MetricMeta])),
+  };
+  const evaluation = evaluateCondition(condition, source, custom.now);
+  if (isLeaf(condition)) {
+    return { current: totals[condition.metric] ?? 0, met: evaluation.met };
+  }
+  return {
+    current: evaluation.met ? def.target : Math.floor(evaluation.progress * def.target * 100) / 100,
+    met: evaluation.met,
+  };
 }
 
 function formatProgress(def: AchievementDefinition, current: number, target: number): string {
+  if (!def.stat) {
+    if (def.unit === 'minutes') return `${Math.floor(current / 60)}h of ${Math.round(target / 60)}h`;
+    return `${Math.min(Math.floor(current), target)} of ${target}${def.unit ? ` ${def.unit}` : ''}`;
+  }
   const isMinutes = def.stat.endsWith('Minutes');
   if (isMinutes) {
     return `${Math.round(current / 60)}h of ${Math.round(target / 60)}h`;
@@ -699,45 +787,99 @@ export async function loadAchievementSource(): Promise<AchievementSourceData> {
   };
 }
 
+/** Fields whose change is worth a write — never `updatedAt` alone. */
+function sameAchievement(a: Achievement | undefined, b: Achievement): boolean {
+  return !!a && a.title === b.title && a.description === b.description && a.category === b.category
+    && a.tier === b.tier && a.target === b.target && a.xpReward === b.xpReward
+    && a.progress === b.progress && (a.unlockedAt ?? null) === (b.unlockedAt ?? null);
+}
+
+/**
+ * READ-ONLY view of every achievement with live progress. Safe inside
+ * `useLiveQuery`: it never writes, so it can't feed back into its own
+ * subscription. A threshold crossed since the last sync is shown as reached
+ * (`unlocked: true`) — the sync persists it moments later.
+ */
+export async function readAchievements(): Promise<EvaluationResult> {
+  const source = await loadAchievementSource();
+  const records = await db.achievements.toArray();
+  const computation = computeStatsDetailed(source);
+  const custom = records.some((r) => r.source === 'custom')
+    ? { context: buildContext(await loadCustomMetricInput(source)), now: new Date() }
+    : undefined;
+  const views = buildViews(computation.stats, records, custom).map((v) => {
+    const reached = v.definition.source === 'custom' ? v.unlocked : v.current >= v.target;
+    return reached && !v.unlocked ? { ...v, unlocked: true } : v;
+  });
+  return { stats: computation.stats, views, newlyUnlocked: [], metrics: buildMetricSource(computation) };
+}
+
+// Serialises writers so two evaluations (e.g. a timer + a manual sync, or
+// two quick completions) can never race the same unlock.
+let evaluationChain: Promise<unknown> = Promise.resolve();
+
 /**
  * Recomputes every stat from stored records, persists progress, and unlocks
  * anything that has crossed its threshold. Idempotent: an already-unlocked
- * achievement is never unlocked (or paid) twice.
+ * achievement is never unlocked (or paid) twice, and rows are only written
+ * when something meaningful changed. Calls are serialised.
+ *
+ * WRITES — never call this from inside a live query; use `readAchievements`.
  */
-export async function evaluateAchievements(): Promise<EvaluationResult> {
+export function evaluateAchievements(): Promise<EvaluationResult> {
+  const run = evaluationChain.then(evaluateAchievementsNow, evaluateAchievementsNow);
+  evaluationChain = run.catch(() => undefined);
+  return run;
+}
+
+async function evaluateAchievementsNow(): Promise<EvaluationResult> {
   const source = await loadAchievementSource();
   const records = await db.achievements.toArray();
 
   const computation = computeStatsDetailed(source);
   const stats = computation.stats;
-  const views = buildViews(stats, records);
+  const custom = records.some((r) => r.source === 'custom')
+    ? { context: buildContext(await loadCustomMetricInput(source)), now: new Date() }
+    : undefined;
+  const views = buildViews(stats, records, custom);
 
   const now = Date.now();
   const newlyUnlocked: AchievementView[] = [];
+  const changed: Achievement[] = [];
+  const unlocks: Array<{ view: AchievementView; record: Achievement }> = [];
 
   for (const view of views) {
     const existing = records.find((r) => r.key === view.definition.key);
-    const justUnlocked = view.current >= view.target && !existing?.unlockedAt;
+    const reached = view.definition.source === 'custom' ? view.unlocked : view.current >= view.target;
+    const justUnlocked = reached && !existing?.unlockedAt;
+    const base = view.definition.source === 'custom' ? view.record : (existing ?? view.record);
+    const next: Achievement = view.definition.source === 'custom'
+      ? { ...base, progress: Math.min(view.current, view.target), unlockedAt: base.unlockedAt ?? (justUnlocked ? now : null) }
+      : {
+          ...base,
+          // Definitions are the source of truth for copy + thresholds.
+          title: view.definition.title,
+          description: view.definition.description,
+          category: view.definition.category,
+          tier: view.definition.tier,
+          target: view.definition.target,
+          xpReward: view.definition.xpReward,
+          progress: Math.min(view.current, view.target),
+          unlockedAt: existing?.unlockedAt ?? (justUnlocked ? now : null),
+        };
+    if (!sameAchievement(existing, next)) changed.push({ ...next, updatedAt: now });
+    if (justUnlocked) unlocks.push({ view, record: next });
+  }
 
-    const patch: Achievement = {
-      ...(existing ?? view.record),
-      // Definitions are the source of truth for copy + thresholds.
-      title: view.definition.title,
-      description: view.definition.description,
-      category: view.definition.category,
-      tier: view.definition.tier,
-      target: view.definition.target,
-      xpReward: view.definition.xpReward,
-      progress: Math.min(view.current, view.target),
-      unlockedAt: existing?.unlockedAt ?? (justUnlocked ? now : null),
-      updatedAt: now,
-    };
-    await db.achievements.put(patch);
+  if (changed.length) await db.achievements.bulkPut(changed);
 
-    if (justUnlocked) {
-      const unlockedView: AchievementView = { ...view, unlocked: true, unlockedAt: now, record: patch };
-      newlyUnlocked.push(unlockedView);
-
+  for (const { view, record } of unlocks) {
+    // Claim the unlock atomically: if another tab/writer already logged it,
+    // the activity row exists and we skip (no duplicate event, no double pay).
+    const claimed = await db.transaction('rw', db.activities, async () => {
+      const already = await db.activities.where('type').equals('achievement_unlocked')
+        .filter((a) => (a.meta as { key?: string } | undefined)?.key === view.definition.key).first();
+      if (already) return false;
       await logActivity({
         type: 'achievement_unlocked',
         at: now,
@@ -751,14 +893,35 @@ export async function evaluateAchievements(): Promise<EvaluationResult> {
           target: view.target,
         },
       });
-
-      if (view.definition.xpReward > 0) {
-        await bankAchievementReward(view.definition, now);
-      }
-    }
+      return true;
+    });
+    if (!claimed) continue;
+    newlyUnlocked.push({ ...view, unlocked: true, unlockedAt: now, record });
+    if (view.definition.xpReward > 0) await bankAchievementReward(view.definition, now);
   }
 
-  return { stats, views, newlyUnlocked, metrics: buildMetricSource(computation) };
+  return { stats, views: views.map((v) => (unlocks.some((u) => u.view === v) ? { ...v, unlocked: true, unlockedAt: now } : v)), newlyUnlocked, metrics: buildMetricSource(computation) };
+}
+
+/** Extra records the generic custom-metric families need. */
+export async function loadCustomMetricInput(source: AchievementSourceData): Promise<CustomMetricInput> {
+  const [goals, trackers, settings] = await Promise.all([
+    db.goals.toArray(),
+    db.trackers.toArray(),
+    db.settings.get('settings'),
+  ]);
+  return {
+    activities: source.activities,
+    tasks: source.tasks,
+    sessions: source.sessions,
+    papers: source.papers,
+    blocks: source.blocks,
+    goals: goals as Goal[],
+    trackerParents: Object.fromEntries((trackers as Tracker[]).map((t) => [t.id, t.parentId])),
+    cycles: (settings?.cycles ?? []) as CycleDefinition[],
+    totalXP: source.profile?.totalXP ?? 0,
+    today: source.today ?? toDateKey(Date.now()),
+  };
 }
 
 /** Measures the current metric source without writing anything. */
@@ -773,45 +936,40 @@ export async function measureMetrics(): Promise<MetricSource> {
  */
 async function bankAchievementReward(def: AchievementDefinition, at: number): Promise<void> {
   const dedupeKey = `achievement_reward:achievement:${def.key}`;
-  if (await db.xp.where('dedupeKey').equals(dedupeKey).first()) return;
-
-  const profile = await db.profile.get('profile');
   const config = (await getSchedulingConfig()).xp;
-  const balanceAfter = (profile?.totalXP ?? 0) + def.xpReward;
-
-  await db.xp.add({
-    id: newId('xp'),
-    createdAt: at,
-    updatedAt: at,
-    at,
-    date: toDateKey(at),
-    amount: def.xpReward,
-    reason: 'achievement_reward',
-    description: `Achievement: ${def.title}`,
-    sourceType: 'achievement',
-    sourceId: def.key,
-    activityId: null,
-    dedupeKey,
-    balanceAfter,
+  // Ledger row + cached balance move together; the unique dedupeKey makes a
+  // lost race a no-op instead of an uncaught ConstraintError.
+  const tx = await db.transaction('rw', db.xp, db.profile, async () => {
+    if (await db.xp.where('dedupeKey').equals(dedupeKey).first()) return null;
+    const profile = await db.profile.get('profile');
+    const balanceAfter = (profile?.totalXP ?? 0) + def.xpReward;
+    const row = {
+      id: newId('xp'), createdAt: at, updatedAt: at, at, date: toDateKey(at),
+      amount: def.xpReward, reason: 'achievement_reward' as const, description: `Achievement: ${def.title}`,
+      sourceType: 'achievement', sourceId: def.key, activityId: null, dedupeKey, balanceAfter,
+    };
+    await db.xp.add(row);
+    if (profile) {
+      await db.profile.update('profile', { totalXP: balanceAfter, level: levelProgress(balanceAfter, config).level, updatedAt: at });
+    }
+    return row;
+  }).catch((e: unknown) => {
+    if (e instanceof Error && e.name === 'ConstraintError') return null;
+    throw e;
   });
-
-  if (profile) {
-    await db.profile.update('profile', {
-      totalXP: balanceAfter,
-      level: levelProgress(balanceAfter, config).level,
-      updatedAt: at,
-    });
-  }
+  // Achievement XP is real XP, so it mints reward currency like any other.
+  if (tx) await mintForXP(tx, config.rewardCurrencyPerXP ?? 0);
 }
 
 /** Read-only view of every achievement with live progress. */
 export async function listAchievements(): Promise<EvaluationResult> {
-  return evaluateAchievements();
+  return readAchievements();
 }
 
 export const ACHIEVEMENT_CATEGORY_ORDER: AchievementCategory[] = [
   'study', 'focus', 'mastery', 'revision', 'planning', 'goals',
   'consistency', 'fitness', 'skills', 'personal',
+  'academic', 'projects', 'research', 'earning', 'discipline', 'meta',
 ];
 
 export function groupByCategory(views: readonly AchievementView[]): {
@@ -825,4 +983,64 @@ export function groupByCategory(views: readonly AchievementView[]): {
       .sort((a, b) => a.definition.tier - b.definition.tier || b.progress - a.progress);
     return { category, views: list, unlocked: list.filter((v) => v.unlocked).length };
   }).filter((g) => g.views.length > 0);
+}
+
+/* ------------------------------------------------------------------ */
+/* User-defined achievements                                           */
+/* ------------------------------------------------------------------ */
+
+export interface CustomAchievementInput {
+  key: string;
+  title: string;
+  description: string;
+  category: Achievement['category'];
+  target: number;
+  xpReward: number;
+  tier?: 1 | 2 | 3;
+  unit?: string;
+  condition: unknown;
+}
+
+/** Problems with a custom achievement definition; empty when it is valid. */
+export function customAchievementIssues(input: CustomAchievementInput): string[] {
+  const issues: string[] = [];
+  if (ACHIEVEMENT_DEFINITIONS.some((d) => d.key === input.key)) issues.push(`Key "${input.key}" is a built-in achievement.`);
+  if (!isValidCondition(input.condition)) return [...issues, 'condition is not a valid condition tree.'];
+  const known = new Set<string>(ACHIEVEMENT_STAT_KEYS);
+  for (const metric of collectMetricKeys(input.condition as Condition)) {
+    if (!known.has(metric) && !isCustomMetricKey(metric)) issues.push(`Unknown metric "${metric}".`);
+  }
+  return issues;
+}
+
+/**
+ * Creates or redefines a custom achievement by key. Progress and unlock state
+ * are earned, so an existing row keeps them; only the definition changes.
+ * Unlocking still happens only through the normal evaluation of real activity.
+ */
+export async function upsertCustomAchievement(input: CustomAchievementInput): Promise<{ achievement: Achievement; created: boolean }> {
+  const issues = customAchievementIssues(input);
+  if (issues.length) throw new Error(issues.join(' '));
+  const now = Date.now();
+  const prev = await db.achievements.where('key').equals(input.key).first();
+  const row: Achievement = {
+    id: prev?.id ?? `ach_${input.key}`,
+    createdAt: prev?.createdAt ?? now,
+    updatedAt: now,
+    key: input.key,
+    title: input.title.trim(),
+    description: input.description.trim(),
+    category: input.category,
+    tier: input.tier ?? 1,
+    target: input.target,
+    progress: prev?.progress ?? 0,
+    unlockedAt: prev?.unlockedAt ?? null,
+    xpReward: input.xpReward,
+    source: 'custom',
+    condition: input.condition as Condition,
+    unit: input.unit,
+    archived: false,
+  };
+  await db.achievements.put(row);
+  return { achievement: row, created: !prev };
 }
