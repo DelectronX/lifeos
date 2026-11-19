@@ -50,10 +50,10 @@ export const BLOCK_STATUS_LABELS: Record<BlockStatus, string> = {
 /** Visual treatment applied on top of the tracker colour, by status. */
 export function statusDecoration(status: BlockStatus): string {
   switch (status) {
-    case 'completed': return 'opacity-70';
+    case 'completed': return '';
     case 'skipped': return 'opacity-45 line-through decoration-1';
     case 'cancelled': return 'opacity-35 line-through decoration-1';
-    case 'in_progress': return 'ring-1 ring-accent/50';
+    case 'in_progress': return 'ring-1 ring-inset ring-ink/20';
     default: return '';
   }
 }
