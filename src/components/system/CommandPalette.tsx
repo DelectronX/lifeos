@@ -220,7 +220,7 @@ export function CommandPalette({ open, onClose, initialQuery = '' }: CommandPale
     <div className="fixed inset-0 z-palette" role="presentation">
       {/* Scrim: a dim, not a blur. */}
       <div
-        className="absolute inset-0 bg-[rgb(0_0_0/0.5)] animate-fade"
+        className="scrim absolute inset-0 animate-fade backdrop-blur-[2px]"
         onClick={onClose}
         aria-hidden
       />
@@ -232,14 +232,14 @@ export function CommandPalette({ open, onClose, initialQuery = '' }: CommandPale
           aria-label="Command palette"
           className={cn(
             'relative flex w-full max-w-[38rem] flex-col overflow-hidden',
-            'rounded-window border border-line-strong bg-surface-overlay shadow-overlay',
+            'material-thick rounded-[var(--r-2xl)] shadow-overlay',
             'animate-scale',
           )}
           onKeyDown={onKeyDown}
         >
           {/* Query row */}
-          <div className="flex items-center gap-3 border-b border-line px-4">
-            <Search className="h-4 w-4 shrink-0 text-ink-faint" aria-hidden />
+          <div className="flex items-center gap-3 border-b border-line/60 px-5">
+            <Search className="h-5 w-5 shrink-0 text-ink-muted" aria-hidden />
             <input
               ref={inputRef}
               value={query}
@@ -253,7 +253,7 @@ export function CommandPalette({ open, onClose, initialQuery = '' }: CommandPale
               autoComplete="off"
               spellCheck={false}
               className={cn(
-                'h-14 min-w-0 flex-1 bg-transparent text-[0.9375rem] text-ink',
+                'h-16 min-w-0 flex-1 bg-transparent text-[1.25rem] font-medium tracking-[-0.015em] text-ink',
                 'placeholder:text-ink-faint focus:outline-none',
                 // The dialog itself is the focus context; the global ring would
                 // draw a redundant box around the whole query row.
@@ -294,7 +294,7 @@ export function CommandPalette({ open, onClose, initialQuery = '' }: CommandPale
                 <div key={block.label} className="mb-1 last:mb-0">
                   <div
                     role="presentation"
-                    className="t-label px-3 pb-1 pt-2"
+                    className="px-3 pb-1 pt-2.5 text-[0.75rem] font-semibold text-ink-faint"
                   >
                     {block.label}
                   </div>
@@ -313,17 +313,17 @@ export function CommandPalette({ open, onClose, initialQuery = '' }: CommandPale
                         onMouseMove={() => { if (!isActive) setActive(index); }}
                         onClick={() => runAt(index)}
                         className={cn(
-                          'flex cursor-pointer items-center gap-3 rounded-[var(--r-md)] px-3 py-2',
+                          'group flex cursor-pointer items-center gap-3 rounded-[var(--r-md)] px-3 py-2.5',
                           'transition-colors duration-fast ease-calm',
                           isActive
-                            ? 'bg-accent/[0.14] text-ink ring-1 ring-inset ring-accent/25'
-                            : 'text-ink-muted',
+                            ? 'bg-accent text-accent-contrast [&_*]:!text-accent-contrast'
+                            : 'text-ink',
                         )}
                       >
                         <Icon
                           className={cn(
-                            'h-4 w-4 shrink-0',
-                            isActive ? 'text-accent-ink' : 'text-ink-faint',
+                            'h-[1.125rem] w-[1.125rem] shrink-0',
+                            isActive ? 'text-accent-contrast' : 'text-accent',
                           )}
                           aria-hidden
                         />
@@ -359,7 +359,7 @@ export function CommandPalette({ open, onClose, initialQuery = '' }: CommandPale
           </div>
 
           {/* Footer legend */}
-          <div className="flex items-center gap-4 border-t border-line bg-surface px-4 py-2">
+          <div className="flex items-center gap-4 border-t border-line/60 px-5 py-2.5">
             <span className="t-meta flex items-center gap-1.5">
               <Kbd>↑</Kbd><Kbd>↓</Kbd> navigate
             </span>
