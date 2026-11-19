@@ -78,7 +78,7 @@ export function RevisionCompleteDialog({
         ))}
       </div>
 
-      <div className="mt-4 rounded-lg border border-line bg-surface-sunken/50 px-3 py-2.5">
+      <div className="mt-4 rounded-[var(--r-lg)] bg-surface-sunken/50 px-3 py-2.5">
         <div className="t-label mb-1">What happens next</div>
         <p className="t-muted">
           {lapses
