@@ -44,6 +44,29 @@ export function Menu({
     setPos({ top, left });
   }, [open, align, items.length]);
 
+  // Second pass with the real panel height (collision handling), then focus the first item.
+  useLayoutEffect(() => {
+    if (!open || !pos || !panelRef.current || !anchorRef.current) return;
+    const h = panelRef.current.offsetHeight;
+    const rect = anchorRef.current.getBoundingClientRect();
+    let top = rect.bottom + 6;
+    if (top + h > window.innerHeight - 8) top = Math.max(8, rect.top - h - 6);
+    if (Math.abs(top - pos.top) > 1) setPos({ ...pos, top });
+    panelRef.current.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus({ preventScroll: true });
+  }, [open, pos]);
+
+  const onPanelKey = (e: React.KeyboardEvent) => {
+    const btns = [...(panelRef.current?.querySelectorAll<HTMLButtonElement>('button:not(:disabled)') ?? [])];
+    if (!btns.length) return;
+    const i = btns.indexOf(document.activeElement as HTMLButtonElement);
+    const go = (n: number) => { e.preventDefault(); btns[(n + btns.length) % btns.length].focus(); };
+    if (e.key === 'ArrowDown') go(i + 1);
+    else if (e.key === 'ArrowUp') go(i - 1);
+    else if (e.key === 'Home') go(0);
+    else if (e.key === 'End') go(btns.length - 1);
+    else if (e.key === 'Tab') setOpen(false);
+  };
+
   useEffect(() => {
     if (!open) return;
     const close = (e: MouseEvent) => {
@@ -51,7 +74,7 @@ export function Menu({
       if (anchorRef.current?.contains(e.target as Node)) return;
       setOpen(false);
     };
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { setOpen(false); anchorRef.current?.focus(); } };
     const onScroll = () => setOpen(false);
     document.addEventListener('mousedown', close);
     document.addEventListener('keydown', onKey);
@@ -77,27 +100,28 @@ export function Menu({
             <div
               ref={panelRef}
               role="menu"
+              onKeyDown={onPanelKey}
               style={{ top: pos.top, left: pos.left, width: 224 }}
               className={cn(
-                'fixed z-[70] max-h-[340px] overflow-y-auto rounded-lg border border-line bg-surface-raised p-1 shadow-pop animate-in-fade',
+                'panel fixed z-[75] max-h-[min(340px,calc(100dvh-16px))] min-w-[13rem] overflow-y-auto rounded-[12px] p-1 animate-in-pop',
                 className,
               )}
             >
               {items.map((item, i) => (
                 <div key={`${item.label}-${i}`}>
-                  {item.separated ? <div className="my-1 h-px bg-line" /> : null}
+                  {item.separated ? <div className="mx-2 my-1 h-px bg-ink/10" /> : null}
                   <button
                     type="button"
                     role="menuitem"
                     disabled={item.disabled}
                     onClick={() => { setOpen(false); void item.onSelect(); }}
                     className={cn(
-                      'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors',
+                      'flex h-8 w-full items-center gap-2.5 rounded-[8px] px-2.5 text-left text-[0.8125rem] transition-colors focus:outline-none',
                       item.disabled
                         ? 'cursor-not-allowed text-ink-faint'
                         : item.danger
-                          ? 'text-critical hover:bg-critical/10'
-                          : 'text-ink hover:bg-surface-sunken',
+                          ? 'text-critical hover:bg-critical/12 focus-visible:bg-critical/12'
+                          : 'text-ink hover:bg-ink/[0.07] focus-visible:bg-ink/[0.07]',
                     )}
                   >
                     {item.icon ? <span className="shrink-0 text-ink-faint">{item.icon}</span> : null}
