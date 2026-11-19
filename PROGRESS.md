@@ -224,3 +224,62 @@ testing on device/simulator.
   viewport bottom without safe padding). Revisit once running in a real
   WKWebView, where keyboard resize behaviour differs from Safari.
 
+
+## Personal configuration + overlap pass (Oct 2026)
+- Storage: browser-only (IndexedDB / site data). Demo data removed; Settings → Data → "Clear all data".
+- Auto Plan: same-area tasks are hosted inside matching subject blocks; other-area overlaps are offered as choices (never applied silently). Manual scheduling asks before overlapping.
+- Generic engines: cycles (engines/cycles.ts), optional blocks, data-defined achievements (engines/customMetrics.ts), per-tracker XP + bonuses, reward currency ledger (services/currencyService.ts) + redeemable rewards, sequential goals (one active project).
+- Config import: services/configService.ts (validate + idempotent merge), Settings → Data → Apply configuration. Personal data lives in config/lifeos-config.json (not source).
+- Tests: services/__tests__/lifeosConfig.test.ts. Suite 470/470, build green.
+
+
+## Work & Growth upgrade (2026-11-18)
+
+Backbone: Goal -> Milestones -> Tasks -> scheduled blocks -> completion -> XP -> achievements -> rewards.
+- Schema v9 (additive, migration V8_TO_V9): checklists, checklistRuns, projects, contacts, money, skills, studies, sources, examTracks, scores.
+- Last task of a milestone completes it automatically (goalService.syncMilestoneFromTasks); reopening reverses it. Milestones now bank xp.awards.milestone_completed and revoke on reopen.
+- Projects and research studies OWN a goal; their milestones/tasks are ordinary rows (Tasks, Auto Plan, XP all apply). No parallel task system.
+- Checklists: daily / weekly / monthly templates, one run per period (date / ISO week / month), per-weekday daily items, due day, streaks, completionXP once per period (revoked on untick).
+- Earning: CRM pipeline (lead -> client) with timeline + follow-ups, money ledger (active vs passive income, invoices, overdue, expenses), weighted pipeline, win rate, effective hourly rate; won deal -> client project.
+- Research: studies (literature review / paper / experiment) with stage stepper, protocol, themes + thin-evidence gaps, manuscript sections with word counts, source library with literature matrix and reference paste-parser.
+- Skills: levels 0-5 vs target, learning path, evidence.
+- Exams: generic exam tracks (SAT scaled sections, AP 1-5) with score log, trend vs target, countdown, domain accuracy + mistake mix from Practice papers.
+- Achievements: new metric families events:<activityType>, checklists:<cadence>, earned:<*|active|passive>; categories research + earning.
+- Home "Up next" card; Apple HIG pass (semantic grouped colours, systemBlue default + accent picker, 17pt touch scale, material bars, accent sidebar selection, borderless grouped cells).
+- Personal data in config/lifeos-my-schedule.json: 25 goals / 110 milestones, 6 projects, 7 studies, 9 skills, 3 exam tracks, 4 checklists (daily, habits, weekly, monthly review), 58 personal achievements (143 total).
+- Tests: 33 files / 497 passing (src/services/__tests__/workgrowth.test.ts).
+
+
+## UI redesign — Apple HIG / premium pass (2026-11-18)
+
+Signature: the Day Ribbon (src/features/schedule/dayRibbon.tsx) and the Live Activity capsule in the top bar (NowStrip.tsx, Dynamic-Island black in both themes). Brand mark = day dial (BrandMark.tsx).
+Tokens (src/index.css): layered graphite #0A0A0B / #111113 / #18181B / #222226, fills #27272C; hairline-light elevation (no dark shadows); radii 6/8/10/14/18/26; accent #0071E3 (4.7:1 under white); SF Pro + SF Pro Rounded (.t-rounded/.t-metric) for numerals only; materials only on bars/sheets/menus/palette.
+Controls: filled/gray/tinted/plain buttons (capsules when small), filled inputs with focus ring, iOS switch, sliding segmented thumb, sheet modals with grabber, HUD toasts, Spotlight-style palette, iOS-Settings grouped sections, Apple Calendar blocks.
+Shell: sidebar source list with search, calm gray selection + accent symbols; top bar transparent until content scrolls, then material + inline title.
+Verified: 23 routes × dark/light at 1440px and 8 key routes × dark/light at iPad 820px — 0 contrast failures (WCAG AA computed per text node), 0 horizontal overflow, 0 runtime errors; 44pt hit areas on touch via .touch-hit.
+
+## Shell redesign — centred stage + Liquid Glass (2026-11-18)
+
+Layout: content is one centred column scrolling under floating Liquid Glass chrome over an ambient field (AppShell.tsx). Nothing is pinned to window edges.
+- FloatingSidebar.tsx: detached glass sidebar (12px float, r=28), springs 260↔72px, sliding selection pill.
+- Notch (NowStrip.tsx `Notch`): black Dynamic-Island capsule at top centre; hover/tap morphs into a live panel (block, progress, Start/Done/Skip, next 3, cycle phase, Close the day).
+- ShellChrome.tsx: TitleCluster (inline title slides in on scroll), StatusCluster (search, save, clock, appearance), Dock (floating glass tab bar with sliding pill, <1024px).
+- Toaster.tsx: floating notifications drop from under the notch, stack iOS-style, pause on hover, countdown hairline, swipe up to dismiss.
+- Page.tsx: centred eyebrow/title/subtitle/actions; sections stagger in; route transitions.
+- index.css: .glass / .glass-regular / .island / .glass-pill / .ambient-stage / scroll-edge; Reduce Transparency + Increase Contrast + Reduce Motion fallbacks. --stage-shift keeps notch and banners on the content axis.
+Verified: 21 routes × dark/light @1440, 9 routes × dark/light @iPad 820 — 0 errors, 0 overflow, 0 contrast failures; 390px phone: dock/notch/clusters don't collide.
+
+
+## Overhaul — dark OS shell, ASCII galaxy, notifications, modes, partial payments (2026-11-19)
+
+Baseline (measured before changes, 1440x900, Home idle 3 s): aurora blobs 607 ms main-thread / 3 s; previous canvas ASCII 1,057 ms / 3 s with 12 long tasks on navigation; layout audit 35/63 route x size combos failing (dock not centred: entrance animation's transform cancelled -translate-x-1/2; schedule inspector + "Ran over?" card taller than the viewport).
+After: galaxy background ~150 ms / 3 s over no background (paused while scrolling/dragging/overlays), p95 frame 7.1 ms, 0 long tasks; 0/63 layout failures; 0 contrast failures dark+light; 500/500 tests.
+
+- Background + loading screen: ASCII Magic "spiral-galaxy" (MIT) self-hosted in public/ascii (offline PWA); two documented local patches (fps cap, global pause) in public/ascii/LOCAL_CHANGES.md. Old SVG preloader removed.
+- Shell: single compact header (brand, breadcrumb, notch centred on the viewport axis, date/time, save, search, notifications, identity ring, settings); bottom dock replaces the sidebar (centred by a non-animated row); Apps launcher (grouped, ranked search, Simple/Advanced switch). Sidebar/rail/mobile shell files deleted after verifying no imports.
+- Overlays: Tooltip portalled with flip/clamp; Menu measured collision + arrow/Home/End + focus return; Modal opaque, dvh-capped; Escape layered (menu → drawer).
+- Schedule: block grammar (work solid+bar, pauses dashed, sleep hatched, protected striped, live dot), 4 text tiers by height, past shading, now chip; inspector is a viewport-anchored drawer (sheet <1024px) with sections, collapsed Links/Protection, sticky actions + More menu; timeline padded by the drawer's exact overlap.
+- Notifications: Notification Center (localStorage, 250 cap) fed by every toast (category inferred from route), real activity events (after commit), and a minute sweep (block soon / ended unlogged, tasks due/overdue, invoices overdue, follow-ups, revision due, open checklists, close the day). Per-category banners, quiet hours, OS mirroring when hidden.
+- Simple / Advanced mode (settings.appearance.mode): Advanced-only destinations and Planning/Maintenance/Reset settings.
+- Earning: partial payments (MoneyEntry.payments; revenue recognised per instalment date; balanceDue/outstanding; markPaid records only the remainder; overpay refused; each instalment = one payment_received event) + BarChart; tests added.
+- Modules: Goals MilestoneTrack, Projects lifecycle stepper + per-milestone segmented progress, Checklists ring + per-item segments, Tasks priority edge + check pop, Focus bezel dial.
