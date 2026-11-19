@@ -100,7 +100,7 @@ export function PlanOverloadBanner({
 
 function DayRow({ day }: { day: DayLoad }) {
   return (
-    <div className="rounded-md border border-line bg-surface px-3 py-2">
+    <div className="rounded-[var(--r-md)] bg-surface-sunken/60 px-3 py-2">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <span className="text-sm font-medium text-ink">{formatDateKeyShort(day.date)}</span>
         <span className="t-num text-2xs text-ink-muted">
