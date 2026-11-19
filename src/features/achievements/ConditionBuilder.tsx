@@ -177,7 +177,7 @@ function LeafRow({ node, traceById, onUpdate, onRemove }: NodeProps & { node: Le
   };
 
   return (
-    <div className="rounded-lg border border-line bg-surface p-2.5">
+    <div className="rounded-[var(--r-lg)] bg-surface-sunken/60 p-2.5">
       <div className="flex flex-wrap items-center gap-2">
         <span
           className={cn(
