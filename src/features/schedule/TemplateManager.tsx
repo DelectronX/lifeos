@@ -103,7 +103,7 @@ export function TemplateManager({
                   className={
                     selected?.id === t.id
                       ? 'flex w-full items-center justify-between gap-2 rounded-lg border border-accent/30 bg-accent-soft px-2.5 py-2 text-left'
-                      : 'flex w-full items-center justify-between gap-2 rounded-lg border border-line px-2.5 py-2 text-left hover:bg-surface-sunken'
+                      : 'flex w-full items-center justify-between gap-2 rounded-[var(--r-lg)] px-2.5 py-2 text-left hover:bg-surface-sunken bg-surface-sunken/50 hover:bg-surface-overlay'
                   }
                 >
                   <span className="min-w-0 truncate text-sm text-ink">{t.name}</span>
@@ -222,14 +222,14 @@ function TemplateEditor({
           </Button>
         </div>
 
-        <div className="max-h-[18rem] space-y-1.5 overflow-y-auto rounded-lg border border-line p-2">
+        <div className="max-h-[18rem] space-y-1.5 overflow-y-auto rounded-[var(--r-lg)] p-2 bg-surface-sunken/50">
           {template.entries.length === 0 ? (
             <div className="t-meta px-1 py-3 text-center">No entries. Add one to describe a recurring slot.</div>
           ) : null}
           {[...template.entries]
             .sort((a, b) => a.dayOfWeek - b.dayOfWeek || a.startMinute - b.startMinute)
             .map((entry) => (
-              <div key={entry.id} className="grid grid-cols-[5rem_1fr] gap-2 rounded-md border border-line bg-surface-sunken p-2 sm:grid-cols-[5rem_1fr_7rem_5rem_5rem_2rem]">
+              <div key={entry.id} className="grid grid-cols-[5rem_1fr] gap-2 rounded-[var(--r-md)] bg-surface-sunken p-2 sm:grid-cols-[5rem_1fr_7rem_5rem_5rem_2rem]">
                 <Select
                   sizeVariant="sm"
                   value={String(entry.dayOfWeek)}
@@ -301,7 +301,7 @@ function TemplateEditor({
         </div>
       </div>
 
-      <div className="flex flex-wrap items-end gap-2 rounded-lg border border-line bg-surface-sunken px-3 py-2">
+      <div className="flex flex-wrap items-end gap-2 rounded-[var(--r-lg)] bg-surface-sunken px-3 py-2">
         <Field label="Copy day" className="w-28">
           <Select sizeVariant="sm" value={String(copyFrom)} onChange={(e) => setCopyFrom(Number(e.target.value))}>
             {[0, 1, 2, 3, 4, 5, 6].map((d) => <option key={d} value={d}>{weekdayName(d, true)}</option>)}
