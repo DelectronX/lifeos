@@ -143,7 +143,7 @@ export function TimerSetup() {
       ) : null}
 
       {mode === 'pomodoro' ? (
-        <div className="mt-4 rounded-lg border border-line bg-surface-sunken px-3 py-2">
+        <div className="mt-4 rounded-[var(--r-lg)] bg-surface-sunken px-3 py-2">
           <div className="t-meta">
             {prefs.pomodoroWorkMinutes}m work · {prefs.pomodoroShortBreakMinutes}m short break ·{' '}
             {prefs.pomodoroLongBreakMinutes}m long break every {prefs.pomodorosBeforeLongBreak} cycles.
