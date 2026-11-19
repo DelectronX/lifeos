@@ -22,13 +22,13 @@ export type PanelTone = 'raised' | 'flush' | 'sunken' | 'outline';
 
 const TONES: Record<PanelTone, string> = {
   /** Default: steps up from the page, hairline + ambient shadow. */
-  raised: 'border border-line bg-surface-raised shadow-panel',
-  /** No shadow — for panels sitting directly on chrome. */
-  flush: 'border border-line bg-surface-raised',
-  /** A well: steps DOWN, for inset regions inside a panel. */
-  sunken: 'border border-line-faint bg-surface-sunken',
+  raised: 'bg-surface-raised shadow-panel',
+  /** No hairline — for panels sitting directly on chrome. */
+  flush: 'bg-surface-raised',
+  /** A well: a fill inside a panel. */
+  sunken: 'bg-surface-sunken/70',
   /** Hairline only, transparent fill. */
-  outline: 'border border-line bg-transparent',
+  outline: 'ring-1 ring-inset ring-line bg-transparent',
 };
 
 export interface PanelProps extends HTMLAttributes<HTMLDivElement> {
@@ -47,8 +47,8 @@ export function Panel({
       className={cn(
         'rounded-panel',
         TONES[tone],
-        padded && 'p-4',
-        interactive && 'lift cursor-pointer hover:border-line-strong',
+        padded && 'p-5',
+        interactive && 'lift cursor-pointer',
         className,
       )}
       {...rest}
@@ -73,9 +73,9 @@ export interface PanelHeaderProps {
 /** A panel's internal header row: title + optional subtitle and trailing slot. */
 export function PanelHeader({ title, subtitle, action, className }: PanelHeaderProps) {
   return (
-    <div className={cn('mb-3 flex items-start justify-between gap-3', className)}>
+    <div className={cn('mb-4 flex items-start justify-between gap-3', className)}>
       <div className="min-w-0">
-        <div className="t-section">{title}</div>
+        <div className="t-title">{title}</div>
         {subtitle ? <div className="t-meta mt-0.5">{subtitle}</div> : null}
       </div>
       {action ? <div className="shrink-0">{action}</div> : null}
@@ -98,8 +98,8 @@ export function SectionHeading({ title, subtitle, action, className }: PanelHead
   return (
     <div className={cn('mb-3 flex items-end justify-between gap-3', className)}>
       <div className="min-w-0">
-        <h2 className="t-title">{title}</h2>
-        {subtitle ? <p className="t-muted mt-0.5">{subtitle}</p> : null}
+        <h2 className="t-title3">{title}</h2>
+        {subtitle ? <p className="t-meta mt-1">{subtitle}</p> : null}
       </div>
       {action ? <div className="shrink-0">{action}</div> : null}
     </div>
@@ -120,7 +120,7 @@ export function PanelSection({
   children, className, ...rest
 }: HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn('border-b border-line px-4 py-3 last:border-b-0', className)} {...rest}>
+    <div className={cn('border-b border-line-faint px-5 py-3.5 last:border-b-0', className)} {...rest}>
       {children}
     </div>
   );
