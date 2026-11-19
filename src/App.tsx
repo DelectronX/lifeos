@@ -1,19 +1,37 @@
 import { useEffect, useState } from 'react';
+import { LoadingScreen } from '@/components/layout/LoadingScreen';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
 import { Toaster } from '@/components/ui/Toaster';
 import { ensureSeeded } from '@/db/seed';
+import { applyAccent, type AccentId } from '@/lib/accent';
 import { applyTheme, getSettings, readCachedTheme, watchSystemTheme } from '@/services/settingsService';
 import { runStartupMaintenance } from '@/services/maintenanceService';
+import { protectStorageAtBoot } from '@/services/storageGuardService';
+import { settleStartedBlocks } from '@/services/scheduleService';
+import { startAchievementSync, stopAchievementSync } from '@/services/achievementSync';
+import { startAgentBridge, stopAgentBridge } from '@/agent/bridgeClient';
+import { installAudioUnlock } from '@/lib/sounds';
 import { startNotificationLoop, stopNotificationLoop } from '@/services/notificationService';
+import { startNotificationCenter } from '@/services/notificationCenter';
 import { useAutoRescheduleStore } from '@/state/autoRescheduleStore';
 import { AutoRescheduleReviewDialog } from '@/features/schedule/AutoRescheduleReview';
 import { LockedFocusOverlay } from '@/features/focus/LockedFocusOverlay';
+import { CompleteBlockSheet } from '@/features/schedule/CompleteBlockSheet';
+import { CloseDaySheet } from '@/features/review/CloseDaySheet';
+import { ExamPlannerSheet } from '@/features/practice/ExamPlannerSheet';
 
 import { HomePage } from '@/features/home/HomePage';
 import { SchedulePage } from '@/features/schedule/SchedulePage';
 import { TasksPage } from '@/features/tasks/TasksPage';
 import { GoalsPage } from '@/features/goals/GoalsPage';
+import { ChecklistsPage } from '@/features/checklists/ChecklistsPage';
+import { ProjectDetailPage, ProjectsPage } from '@/features/projects/ProjectsPage';
+import { ClickUpPage } from '@/features/clickup/ClickUpPage';
+import { startClickUpSync } from '@/integrations/clickup/linkService';
+import { EarningPage } from '@/features/earning/EarningPage';
+import { ExamsPage } from '@/features/exams/ExamsPage';
+import { ResearchPage, SkillsPage } from '@/features/research/ResearchPage';
 import { GoalDetailPage } from '@/features/goals/GoalDetailPage';
 import { FocusPage } from '@/features/focus/FocusPage';
 import { PaperRunnerPage } from '@/features/focus/PaperRunnerPage';
@@ -25,7 +43,6 @@ import { AchievementsPage } from '@/features/achievements/AchievementsPage';
 import { SettingsPage } from '@/features/settings/SettingsPage';
 import { PracticePage } from '@/features/practice/PracticePage';
 import { FileViewerPage } from '@/features/practice/FileViewerPage';
-import { FirstRunDemoPrompt } from '@/features/settings/DemoDataSettings';
 import { DailyReviewPage } from '@/features/review/DailyReviewPage';
 import { WeeklyReviewPage } from '@/features/review/WeeklyReviewPage';
 import { RuleBuilderPage } from '@/features/planning/RuleBuilderPage';
@@ -33,6 +50,12 @@ import { RuleBuilderPage } from '@/features/planning/RuleBuilderPage';
 export default function App() {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    if (ready) return;
+    const t = window.setTimeout(() => setSlow(true), 15_000);
+    return () => window.clearTimeout(t);
+  }, [ready]);
 
   const runStartupCheck = useAutoRescheduleStore((s) => s.runStartupCheck);
 
@@ -46,8 +69,12 @@ export default function App() {
     (async () => {
       try {
         await ensureSeeded();
+        void protectStorageAtBoot();
+        // A block started earlier (e.g. School) is logged once its time ends.
+        await settleStartedBlocks();
         const settings = await getSettings();
         applyTheme(settings.theme);
+        applyAccent(settings.appearance?.accent as AccentId | undefined);
         // Materialise recurring rules / mark missed revisions / roll snapshots.
         await runStartupMaintenance();
         if (!cancelled) setReady(true);
@@ -57,13 +84,23 @@ export default function App() {
         // Local reminders. No permission is requested here — the loop is a
         // silent no-op until the user opts in from Settings.
         startNotificationLoop();
+        // In-app Notification Center: real activity + time-based reminders.
+        startNotificationCenter();
+        // Achievements unlock from real records, whichever page is open.
+        startAchievementSync();
+        // External AI agents (opt-in, Settings → Agents).
+        startAgentBridge();
+        // Linked ClickUp tasks reconcile every few minutes (no-op when none are linked).
+        startClickUpSync();
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : String(e));
       }
     })();
 
     const unwatch = watchSystemTheme(() => readCachedTheme());
-    return () => { cancelled = true; unwatch(); stopNotificationLoop(); };
+    const unlockAudio = installAudioUnlock();
+    const settle = window.setInterval(() => { void settleStartedBlocks(); }, 60_000);
+    return () => { cancelled = true; unwatch(); unlockAudio(); stopNotificationLoop(); stopAchievementSync(); stopAgentBridge(); window.clearInterval(settle); };
   }, [runStartupCheck]);
 
   if (error) {
@@ -84,15 +121,22 @@ export default function App() {
 
   if (!ready) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-surface-base">
-        <div className="flex h-9 w-9 items-center justify-center rounded-[var(--r-md)] bg-accent text-sm font-bold text-accent-contrast">
-          L
-        </div>
-        <div className="h-[3px] w-32 overflow-hidden rounded-full bg-line-faint">
-          <div className="h-full w-1/3 animate-shimmer rounded-full bg-[linear-gradient(90deg,transparent,rgb(var(--c-accent)),transparent)] bg-[length:200%_100%]" />
-        </div>
-        <span className="t-meta">Starting LifeOS</span>
-      </div>
+      <LoadingScreen>
+        {slow ? (
+          <div className="max-w-sm px-6 text-center">
+            <p className="t-muted">
+              The browser storage is slow to respond. Your data is not deleted — close LifeOS completely and open it again.
+            </p>
+            <button
+              type="button"
+              className="mt-3 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-contrast"
+              onClick={() => window.location.reload()}
+            >
+              Reload
+            </button>
+          </div>
+        ) : null}
+      </LoadingScreen>
     );
   }
 
@@ -104,6 +148,14 @@ export default function App() {
           <Route path="schedule" element={<SchedulePage />} />
           <Route path="tasks" element={<TasksPage />} />
           <Route path="goals" element={<GoalsPage />} />
+          <Route path="checklists" element={<ChecklistsPage />} />
+          <Route path="projects" element={<ProjectsPage />} />
+          <Route path="projects/:projectId" element={<ProjectDetailPage />} />
+          <Route path="earning" element={<EarningPage />} />
+          <Route path="clickup" element={<ClickUpPage />} />
+          <Route path="exams" element={<ExamsPage />} />
+          <Route path="research" element={<ResearchPage />} />
+          <Route path="skills" element={<SkillsPage />} />
           <Route path="goals/:goalId" element={<GoalDetailPage />} />
           <Route path="focus" element={<FocusPage />} />
           <Route path="focus/paper/:paperId" element={<PaperRunnerPage />} />
@@ -123,9 +175,11 @@ export default function App() {
         </Route>
       </Routes>
       <Toaster />
-      <FirstRunDemoPrompt />
       <AutoRescheduleReviewDialog />
       <LockedFocusOverlay />
+      <CompleteBlockSheet />
+      <CloseDaySheet />
+      <ExamPlannerSheet />
     </>
   );
 }
