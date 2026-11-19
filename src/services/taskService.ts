@@ -195,6 +195,8 @@ export async function setTaskStatus(
       basePriority: task.basePriority,
       recordAgeSeconds: Math.max(0, (at - task.createdAt) / 1000),
       description: task.title,
+      trackerId: task.trackerId,
+      workUnitKey: `task:${task.id}`,
     }, { activityId: activity.id, at });
   } else if (to === 'skipped') {
     await logActivity({
@@ -210,6 +212,10 @@ export async function setTaskStatus(
     });
   }
 
+  if (task.status !== to && (to === 'completed' || task.status === 'completed' || to === 'cancelled')) {
+    const { syncMilestoneFromTasks } = await import('./goalService');
+    await syncMilestoneFromTasks(updated.milestoneId);
+  }
   await onTaskChanged(updated);
   return updated;
 }
