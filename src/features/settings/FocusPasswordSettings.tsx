@@ -124,7 +124,7 @@ export function FocusPasswordSettings() {
       ) : null}
 
       {mode === 'set' || mode === 'change' ? (
-        <div className="space-y-2 rounded-md border border-line bg-surface px-3 py-3">
+        <div className="space-y-2 rounded-[var(--r-md)] bg-surface-sunken/60 px-3 py-3">
           {mode === 'change' ? (
             <Input
               type="password"
@@ -159,7 +159,7 @@ export function FocusPasswordSettings() {
       ) : null}
 
       {mode === 'remove' ? (
-        <div className="space-y-2 rounded-md border border-line bg-surface px-3 py-3">
+        <div className="space-y-2 rounded-[var(--r-md)] bg-surface-sunken/60 px-3 py-3">
           <p className="t-meta">Enter the current password to remove it.</p>
           <Input
             type="password"
