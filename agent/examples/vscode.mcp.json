@@ -1,0 +1,12 @@
+{
+  "servers": {
+    "lifeos": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "D:\\lifeos\\agent\\dist\\lifeos-agent.mjs",
+        "mcp"
+      ]
+    }
+  }
+}
