@@ -1,16 +1,19 @@
 import type { DashboardWidgetSize, DashboardWidgetType } from '@/types';
 import { TodayTasksWidget } from './TodayTasksWidget';
-import { TodayScheduleWidget } from './TodayScheduleWidget';
 import { FocusTimeTodayWidget } from './FocusTimeTodayWidget';
 import { XPProgressWidget } from './XPProgressWidget';
 import { StudyStreakWidget } from './StudyStreakWidget';
 import { WeeklyStudyTimeWidget } from './WeeklyStudyTimeWidget';
 import { SubjectProgressWidget } from './SubjectProgressWidget';
-import { UpcomingDeadlinesWidget } from './UpcomingDeadlinesWidget';
 import { RecentMaterialWidget } from './RecentMaterialWidget';
 import { ContinueStudyingWidget } from './ContinueStudyingWidget';
 import { AchievementProgressWidget } from './AchievementProgressWidget';
 import type { WidgetComponentProps } from './types';
+import {
+  AchievementShowcaseWidget, ActivityTimelineWidget, DailyProductivityWidget, FocusStatsWidget, GoalProgressWidget,
+  OverdueTasksWidget, ProjectOverviewWidget, ScheduleOverviewWidget, StreakTrackerWidget, TimeDistributionWidget,
+  UpcomingDeadlinesWidget as DeadlinesWidget, WeeklyPerformanceWidget,
+} from './insightWidgets';
 
 export interface WidgetDefinition {
   type: DashboardWidgetType;
@@ -38,10 +41,10 @@ export const WIDGET_REGISTRY: Record<DashboardWidgetType, WidgetDefinition> = {
   },
   today_schedule: {
     type: 'today_schedule',
-    label: "Today's Schedule",
-    description: "Today's scheduled blocks in time order.",
+    label: 'Schedule overview',
+    description: 'Current, upcoming and completed blocks today.',
     defaultSize: 'medium',
-    component: TodayScheduleWidget,
+    component: ScheduleOverviewWidget,
   },
   focus_time_today: {
     type: 'focus_time_today',
@@ -82,9 +85,9 @@ export const WIDGET_REGISTRY: Record<DashboardWidgetType, WidgetDefinition> = {
   upcoming_deadlines: {
     type: 'upcoming_deadlines',
     label: 'Upcoming Deadlines',
-    description: 'Your nearest task due dates.',
+    description: 'Your nearest task due dates, with days left.',
     defaultSize: 'medium',
-    component: UpcomingDeadlinesWidget,
+    component: DeadlinesWidget,
   },
   recent_material: {
     type: 'recent_material',
@@ -107,6 +110,23 @@ export const WIDGET_REGISTRY: Record<DashboardWidgetType, WidgetDefinition> = {
     defaultSize: 'medium',
     component: AchievementProgressWidget,
   },
+  daily_productivity: { type: 'daily_productivity', label: 'Daily productivity', description: "Today's completion across blocks, tasks and checklists.", defaultSize: 'medium', component: DailyProductivityWidget },
+  time_distribution: { type: 'time_distribution', label: 'Time distribution', description: 'Where tracked time went, by area — today or the last 7 days.', defaultSize: 'medium', component: TimeDistributionWidget },
+  weekly_performance: { type: 'weekly_performance', label: 'Weekly performance', description: 'Daily completion rate this week vs. last week.', defaultSize: 'medium', component: WeeklyPerformanceWidget },
+  goal_progress: { type: 'goal_progress', label: 'Goal progress', description: 'Active goals with their milestone tracks.', defaultSize: 'medium', component: GoalProgressWidget },
+  project_overview: { type: 'project_overview', label: 'Projects', description: 'Projects with stage and health.', defaultSize: 'medium', component: ProjectOverviewWidget },
+  streak_tracker: { type: 'streak_tracker', label: 'Streak tracker', description: 'Current streak and a 28-day consistency grid.', defaultSize: 'small', component: StreakTrackerWidget },
+  achievement_showcase: { type: 'achievement_showcase', label: 'Achievement showcase', description: 'Recently unlocked achievements and the next one.', defaultSize: 'small', component: AchievementShowcaseWidget },
+  focus_stats: { type: 'focus_stats', label: 'Focus statistics', description: 'Focus time and sessions today and this week.', defaultSize: 'small', component: FocusStatsWidget },
+  overdue_tasks: { type: 'overdue_tasks', label: 'Overdue tasks', description: 'Tasks past due, completable in one tap.', defaultSize: 'small', component: OverdueTasksWidget },
+  activity_timeline: { type: 'activity_timeline', label: 'Activity timeline', description: 'The latest things you actually did.', defaultSize: 'medium', component: ActivityTimelineWidget },
 };
+
+/** The recommended Home arrangement (also how new widget types are introduced). */
+export const RECOMMENDED_LAYOUT: DashboardWidgetType[] = [
+  'daily_productivity', 'today_schedule', 'weekly_performance', 'time_distribution',
+  'streak_tracker', 'focus_stats', 'overdue_tasks', 'achievement_showcase',
+  'goal_progress', 'project_overview', 'upcoming_deadlines', 'activity_timeline',
+];
 
 export const WIDGET_TYPES = Object.keys(WIDGET_REGISTRY) as DashboardWidgetType[];
