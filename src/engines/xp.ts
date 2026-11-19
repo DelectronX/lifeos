@@ -79,6 +79,18 @@ export interface XPEventInput {
   /** Seconds between record creation and the event; guards instant-complete farming. */
   recordAgeSeconds?: number;
   description?: string;
+  /** Tracker the work belongs to — enables data-driven per-tracker awards. */
+  trackerId?: string | null;
+  /** Replaces `config.awards[reason]` (resolved from `trackerAwards`). */
+  flatOverride?: number;
+  /** Overrides the default `reason:sourceType:sourceId` dedupe identity. */
+  dedupeKey?: string;
+  /**
+   * Identity of the real piece of work (`task:<id>`, `block:<id>`,
+   * `session:<id>`). When a per-tracker award applies, the task, its block
+   * and its timer session share this key, so the work pays exactly once.
+   */
+  workUnitKey?: string;
 }
 
 export interface XPAward {
@@ -93,11 +105,11 @@ export interface XPAward {
 }
 
 export function computeXPAward(input: XPEventInput, config: XPConfig): XPAward {
-  const dedupeKey = `${input.reason}:${input.sourceType}:${input.sourceId ?? 'none'}`;
+  const dedupeKey = input.dedupeKey ?? `${input.reason}:${input.sourceType}:${input.sourceId ?? 'none'}`;
   const description = input.description ?? input.reason.replace(/_/g, ' ');
   const breakdown: { label: string; value: number }[] = [];
 
-  const flat = config.awards[input.reason] ?? 0;
+  const flat = input.flatOverride ?? config.awards[input.reason] ?? 0;
 
   // --- anti-farming gate 2: the event must represent real elapsed effort ----
   const needsAge = input.reason === 'task_completed' || input.reason === 'block_completed';
