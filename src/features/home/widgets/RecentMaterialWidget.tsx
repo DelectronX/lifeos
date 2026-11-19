@@ -11,7 +11,7 @@ export function RecentMaterialWidget(_props: WidgetComponentProps) {
   const recent = resources.slice().sort((a, b) => b.updatedAt - a.updatedAt);
 
   return (
-    <WidgetShell title="Recent Study Material">
+    <WidgetShell icon={FileText} tone="neutral" href="/practice" title="Recent Study Material">
       {recent.length === 0 ? (
         <WidgetEmpty text="No materials added yet." />
       ) : (
