@@ -1,3 +1,4 @@
+import { Flame } from 'lucide-react';
 import { WidgetShell } from './WidgetShell';
 import { useLiveProfile } from '@/state/useLiveData';
 import { Stat } from '@/components/ui/Progress';
@@ -9,7 +10,7 @@ export function StudyStreakWidget(_props: WidgetComponentProps) {
   const streak = profile?.currentStreak ?? 0;
 
   return (
-    <WidgetShell title="Study Streak">
+    <WidgetShell icon={Flame} tone="caution" href="/achievements" title="Study Streak">
       <Stat
         label="Current streak"
         value={`${streak} day${streak === 1 ? '' : 's'}`}
