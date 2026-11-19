@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { useSearchParams } from 'react-router-dom';
 import { Lock, Trophy } from 'lucide-react';
 import { Page, PageSection } from '@/components/layout/Page';
 import { Card, EmptyState } from '@/components/ui/Card';
@@ -12,12 +13,13 @@ import { levelProgress } from '@/engines/xp';
 import { useLiveProfile, useSchedulingConfig } from '@/state/useLiveData';
 import { ACHIEVEMENT_CATEGORY_LABELS } from '@/config/achievements';
 import {
-  ACHIEVEMENT_CATEGORY_ORDER, evaluateAchievements, groupByCategory,
+  ACHIEVEMENT_CATEGORY_ORDER, readAchievements, groupByCategory,
   type AchievementView,
 } from '@/services/achievementService';
 import { getRecentXP, groupXPByReason } from '@/services/xpService';
 import type { AchievementCategory } from '@/types';
 import { RewardsSection } from './RewardsSection';
+import { RewardShopSection } from './RewardShopSection';
 
 type StatusFilter = 'all' | 'unlocked' | 'locked';
 type CategoryFilter = 'all' | AchievementCategory;
@@ -32,11 +34,12 @@ type Section = 'achievements' | 'rewards';
 export function AchievementsPage() {
   const profile = useLiveProfile();
   const config = useSchedulingConfig();
-  const [section, setSection] = useState<Section>('achievements');
+  const [params] = useSearchParams();
+  const [section, setSection] = useState<Section>(params.get('section') === 'rewards' ? 'rewards' : 'achievements');
   const [status, setStatus] = useState<StatusFilter>('all');
   const [category, setCategory] = useState<CategoryFilter>('all');
 
-  const evaluation = useLiveQuery(() => evaluateAchievements(), []);
+  const evaluation = useLiveQuery(() => readAchievements(), []);
   const recentXP = useLiveQuery(() => getRecentXP(40), []) ?? [];
 
   const level = profile ? levelProgress(profile.totalXP, config.xp) : null;
@@ -118,7 +121,8 @@ export function AchievementsPage() {
       />
 
       {section === 'rewards' ? (
-        <RewardsSection />
+        <div className="space-y-8"><RewardShopSection />
+        <RewardsSection /></div>
       ) : (
         <>
           <div className="mb-5 flex flex-wrap items-center gap-2">
