@@ -1,0 +1,1 @@
+claude mcp add lifeos -- node D:\lifeos\agent\dist\lifeos-agent.mjs mcp
