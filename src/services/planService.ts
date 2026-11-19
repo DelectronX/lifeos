@@ -15,7 +15,7 @@ import type {
   DateKey, ID, PlanRun, RecordChange, ScheduleBlock, SchedulingConfig,
   Settings, Task,
 } from '@/types';
-import type { ProposedBlock, SchedulingPreferences } from '@/types/scheduling';
+import type { OverlapOption, ProposedBlock, SchedulingPreferences } from '@/types/scheduling';
 
 /**
  * PlanService — the persistence half of the scheduling intelligence.
@@ -155,7 +155,26 @@ function materialise(p: ProposedBlock, planRunId: ID, now: number): ScheduleBloc
     actualStart: null,
     actualEnd: null,
     notes: p.reason,
+    hostBlockId: p.hostBlockId ?? null,
   };
+}
+
+/** Tracker id -> [self, parent, ...] — feeds same-area slot hosting. */
+export async function loadTrackerAncestors(): Promise<Record<ID, ID[]>> {
+  const trackers = await db.trackers.toArray();
+  const parent = new Map(trackers.map((t) => [t.id, t.parentId]));
+  const out: Record<ID, ID[]> = {};
+  for (const t of trackers) {
+    const chain: ID[] = [t.id];
+    let cursor = t.parentId;
+    let guard = 0;
+    while (cursor && guard++ < 32 && !chain.includes(cursor)) {
+      chain.push(cursor);
+      cursor = parent.get(cursor) ?? null;
+    }
+    out[t.id] = chain;
+  }
+  return out;
 }
 
 /* ------------------------------------------------------------------ */
@@ -234,11 +253,15 @@ export async function previewAutoPlan(options: AutoPlanOptions = {}): Promise<Au
         && !releaseBlockIds.has(b.id))
       .map((b) => b.taskId!),
   );
-  const candidates = pool.filter((t) => !alreadyScheduled.has(t.id) || releasedTaskIds.has(t.id));
-
   const goals = await db.goals.toArray();
+  // Work for a paused goal (e.g. the next project in a sequence) waits its turn.
+  const pausedGoals = new Set(goals.filter((g) => g.status === 'paused').map((g) => g.id));
+  const candidates = pool.filter((t) =>
+    (!alreadyScheduled.has(t.id) || releasedTaskIds.has(t.id))
+    && !(t.goalId && pausedGoals.has(t.goalId)));
 
   const subjectWindowRules = await loadSubjectWindowRules();
+  const trackerAncestors = await loadTrackerAncestors();
 
   const result = planSchedule(
     {
@@ -251,6 +274,7 @@ export async function previewAutoPlan(options: AutoPlanOptions = {}): Promise<Au
       to: context.to,
       runId: 'autoplan',
       subjectWindowRules,
+      trackerAncestors,
       ignoreBlockIds: [...releaseBlockIds],
     },
     context.config,
@@ -401,6 +425,67 @@ function buildAutoPlanExplanation(
     lines.push(`Not placed — ${u.title}: ${u.reason}`);
   }
   return lines;
+}
+
+/**
+ * The user answered "yes, overlap" for a task Auto Plan could not fit and
+ * picked WHICH block to share. Writes one block (undoable PlanRun), linked to
+ * the chosen host. Never called by the engine on its own.
+ */
+export async function applyOverlapChoice(taskId: ID, option: OverlapOption): Promise<ApplyResult> {
+  const task = await db.tasks.get(taskId);
+  if (!task) return { planRunId: '', created: 0, updated: 0, deleted: 0, explanation: [] };
+  const host = await db.blocks.get(option.blockId);
+  const now = Date.now();
+  const planRunId = newId('run');
+  const set = new ChangeSet();
+  const explanation = [
+    `${task.title}: scheduled on top of "${host?.title ?? option.blockTitle}" because you chose to overlap.`,
+  ];
+  const block = materialise({
+    tempId: `overlap:${taskId}`,
+    title: task.title,
+    date: option.date,
+    start: option.start,
+    end: option.end,
+    durationMinutes: option.durationMinutes,
+    trackerId: task.trackerId,
+    kind: 'task',
+    taskId: task.id,
+    goalId: task.goalId,
+    locked: false,
+    protected: false,
+    origin: 'scheduler',
+    splitGroupId: null,
+    splitIndex: 0,
+    splitCount: 1,
+    reason: explanation[0]!,
+    hostBlockId: option.blockId,
+  }, planRunId, now);
+
+  await db.transaction('rw', [db.blocks, db.tasks, db.planRuns], async () => {
+    await db.blocks.add(block);
+    set.create('blocks', block.id, block);
+    const fresh = await db.tasks.get(task.id);
+    if (fresh && fresh.status !== 'planned') {
+      const after: Task = {
+        ...fresh,
+        status: 'planned',
+        updatedAt: now,
+        statusHistory: [
+          ...fresh.statusHistory,
+          { from: fresh.status, to: 'planned', at: now, reason: 'Overlap accepted', planRunId },
+        ],
+      };
+      await db.tasks.put(after);
+      set.update('tasks', fresh.id, fresh, after);
+    }
+    await db.planRuns.add({
+      id: planRunId, createdAt: now, updatedAt: now, kind: 'auto_schedule', at: now,
+      explanation, changes: set.changes, undone: false, undoneAt: null,
+    });
+  });
+  return { planRunId, created: 1, updated: 1, deleted: 0, explanation };
 }
 
 /* ------------------------------------------------------------------ */
