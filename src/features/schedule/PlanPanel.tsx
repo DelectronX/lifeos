@@ -4,11 +4,12 @@ import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Field, Select } from '@/components/ui/Input';
 import { toast } from '@/state/toastStore';
-import { formatDateKeyShort, formatDuration } from '@/lib/date';
+import { formatDateKeyShort, formatDuration, formatTime } from '@/lib/date';
 import {
-  applyAutoPlan, previewAutoPlan, undoPlanRun,
+  applyAutoPlan, applyOverlapChoice, previewAutoPlan, undoPlanRun,
   type AutoPlanPreview,
 } from '@/services/planService';
+import type { OverlapOption, UnplacedTask } from '@/types/scheduling';
 import { ImpactPreview, useSelection } from './PlanImpactPreview';
 import type { DateKey } from '@/types';
 
@@ -35,6 +36,27 @@ export function PlanPanel({
   const [applying, setApplying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { selected, reset, toggle } = useSelection([]);
+  const [overlap, setOverlap] = useState<{ task: UnplacedTask; option: OverlapOption } | null>(null);
+
+  const confirmOverlap = async () => {
+    if (!overlap) return;
+    const { task, option } = overlap;
+    setOverlap(null);
+    try {
+      const result = await applyOverlapChoice(task.taskId, option);
+      toast.withAction('Scheduled with overlap', result.explanation[0] ?? task.title, {
+        label: 'Undo',
+        onClick: async () => {
+          const undo = await undoPlanRun(result.planRunId);
+          toast[undo.ok ? 'success' : 'warning'](undo.ok ? 'Change reverted' : 'Could not undo', undo.message);
+        },
+      });
+      onApplied?.();
+      void run();
+    } catch (e) {
+      toast.error('Could not schedule', e instanceof Error ? e.message : String(e));
+    }
+  };
 
   const run = useCallback(async () => {
     setLoading(true);
@@ -161,7 +183,7 @@ export function PlanPanel({
         </div>
       ) : preview ? (
         <>
-          <p className="mb-3 rounded-md border border-line bg-surface-sunken px-3 py-2 text-sm text-ink">
+          <p className="mb-3 rounded-[var(--r-md)] bg-surface-sunken px-3 py-2 text-sm text-ink">
             {preview.summary}
           </p>
           <ImpactPreview
@@ -171,9 +193,31 @@ export function PlanPanel({
             unplaced={preview.result.unplaced}
             selected={selected}
             onToggle={toggle}
+            onOverlap={(task, option) => setOverlap({ task, option })}
           />
         </>
       ) : null}
+
+      <Modal
+        open={overlap !== null}
+        onClose={() => setOverlap(null)}
+        size="sm"
+        title="Overlap this slot?"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setOverlap(null)}>No, leave it unplaced</Button>
+            <Button variant="primary" onClick={() => void confirmOverlap()}>Yes, overlap</Button>
+          </>
+        }
+      >
+        {overlap ? (
+          <p className="text-sm text-ink-muted">
+            “{overlap.task.title}” is a different area from “{overlap.option.blockTitle}”. Schedule it at{' '}
+            {formatTime(overlap.option.start)}–{formatTime(overlap.option.end)} on top of that block?
+            {overlap.option.hostProtected ? ' That block is protected/locked — both will stay on your calendar side by side.' : ' Both will stay on your calendar side by side.'}
+          </p>
+        ) : null}
+      </Modal>
     </Modal>
   );
 }
