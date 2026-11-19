@@ -42,7 +42,7 @@ export function UnsupportedFormatViewer({
           this is an honest "no preview" state rather than a broken one.
         </p>
       </div>
-      <div className="rounded-card border border-line bg-surface-raised px-4 py-3 text-sm">
+      <div className="rounded-card px-4 py-3 text-sm surface-card">
         <div className="text-ink">{resource.title}</div>
         <div className="t-meta mt-0.5">
           {formatBytes(blob.size)} · added {new Date(resource.createdAt).toLocaleDateString()}
