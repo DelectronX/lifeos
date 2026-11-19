@@ -79,7 +79,7 @@ export function MaintenanceSettings({ settings }: { settings: Settings }) {
       {snapshots && snapshots.length ? (
         <div>
           <div className="t-label mb-1">Recent snapshots</div>
-          <div className="overflow-hidden rounded-md border border-line">
+          <div className="overflow-hidden rounded-[var(--r-md)] surface-card">
             <table className="w-full text-sm">
               <thead className="bg-surface-muted text-ink-muted">
                 <tr>
