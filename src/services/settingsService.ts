@@ -138,7 +138,8 @@ export function applyTheme(mode: ThemeMode): void {
 }
 
 export async function setTheme(mode: ThemeMode): Promise<void> {
-  applyTheme(mode);
+  // The DOM part only applies where there is a document (not in workers/tests).
+  if (typeof document !== 'undefined') applyTheme(mode);
   await updateSettings({ theme: mode });
 }
 
