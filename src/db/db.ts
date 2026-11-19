@@ -1,6 +1,7 @@
 import Dexie, { type Table } from 'dexie';
+import type { Checklist, ChecklistRun, Contact, ExamTrack, MoneyEntry, Project, ScoreEntry, Skill, Source, Study } from '@/types/workgrowth';
 import type {
-  Achievement, Activity, AnalyticsSnapshot, Annotation, Attachment, BackupSnapshot, Goal, Habit,
+  Achievement, Activity, AnalyticsSnapshot, Annotation, Attachment, BackupSnapshot, CurrencyTransaction, Goal, Habit,
   Milestone, CustomReward, Paper, PlanRun, Question, QuestionAttempt, RecurringRule, Resource,
   RewardEarning, ScheduleRule,
   RevisionEntry, RevisionPlan, ScheduleBlock, ScheduleTemplate, Settings,
@@ -8,7 +9,31 @@ import type {
 } from '@/types';
 
 /** Bumped whenever the Dexie stores definition changes. Also written into exports. */
-export const SCHEMA_VERSION = 7;
+export const SCHEMA_VERSION = 9;
+
+/** One agent operation, recorded after it ran. */
+export interface AuditEntry {
+  id: string;
+  at: number;
+  /** Operation name from the agent catalog. */
+  op: string;
+  /** Who initiated it. Frontend actions are not routed through the agent layer. */
+  source: 'agent';
+  /** Client label the server reported (e.g. "mcp:claude-desktop", "rest", "cli"). */
+  client: string;
+  kind: 'read' | 'write' | 'destructive';
+  ok: boolean;
+  errorCode?: string;
+  /** Primary entity affected, when known. */
+  entityType?: string;
+  entityId?: string;
+  /** Input with long strings truncated. */
+  input: unknown;
+  durationMs: number;
+  idempotencyKey?: string;
+  /** Cached result for idempotent replays (writes only, trimmed). */
+  result?: unknown;
+}
 
 /**
  * Index design notes (this app must stay fast with years of history):
@@ -54,6 +79,19 @@ export class LifeOSDatabase extends Dexie {
   annotations!: Table<Annotation, string>;
   viewerProgress!: Table<ViewerProgress, string>;
   scheduleRules!: Table<ScheduleRule, string>;
+  currency!: Table<CurrencyTransaction, string>;
+  checklists!: Table<Checklist, string>;
+  checklistRuns!: Table<ChecklistRun, string>;
+  projects!: Table<Project, string>;
+  contacts!: Table<Contact, string>;
+  money!: Table<MoneyEntry, string>;
+  skills!: Table<Skill, string>;
+  studies!: Table<Study, string>;
+  sources!: Table<Source, string>;
+  examTracks!: Table<ExamTrack, string>;
+  scores!: Table<ScoreEntry, string>;
+  /** Local-only audit trail of agent-performed operations (not exported). */
+  auditLog!: Table<AuditEntry, string>;
 
   constructor(name = 'lifeos') {
     super(name);
@@ -174,6 +212,34 @@ export class LifeOSDatabase extends Dexie {
     this.version(7).stores({
       scheduleRules: 'id, trackerId, active, [trackerId+active]',
     });
+
+    /**
+     * v8 (data-driven configuration): a reward-currency ledger, distinct from
+     * XP, deduped by key exactly like `xp`. Every other store carries forward
+     * untouched; the new optional fields on achievements / rewards / blocks /
+     * recurring rules are not indexed and need no upgrade hook.
+     */
+    this.version(8).stores({
+      currency: 'id, at, date, reason, &dedupeKey, sourceId, [date+reason]',
+    });
+    // v9 — Work & Growth: checklists, projects, CRM, money ledger, skills, research.
+    this.version(9).stores({
+      checklists: 'id, cadence, active, sortOrder',
+      checklistRuns: 'id, checklistId, periodKey, &[checklistId+periodKey], completedAt',
+      projects: 'id, status, kind, goalId, clientId, studyId, sortOrder',
+      contacts: 'id, stage, nextFollowUp, updatedAt, *tags',
+      money: 'id, date, direction, status, stream, contactId, projectId, [direction+date]',
+      skills: 'id, category, level, trackerId, sortOrder',
+      studies: 'id, kind, stage, goalId, targetDate, sortOrder',
+      sources: 'id, status, year, *studyIds, *themes',
+      examTracks: 'id, family, examDate, sortOrder',
+      scores: 'id, trackId, date, kind, [trackId+date]',
+    });
+    // v10 — agent audit log. Additive, local-only (not part of backups or the
+    // JSON mirror), so the bundle format stays at v9 and needs no migration.
+    this.version(10).stores({
+      auditLog: 'id, at, op, source, ok, idempotencyKey, entityId',
+    });
   }
 }
 
@@ -211,6 +277,17 @@ export function tableByName(name: string): Table<any, string> | null {
     annotations: db.annotations,
     viewerProgress: db.viewerProgress,
     scheduleRules: db.scheduleRules,
+    currency: db.currency,
+    checklists: db.checklists,
+    checklistRuns: db.checklistRuns,
+    projects: db.projects,
+    contacts: db.contacts,
+    money: db.money,
+    skills: db.skills,
+    studies: db.studies,
+    sources: db.sources,
+    examTracks: db.examTracks,
+    scores: db.scores,
   };
   return map[name] ?? null;
 }
@@ -221,7 +298,8 @@ export const EXPORTABLE_TABLES = [
   'templates', 'recurringRules', 'sessions', 'papers', 'questions', 'attempts',
   'revisionPlans', 'revisionEntries', 'resources', 'habits', 'activities',
   'xp', 'achievements', 'snapshots', 'planRuns', 'rewards', 'rewardEarnings',
-  'annotations', 'viewerProgress', 'scheduleRules',
+  'annotations', 'viewerProgress', 'scheduleRules', 'currency',
+  'checklists', 'checklistRuns', 'projects', 'contacts', 'money', 'skills', 'studies', 'sources', 'examTracks', 'scores',
 ] as const;
 
 export type ExportableTable = (typeof EXPORTABLE_TABLES)[number];
