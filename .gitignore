@@ -8,3 +8,5 @@ browser-out.txt
 # `npx cap add ios` / `npx cap add android`. Never commit them from here.
 ios/
 android/
+
+.certs/
