@@ -173,7 +173,7 @@ export function RevisionPlanDialog({ onClose }: { onClose: () => void }) {
                 {manualDates.length > 0 ? (
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {manualDates.map((d) => (
-                      <span key={d} className="inline-flex items-center gap-1 rounded-full border border-line bg-surface-sunken px-2 py-0.5 text-xs">
+                      <span key={d} className="inline-flex items-center gap-1 rounded-full bg-surface-sunken px-2 py-0.5 text-xs">
                         {formatDateKeyShort(d)}
                         <IconButton
                           size="xs"
@@ -197,7 +197,7 @@ export function RevisionPlanDialog({ onClose }: { onClose: () => void }) {
           <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
         </Field>
 
-        <div className="rounded-lg border border-line bg-surface-sunken/40 p-3">
+        <div className="rounded-[var(--r-lg)] bg-surface-sunken/40 p-3">
           <div className="t-label mb-2">Schedule preview</div>
           {preview.length === 0 ? (
             <p className="t-meta">Nothing to schedule with the current settings.</p>
