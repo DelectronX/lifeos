@@ -69,6 +69,7 @@ export function SaveIndicator({ className }: { className?: string }) {
       aria-keyshortcuts={`${modKeyLabel() === '⌘' ? 'Meta' : 'Control'}+S`}
       aria-label={`${label}. Save now.`}
       className={cn(
+        'touch-hit',
         'inline-flex h-7 shrink-0 items-center gap-1.5 rounded-[var(--r-md)] border px-2',
         'text-xs font-medium transition-colors duration-base ease-calm',
         error
