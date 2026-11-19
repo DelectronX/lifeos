@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Play } from 'lucide-react';
+import { Play, PlayCircle } from 'lucide-react';
 import { WidgetShell, WidgetEmpty } from './WidgetShell';
 import { db } from '@/db/db';
 import type { WidgetComponentProps } from './types';
@@ -17,7 +17,7 @@ export function ContinueStudyingWidget(_props: WidgetComponentProps) {
   }, []);
 
   return (
-    <WidgetShell title="Continue Studying">
+    <WidgetShell icon={PlayCircle} tone="accent" href="/practice" title="Continue Studying">
       {latest === undefined ? (
         <p className="t-meta py-2">Loading…</p>
       ) : latest === null ? (
