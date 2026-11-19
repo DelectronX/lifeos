@@ -87,6 +87,12 @@ export interface ProposedBlock {
   splitCount: number;
   /** Plain-English justification for this specific placement. */
   reason: string;
+  /**
+   * Set when the block was placed INSIDE an existing block of the same area
+   * (e.g. Physics homework inside the Physics study slot) or over a block
+   * the user explicitly chose to overlap.
+   */
+  hostBlockId?: ID | null;
 }
 
 /** A change an engine proposes to an *existing* block. */
@@ -168,4 +174,24 @@ export interface UnplacedTask {
   reason: string;
   /** Minutes that still need a home. */
   missingMinutes: number;
+  /**
+   * Existing blocks of a DIFFERENT area the task could overlap instead. The
+   * engine never overlaps these by itself — the UI asks the user whether to
+   * overlap, and which one. Empty/absent when no sensible candidate exists.
+   */
+  overlapOptions?: OverlapOption[];
+}
+
+/** One "put it on top of this block" choice offered for an unplaced task. */
+export interface OverlapOption {
+  blockId: ID;
+  blockTitle: string;
+  blockTrackerId: ID;
+  date: DateKey;
+  /** Proposed time for the task, inside the host block. */
+  start: Timestamp;
+  end: Timestamp;
+  durationMinutes: number;
+  /** Host is protected (school/sleep/meal-style) — shown as a stronger warning. */
+  hostProtected: boolean;
 }
