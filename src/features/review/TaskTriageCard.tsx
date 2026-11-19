@@ -198,7 +198,7 @@ export function TaskTriageCard({
         ) : (
           <div className="mt-3 space-y-4">
             {remaining ? (
-              <p className="rounded-md border border-line bg-surface-sunken px-3 py-2 text-sm text-ink">
+              <p className="rounded-[var(--r-md)] bg-surface-sunken px-3 py-2 text-sm text-ink">
                 {remaining.explanation}
               </p>
             ) : null}
@@ -238,7 +238,7 @@ export function TaskTriageCard({
               <button
                 type="button"
                 onClick={() => setManualOpen(true)}
-                className="rounded-card border border-line bg-surface px-3 py-2.5 text-left transition-colors duration-150 ease-calm hover:border-accent"
+                className="rounded-card bg-surface-sunken/60 px-3 py-2.5 text-left transition-colors duration-150 ease-calm hover:bg-surface-overlay"
               >
                 <span className="flex items-center gap-2">
                   <Hand className="h-3.5 w-3.5 shrink-0 text-ink-faint" />
@@ -255,7 +255,7 @@ export function TaskTriageCard({
                   const option = optionFor('cancel');
                   if (option) setPending(option);
                 }}
-                className="rounded-card border border-line bg-surface px-3 py-2.5 text-left transition-colors duration-150 ease-calm hover:border-critical"
+                className="rounded-card bg-surface-sunken/60 px-3 py-2.5 text-left transition-colors duration-150 ease-calm hover:bg-surface-overlay"
               >
                 <span className="flex items-center gap-2">
                   <XCircle className="h-3.5 w-3.5 shrink-0 text-critical" />
@@ -313,7 +313,7 @@ function ConfirmStep({
   const destructive = option.strategy === 'cancel';
   return (
     <div className="mt-3 space-y-4">
-      <div className="rounded-md border border-line bg-surface-sunken px-3 py-2">
+      <div className="rounded-[var(--r-md)] bg-surface-sunken px-3 py-2">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-medium text-ink">{option.label}</span>
           {option.coveredMinutes > 0 ? (
