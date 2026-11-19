@@ -16,10 +16,10 @@ export default defineConfig({
         short_name: 'LifeOS',
         description:
           'Offline-first personal productivity and growth system for study, fitness, skills and personal life.',
-        theme_color: '#101216',
-        background_color: '#101216',
+        theme_color: '#0A0A0B',
+        background_color: '#0A0A0B',
         display: 'standalone',
-        orientation: 'portrait-primary',
+        orientation: 'any',
         start_url: '/',
         scope: '/',
         icons: [
