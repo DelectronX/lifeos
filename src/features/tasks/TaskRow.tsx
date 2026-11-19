@@ -77,11 +77,16 @@ export function TaskRow({
   return (
     <div
       className={cn(
-        'group relative flex items-start gap-3 border-b border-line px-3 py-2.5 transition-colors last:border-b-0',
-        selected ? 'bg-accent-soft/60' : 'hover:bg-surface-sunken',
+        'group relative flex items-start gap-3 border-b border-line-faint px-3.5 py-2.5 transition-colors last:border-b-0',
+        selected ? 'bg-accent/10' : 'hover:bg-ink/[0.035]',
         closed && 'opacity-60',
       )}
     >
+      {/* Priority edge: reads at a glance without a badge. */}
+      {task.basePriority >= 3 && !closed ? (
+        <span aria-hidden className={cn('absolute bottom-2 left-0 top-2 w-[3px] rounded-r-full',
+          task.basePriority === 5 ? 'bg-critical' : task.basePriority === 4 ? 'bg-caution' : 'bg-accent/50')} />
+      ) : null}
       {selectable ? (
         <input
           type="checkbox"
@@ -98,11 +103,11 @@ export function TaskRow({
         title={done ? 'Reopen task' : 'Complete task'}
         onClick={() => actions.onSetStatus(task, done ? 'planned' : 'completed')}
         className={cn(
-          'mt-0.5 shrink-0 rounded-full transition-colors',
-          done ? 'text-positive' : 'text-ink-faint hover:text-accent',
+          'touch-hit mt-0.5 shrink-0 rounded-full transition-[color,transform] duration-base active:scale-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/60',
+          done ? 'text-positive' : 'text-ink-faint hover:text-accent-ink',
         )}
       >
-        <StatusIcon className="h-[18px] w-[18px]" />
+        <StatusIcon key={String(done)} className={cn('h-[18px] w-[18px]', done && 'animate-[lo-check_420ms_cubic-bezier(0.34,1.56,0.64,1)]')} />
       </button>
 
       <button
@@ -111,7 +116,7 @@ export function TaskRow({
         className="min-w-0 flex-1 text-left"
       >
         <div className="flex items-start gap-2">
-          <span className={cn('min-w-0 flex-1 text-sm text-ink', done && 'line-through decoration-1')}>
+          <span className={cn('min-w-0 flex-1 text-[0.9375rem] leading-snug text-ink transition-colors', done && 'text-ink-faint line-through decoration-1')}>
             {task.title}
           </span>
           {task.deadlineHard && task.dueDate ? (
@@ -131,10 +136,12 @@ export function TaskRow({
             </span>
           ) : null}
 
-          <Badge tone={STATUS_TONE[task.status]}>{STATUS_LABELS[task.status]}</Badge>
+          {task.status !== 'planned' && task.status !== 'inbox' ? (
+            <Badge tone={STATUS_TONE[task.status]}>{STATUS_LABELS[task.status]}</Badge>
+          ) : null}
 
           {task.basePriority >= 4 ? (
-            <Badge tone={task.basePriority === 5 ? 'critical' : 'caution'}>P{task.basePriority}</Badge>
+            <span className={cn('text-2xs font-semibold', task.basePriority === 5 ? 'text-critical' : 'text-caution')}>P{task.basePriority}</span>
           ) : null}
 
           {task.dueDate ? (
