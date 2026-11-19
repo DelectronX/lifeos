@@ -94,7 +94,12 @@ export async function detectAdapter(
     return ready ? adapter : null;
   };
 
-  const defaultOrder: AdapterId[] = ['http', 'singlefile', 'fsaccess', 'download'];
+  // Browser storage is the ONE place data lives: every save lands in this
+  // app's IndexedDB (Safari "Website Data" / Chrome site storage) with no
+  // file picker, no server and no manual Save. Explicit `prefer` overrides
+  // (tests, power users) are still honoured; the file adapters remain
+  // available for export/import only.
+  const defaultOrder: AdapterId[] = ['indexeddb', 'memory'];
   const order: AdapterId[] = overrides.prefer
     ? [overrides.prefer, ...defaultOrder.filter((i) => i !== overrides.prefer)]
     : defaultOrder;
