@@ -127,7 +127,7 @@ export function LockedFocusOverlay() {
       <div className="mx-auto w-full max-w-2xl flex-1 space-y-4 p-4">
         <ActiveTimerPanel />
 
-        <div className="rounded-lg border border-line bg-surface-sunken px-3 py-2.5">
+        <div className="rounded-[var(--r-lg)] bg-surface-sunken px-3 py-2.5">
           <p className="t-meta flex items-start gap-1.5">
             <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             <span>
@@ -148,7 +148,7 @@ export function LockedFocusOverlay() {
         ) : null}
 
         {mode === 'exit' ? (
-          <div className="space-y-2 rounded-md border border-line bg-surface px-3 py-3">
+          <div className="space-y-2 rounded-[var(--r-md)] bg-surface-sunken/60 px-3 py-3">
             <p className="t-meta">Enter your Focus password to end this session early.</p>
             <Input
               type="password"
