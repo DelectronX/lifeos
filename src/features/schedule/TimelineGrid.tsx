@@ -130,19 +130,27 @@ export function TimelineGrid({
   };
 
   return (
-    <div ref={scrollRef} className={cn('relative overflow-auto rounded-card border border-line bg-surface-raised', className)}>
+    <div ref={scrollRef} className={cn('relative overflow-auto overscroll-contain rounded-[14px] surface-card', className)}>
       <div ref={bodyRef} className="relative flex" style={{ height }}>
         {/* Hour gutter */}
-        <div className="sticky left-0 z-10 shrink-0 bg-surface-raised" style={{ width: HOUR_LABEL_WIDTH }}>
-          {hourLines.map((m) => (
-            <div
-              key={m}
-              className="absolute -translate-y-1/2 whitespace-nowrap pr-2 text-right"
-              style={{ top: yFor(m), width: HOUR_LABEL_WIDTH }}
-            >
-              <span className="t-num text-2xs text-ink-faint">{formatMinute(m)}</span>
+        <div className="sticky left-0 z-10 shrink-0 border-r border-line-faint bg-surface-raised" style={{ width: HOUR_LABEL_WIDTH }}>
+          {hourLines.map((m) => {
+            const current = nowVisible && Math.floor(nowMinute / 60) * 60 === m;
+            return (
+              <div
+                key={m}
+                className="absolute -translate-y-1/2 whitespace-nowrap pr-2.5 text-right"
+                style={{ top: yFor(m), width: HOUR_LABEL_WIDTH }}
+              >
+                <span className={cn('t-num text-[0.6875rem]', current ? 'font-semibold text-ink' : 'text-ink-faint')}>{formatMinute(m)}</span>
+              </div>
+            );
+          })}
+          {nowVisible ? (
+            <div className="absolute right-1 z-10 -translate-y-1/2" style={{ top: yFor(nowMinute) }}>
+              <span className="t-num rounded-[5px] bg-[#D70015] px-1 py-[1px] text-[0.625rem] font-bold text-white">{formatMinute(nowMinute)}</span>
             </div>
-          ))}
+          ) : null}
         </div>
 
         {/* Day columns */}
@@ -150,14 +158,14 @@ export function TimelineGrid({
           {/* Hour lines span all columns */}
           <div className="pointer-events-none absolute inset-0">
             {hourLines.map((m) => (
-              <div key={m} className="absolute inset-x-0 border-t border-line" style={{ top: yFor(m) }} />
+              <div key={m} className="absolute inset-x-0 border-t border-line-faint" style={{ top: yFor(m) }} />
             ))}
             {/* Half-hour hairlines, only when the grid is tall enough to read them */}
             {pixelsPerMinute >= 0.7 &&
               hourLines.map((m) => (
                 <div
                   key={`h${m}`}
-                  className="absolute inset-x-0 border-t border-line/40"
+                  className="absolute inset-x-0 border-t border-dashed border-line-faint/60"
                   style={{ top: yFor(m + 30) }}
                 />
               ))}
@@ -166,9 +174,13 @@ export function TimelineGrid({
           {columns.map((col, ci) => (
             <div
               key={col.date}
-              className={cn('relative flex-1 border-l border-line', ci === 0 && 'border-l-0')}
+              className={cn('relative flex-1 border-l border-line-faint', ci === 0 && 'border-l-0')}
               onClick={(e) => { if (e.target === e.currentTarget) handleGridClick(e, col.date); }}
             >
+              {/* Elapsed time today reads as slightly receded. */}
+              {nowVisible && nowColumn === ci ? (
+                <div className="timeline-past pointer-events-none absolute inset-x-0 top-0" style={{ height: yFor(nowMinute) }} aria-hidden />
+              ) : null}
               {col.laid.map(({ block, left, width, startMinute, endMinute }) => {
                 const isDragging = drag?.active && drag.id === block.id;
                 if (isDragging) return null;
@@ -204,8 +216,8 @@ export function TimelineGrid({
 
               {nowVisible && nowColumn === ci ? (
                 <div className="pointer-events-none absolute inset-x-0 z-20" style={{ top: yFor(nowMinute) }}>
-                  <div className="relative border-t-2 border-critical">
-                    <span className="absolute -left-1 -top-[5px] h-2 w-2 rounded-full bg-critical" />
+                  <div className="relative h-[2px] bg-critical shadow-[0_0_10px_rgb(var(--c-critical)/0.6)]">
+                    <span className="absolute -left-[5px] -top-[4px] h-2.5 w-2.5 rounded-full bg-critical ring-2 ring-surface-raised" />
                   </div>
                 </div>
               ) : null}
