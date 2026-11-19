@@ -110,7 +110,7 @@ export function AutoRescheduleReviewDialog() {
           {decisions.map((d) => (
             <div
               key={d.taskId}
-              className="rounded-card border border-line bg-surface px-3 py-2.5"
+              className="rounded-card bg-surface-sunken/60 px-3 py-2.5"
             >
               <div className="flex items-start gap-2.5">
                 <Checkbox
