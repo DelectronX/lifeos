@@ -112,7 +112,7 @@ export function PlanRescheduleDialog({
         </div>
       ) : !preview ? null : (
         <>
-          <p className="mb-3 rounded-md border border-line bg-surface-sunken px-3 py-2 text-sm text-ink">
+          <p className="mb-3 rounded-[var(--r-md)] bg-surface-sunken px-3 py-2 text-sm text-ink">
             {remaining?.explanation}
           </p>
 
@@ -196,7 +196,7 @@ export function DurationHint({
   if (prediction.sampleSize < 1) return null;
   const s = prediction.suggestion;
   return (
-    <div className={cn('rounded-card border border-line bg-surface-sunken px-3 py-2', className)}>
+    <div className={cn('rounded-card bg-surface-sunken px-3 py-2', className)}>
       <div className="flex items-start gap-2">
         <Lightbulb className="mt-0.5 h-3.5 w-3.5 shrink-0 text-caution" />
         <div className="min-w-0 flex-1">
