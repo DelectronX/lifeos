@@ -2,6 +2,8 @@ import { Trash2 } from 'lucide-react';
 import { Button, IconButton } from '@/components/ui/Button';
 import { Input, Select, Toggle } from '@/components/ui/Input';
 import { weekdayName } from '@/lib/date';
+import { ACCENTS, applyAccent } from '@/lib/accent';
+import { cn } from '@/lib/cn';
 import { SettingRow, SettingsSection, clampNumber, hhmmToMinutes, minutesToHHMM } from './SettingsSection';
 import type { Settings, ThemeMode, TimeRange, WorkingHours } from '@/types';
 import {
@@ -34,6 +36,35 @@ export function AppearanceSettings({
           <option value="light">Light</option>
           <option value="dark">Dark</option>
         </Select>
+      </SettingRow>
+
+      <SettingRow label="Accent color" hint="Tints buttons, selection and the sidebar.">
+        <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Accent color">
+          {ACCENTS.map((a) => {
+            const on = (appearance.accent ?? 'blue') === a.id;
+            return (
+              <button
+                key={a.id}
+                type="button"
+                role="radio"
+                aria-checked={on}
+                aria-label={a.label}
+                title={a.label}
+                onClick={() => {
+                  applyAccent(a.id);
+                  void onPatch({ appearance: { ...appearance, accent: a.id } });
+                }}
+                className={cn(
+                  'grid h-8 w-8 place-items-center rounded-full transition-transform active:scale-95',
+                  on ? 'ring-2 ring-offset-2 ring-offset-surface-raised' : '',
+                )}
+                style={{ backgroundColor: a.swatch, ...(on ? { ['--tw-ring-color' as string]: a.swatch } : {}) }}
+              >
+                {on ? <span className="h-2.5 w-2.5 rounded-full bg-white/90" /> : null}
+              </button>
+            );
+          })}
+        </div>
       </SettingRow>
 
       <SettingRow label="Week starts on" hint="Used by the week view, weekly review and analytics.">
