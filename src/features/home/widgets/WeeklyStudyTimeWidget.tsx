@@ -1,3 +1,4 @@
+import { BarChart3 } from 'lucide-react';
 import { WidgetShell } from './WidgetShell';
 import { useAnalytics, resolveRange } from '@/services/analyticsService';
 import { formatDuration } from '@/lib/date';
@@ -12,7 +13,7 @@ export function WeeklyStudyTimeWidget(_props: WidgetComponentProps) {
   const minutes = bundle?.result.study.studyMinutes ?? 0;
 
   return (
-    <WidgetShell title="Weekly Study Time">
+    <WidgetShell icon={BarChart3} tone="violet" href="/analytics" title="Weekly Study Time">
       <Stat
         label="This week"
         value={bundle ? formatDuration(minutes) : '…'}
