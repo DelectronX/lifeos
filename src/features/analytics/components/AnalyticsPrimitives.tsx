@@ -121,7 +121,7 @@ export function AnalyticsSection({
 /** A plain sentence the engine produced, presented as an observation. */
 export function InsightNote({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <p className={cn('rounded-lg border border-line bg-surface-sunken px-3 py-2 text-sm text-ink-muted', className)}>
+    <p className={cn('rounded-[var(--r-lg)] bg-surface-sunken px-3 py-2 text-sm text-ink-muted', className)}>
       {children}
     </p>
   );
