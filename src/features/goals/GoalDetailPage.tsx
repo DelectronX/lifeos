@@ -231,7 +231,7 @@ export function GoalDetailPage() {
                             type="date"
                             value={node.milestone.targetDate ?? ''}
                             onChange={(e) => void updateMilestone(node.milestone.id, { targetDate: e.target.value || null })}
-                            className="rounded border border-line bg-surface px-1 py-0.5 text-2xs text-ink"
+                            className="rounded-[var(--r-sm)] bg-surface-sunken/60 px-1 py-0.5 text-2xs text-ink"
                           />
                         </label>
                         <label className="t-meta inline-flex items-center gap-1">
@@ -242,7 +242,7 @@ export function GoalDetailPage() {
                             step={0.5}
                             value={node.milestone.weight}
                             onChange={(e) => void updateMilestone(node.milestone.id, { weight: Math.max(0, Number(e.target.value) || 0) })}
-                            className="w-14 rounded border border-line bg-surface px-1 py-0.5 text-2xs text-ink"
+                            className="w-14 rounded-[var(--r-sm)] bg-surface-sunken/60 px-1 py-0.5 text-2xs text-ink"
                           />
                         </label>
                         {node.milestone.targetDate ? (
@@ -459,7 +459,7 @@ function LinkTasksModal({
         <Field label="Search">
           <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Filter by title…" />
         </Field>
-        <div className="max-h-72 space-y-1 overflow-y-auto rounded-lg border border-line p-2">
+        <div className="max-h-72 space-y-1 overflow-y-auto rounded-[var(--r-lg)] p-2 bg-surface-sunken/50">
           {shown.length === 0 ? <div className="t-meta px-1 py-3 text-center">No matching open tasks.</div> : null}
           {shown.map((t) => (
             <div key={t.id} className="rounded px-1 py-1 hover:bg-surface-sunken">
