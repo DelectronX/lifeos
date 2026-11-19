@@ -17,31 +17,40 @@ import { cn } from '@/lib/cn';
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'subtle' | 'danger' | 'link';
 export type ButtonSize = 'xs' | 'sm' | 'md' | 'lg';
 
+/*
+ * Apple button styles:
+ *   primary   = filled  (accent fill — one per screen)
+ *   secondary = gray    (system fill, label colour)
+ *   subtle    = tinted  (accent at 15%, accent label)
+ *   ghost     = plain   (no fill until hover)
+ *   danger    = destructive tinted
+ * Small sizes are capsules; large are rounded rects. Press = 0.97 scale.
+ */
 const BASE =
-  'relative inline-flex select-none items-center justify-center whitespace-nowrap font-medium ' +
-  'transition-[background-color,border-color,color,transform,opacity] duration-base ease-calm ' +
-  'active:translate-y-px disabled:pointer-events-none disabled:opacity-45';
+  'touch-hit relative inline-flex select-none items-center justify-center whitespace-nowrap font-semibold tracking-[-0.01em] ' +
+  'transition-[background-color,color,transform,opacity,box-shadow] duration-base ease-calm ' +
+  'active:scale-[0.97] disabled:pointer-events-none disabled:opacity-40';
 
 const VARIANTS: Record<ButtonVariant, string> = {
   primary:
-    'bg-accent text-accent-contrast shadow-ambient hover:bg-accent/90 active:bg-accent/95',
+    'bg-accent text-accent-contrast shadow-[inset_0_1px_0_rgb(255_255_255/0.18)] hover:brightness-110 active:brightness-95',
   secondary:
-    'border border-line bg-surface-raised text-ink hover:border-line-strong hover:bg-surface-overlay',
+    'bg-surface-sunken text-ink hover:bg-line-strong/60',
   ghost:
-    'text-ink-muted hover:bg-surface-raised hover:text-ink',
+    'text-ink-muted hover:bg-surface-sunken/70 hover:text-ink',
   subtle:
-    'bg-surface-raised/70 text-ink-muted hover:bg-surface-overlay hover:text-ink',
+    'bg-accent/15 text-accent-ink hover:bg-accent/25',
   danger:
-    'bg-critical text-accent-contrast hover:bg-critical/90',
+    'bg-critical/15 text-critical hover:bg-critical/25',
   link:
-    'px-0 text-accent underline-offset-4 hover:underline',
+    'px-0 font-medium text-accent-ink hover:underline underline-offset-4 active:scale-100',
 };
 
 const SIZES: Record<ButtonSize, string> = {
-  xs: 'h-7 gap-1 rounded-[var(--r-xs)] px-2 text-xs',
-  sm: 'h-8 gap-1.5 rounded-[var(--r-sm)] px-2.5 text-[0.8125rem]',
-  md: 'h-9 gap-2 rounded-[var(--r-md)] px-3.5 text-sm',
-  lg: 'h-11 gap-2 rounded-[var(--r-lg)] px-5 text-[0.9375rem]',
+  xs: 'h-7 gap-1 rounded-full px-2.5 text-xs',
+  sm: 'h-8 gap-1.5 rounded-full px-3.5 text-[0.8125rem]',
+  md: 'h-10 gap-2 rounded-[var(--r-md)] px-4 text-[0.9375rem]',
+  lg: 'h-12 gap-2 rounded-[var(--r-lg)] px-6 text-[1.0625rem]',
 };
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -100,10 +109,10 @@ export interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>
 }
 
 const ICON_BOX: Record<ButtonSize, string> = {
-  xs: 'h-6 w-6 rounded-[var(--r-xs)]',
-  sm: 'h-8 w-8 rounded-[var(--r-sm)]',
-  md: 'h-9 w-9 rounded-[var(--r-md)]',
-  lg: 'h-11 w-11 rounded-[var(--r-lg)]',
+  xs: 'h-7 w-7 rounded-full',
+  sm: 'h-8 w-8 rounded-full',
+  md: 'h-10 w-10 rounded-full',
+  lg: 'h-12 w-12 rounded-full',
 };
 
 export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(function IconButton(
@@ -145,8 +154,8 @@ export function ButtonGroup({ children, className }: { children: ReactNode; clas
   return (
     <div
       className={cn(
-        'inline-flex items-center overflow-hidden rounded-[var(--r-md)] border border-line bg-surface-raised',
-        '[&>*]:rounded-none [&>*]:border-0 [&>*]:bg-transparent [&>*+*]:border-l [&>*+*]:border-line',
+        'inline-flex items-center overflow-hidden rounded-full bg-surface-sunken p-0.5',
+        '[&>*]:rounded-full [&>*]:border-0 [&>*]:bg-transparent',
         className,
       )}
     >
