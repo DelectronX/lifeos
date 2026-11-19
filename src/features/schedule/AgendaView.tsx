@@ -1,3 +1,4 @@
+import { requestCompleteBlock } from '@/state/completeBlockStore';
 import { CalendarX2, CheckCircle2, MoreHorizontal, SkipForward } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Card, EmptyState } from '@/components/ui/Card';
@@ -5,7 +6,7 @@ import { Badge, Dot } from '@/components/ui/Badge';
 import { IconButton } from '@/components/ui/Button';
 import { Menu, type MenuItemSpec } from '@/components/ui/Menu';
 import {
-  completeBlock, duplicateBlock, deleteBlock, reopenBlock, skipBlock, startBlock,
+  duplicateBlock, deleteBlock, reopenBlock, skipBlock, startBlock,
 } from '@/services/scheduleService';
 import { toast } from '@/state/toastStore';
 import { formatDateKeyLong, formatDuration, formatTimeRange, relativeDayLabel } from '@/lib/date';
@@ -96,7 +97,7 @@ function AgendaRow({
     ...(closed
       ? [{ label: 'Reopen', onSelect: async () => { await reopenBlock(block.id); toast.success('Reopened'); } }]
       : [
-          { label: 'Complete', onSelect: async () => { await completeBlock(block.id); toast.success('Completed'); } },
+          { label: 'Complete', onSelect: () => void requestCompleteBlock(block) },
           { label: 'Skip', onSelect: async () => { await skipBlock(block.id); toast.success('Skipped'); } },
           { label: 'Start now', onSelect: async () => { await startBlock(block.id); toast.success('Started'); } },
         ]),
@@ -142,7 +143,7 @@ function AgendaRow({
             <IconButton
               label="Complete block"
               size="xs"
-              onClick={async () => { await completeBlock(block.id); toast.success('Completed'); }}
+              onClick={() => void requestCompleteBlock(block)}
             >
               <CheckCircle2 className="h-4 w-4" />
             </IconButton>
