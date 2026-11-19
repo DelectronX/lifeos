@@ -237,6 +237,13 @@ export async function importFromFile(
   options: { allowPartial?: boolean } = {},
 ): Promise<ImportResult> {
   const text = await file.text();
+
+  // A LifeOS configuration file (format "lifeos-config") is set-up data, not
+  // a backup: it is MERGED by id/key and never wipes anything, whichever
+  // import button was used.
+  const configResult = await tryApplyConfigText(text);
+  if (configResult) return configResult;
+
   const { bundle, report } = inspectImportFile(text);
   if (!bundle || report.issues.some((i) => i.severity === 'error' && i.table === null)) {
     return {
@@ -427,4 +434,38 @@ async function decodeAttachments(rows: Record<string, unknown>[]): Promise<Recor
     void _drop;
     return { ...rest, blob: base64ToBlob(base64, String(row.mime ?? 'application/octet-stream')) };
   });
+}
+
+/**
+ * When `text` is a `lifeos-config` file, applies it (merge, never replace)
+ * and returns an ImportResult; otherwise returns null so the caller treats
+ * the file as a normal backup.
+ */
+export async function tryApplyConfigText(text: string): Promise<ImportResult | null> {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    return null;
+  }
+  if (!parsed || typeof parsed !== 'object' || (parsed as { format?: unknown }).format !== 'lifeos-config') return null;
+  const { applyConfig } = await import('./configService');
+  const snap = await createSnapshot('pre_import', 'Automatic snapshot taken before applying a configuration file.');
+  const outcome = await applyConfig(parsed);
+  const issues = outcome.validation.issues.map((i) => ({
+    severity: i.severity, table: i.where.split('.')[0] ?? null, row: null, message: `${i.where}: ${i.message}`,
+  }));
+  const counts: Record<string, number> = {};
+  for (const [k, v] of Object.entries(outcome.created)) counts[k] = (counts[k] ?? 0) + v;
+  for (const [k, v] of Object.entries(outcome.updated)) counts[k] = (counts[k] ?? 0) + v;
+  return {
+    ok: outcome.ok,
+    report: { ok: outcome.validation.ok, issues, acceptedCounts: counts, droppedCount: 0 },
+    migrationsApplied: [],
+    importedCounts: counts,
+    safetySnapshotId: outcome.ok ? snap.id : null,
+    message: outcome.ok
+      ? outcome.message
+      : `${outcome.message} ${issues.filter((i) => i.severity === 'error').slice(0, 3).map((i) => i.message).join(' · ')}`,
+  };
 }
