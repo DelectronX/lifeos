@@ -1,3 +1,4 @@
+import { Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { WidgetShell } from './WidgetShell';
 import { useLiveProfile, useSchedulingConfig } from '@/state/useLiveData';
@@ -12,7 +13,7 @@ export function XPProgressWidget(_props: WidgetComponentProps) {
   const level = profile ? levelProgress(profile.totalXP, config.xp) : null;
 
   return (
-    <WidgetShell title="EP / XP Progress">
+    <WidgetShell icon={Sparkles} tone="accent" href="/achievements" title="EP / XP Progress">
       <Link to="/achievements" className="flex items-center gap-3 hover:opacity-90">
         <Ring value={level?.progress ?? 0} size={48} stroke={5}>
           <span className="t-num text-xs font-semibold text-ink">{level?.level ?? 1}</span>
