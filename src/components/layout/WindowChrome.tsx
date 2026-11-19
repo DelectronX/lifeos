@@ -1,79 +1,70 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Search } from 'lucide-react';
 import { cn } from '@/lib/cn';
-import { Kbd } from '@/components/ui/Kbd';
-import { modKeyLabel } from '@/lib/platform';
 import { SaveIndicator } from '@/components/system/SaveIndicator';
-import { useShell } from './ShellContext';
+
+/** True once the main content has scrolled past its large title. */
+export function useContentScrolled(threshold = 44): boolean {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const el = document.getElementById('lo-content');
+    if (!el) return;
+    const on = () => setScrolled(el.scrollTop > threshold);
+    on();
+    el.addEventListener('scroll', on, { passive: true });
+    return () => el.removeEventListener('scroll', on);
+  }, [threshold]);
+  return scrolled;
+}
 
 /**
- * WindowChrome — the slim top bar.
+ * WindowChrome — the desktop/iPad top bar.
  *
- * Reads as OS window chrome, not a page header: module title on the left,
- * a contextual actions slot in the middle-right, then the palette trigger and
- * a live clock/date. Everything numeric is tabular so nothing jitters.
+ * Apple navigation-bar behaviour: transparent while the page's large title is
+ * visible; once content scrolls beneath it the bar takes on material and a
+ * hairline and the inline title fades in. The Live Activity capsule sits in
+ * the centre; save state and the clock on the right.
  */
 export function WindowChrome({
   title,
   actions,
+  center,
 }: {
   title: string;
   actions?: ReactNode;
+  center?: ReactNode;
 }) {
-  const { openCommandPalette } = useShell();
-
+  const scrolled = useContentScrolled();
   return (
     <header
       className={cn(
-        'sticky top-0 z-chrome flex h-chrome shrink-0 items-center gap-3',
-        'border-b border-line bg-surface/90 pl-5 pr-3 shadow-edge backdrop-blur-xl',
+        'sticky top-0 z-chrome grid h-chrome shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 px-5',
+        'border-b transition-[background-color,border-color,backdrop-filter] duration-slow ease-calm',
+        scrolled ? 'material-bar border-line/60' : 'border-transparent bg-surface-base',
       )}
     >
-      <h1 className="truncate text-[0.8125rem] font-semibold tracking-[-0.012em] text-ink">
+      <h1
+        className={cn(
+          'truncate text-[0.9375rem] font-semibold tracking-[-0.016em] text-ink transition-[opacity,transform] duration-slow ease-calm',
+          scrolled ? 'translate-y-0 opacity-100' : 'translate-y-1 opacity-0',
+        )}
+        aria-hidden={!scrolled}
+      >
         {title}
       </h1>
 
-      <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
+      <div className="flex min-w-0 justify-center">{center}</div>
+
+      <div className="flex min-w-0 items-center justify-end gap-3">
         {actions}
+        <SaveIndicator />
+        <Clock />
       </div>
-
-      <SaveIndicator />
-
-      <PaletteTrigger onClick={() => openCommandPalette()} />
-
-      <span className="h-5 w-px shrink-0 bg-line" aria-hidden />
-
-      <Clock />
     </header>
   );
 }
 
-function PaletteTrigger({ onClick }: { onClick: () => void }) {
-  const mod = modKeyLabel();
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-keyshortcuts={`${mod === '⌘' ? 'Meta' : 'Control'}+K`}
-      className={cn(
-        'group inline-flex h-7 shrink-0 items-center gap-2 rounded-[var(--r-md)]',
-        'border border-line bg-surface-sunken pl-2 pr-1.5',
-        'text-xs text-ink-faint transition-colors duration-base ease-calm',
-        'hover:border-line-strong hover:text-ink-muted',
-      )}
-    >
-      <Search className="h-3.5 w-3.5" aria-hidden />
-      <span className="hidden sm:inline">Search</span>
-      <span className="flex items-center gap-0.5">
-        <Kbd>{mod}</Kbd>
-        <Kbd>K</Kbd>
-      </span>
-    </button>
-  );
-}
-
 /** A live clock + date. Ticks on the minute boundary, not on a 1s interval. */
-export function Clock({ className }: { className?: string }) {
+export function Clock({ className, withDate = false }: { className?: string; withDate?: boolean }) {
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
@@ -96,11 +87,11 @@ export function Clock({ className }: { className?: string }) {
     <div className={cn('hidden shrink-0 items-center gap-2 pr-1 sm:flex', className)}>
       <time
         dateTime={now.toISOString()}
-        className="t-num text-[0.8125rem] font-medium text-ink"
+        className="t-num text-[0.8125rem] font-semibold text-ink"
       >
         {time}
       </time>
-      <span className="t-meta t-num hidden md:inline">{date}</span>
+      {withDate ? <span className="t-num text-[0.8125rem] text-ink-faint">{date}</span> : <span className="t-meta t-num hidden md:inline">{date}</span>}
     </div>
   );
 }
