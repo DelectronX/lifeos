@@ -31,19 +31,19 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        'flex flex-col items-center justify-center rounded-panel border border-dashed border-line text-center',
-        size === 'sm' ? 'px-4 py-6' : 'px-6 py-12',
+        'flex flex-col items-center justify-center rounded-panel bg-surface-raised/50 text-center',
+        size === 'sm' ? 'px-4 py-7' : 'px-6 py-16',
         className,
       )}
     >
       {icon ? (
-        <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-[var(--r-md)] bg-surface-raised text-ink-faint">
+        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-surface-sunken text-ink-muted [&_svg]:h-6 [&_svg]:w-6">
           {icon}
         </div>
       ) : null}
-      <div className="t-section">{title}</div>
-      {description ? <p className="t-muted mt-1 max-w-sm text-balance">{description}</p> : null}
-      {action ? <div className="mt-4">{action}</div> : null}
+      <div className="t-title">{title}</div>
+      {description ? <p className="t-muted mt-1.5 max-w-sm text-balance">{description}</p> : null}
+      {action ? <div className="mt-5">{action}</div> : null}
     </div>
   );
 }
