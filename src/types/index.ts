@@ -51,6 +51,11 @@ export interface Tracker extends BaseEntity {
   sortOrder: number;
   /** Optional weekly time target in minutes, used by analytics + goals. */
   weeklyTargetMinutes?: number;
+  /**
+   * When set (e.g. "problems"), completing a block of this tracker offers a
+   * quick counter, and the count feeds `units:<tracker>` achievements.
+   */
+  unitLabel?: string;
 }
 
 /* ------------------------------------------------------------------ */
@@ -66,6 +71,11 @@ export interface UserProfile extends BaseEntity {
   longestStreak: number;
   lastActiveDate: DateKey | null;
   onboardedAt: Timestamp | null;
+  /**
+   * Redeemable reward-currency balance (distinct from XP). Cached mirror of
+   * the `currency` ledger; recomputed whenever the ledger changes.
+   */
+  rewardBalance?: number;
 }
 
 export type ThemeMode = 'light' | 'dark' | 'system';
@@ -93,7 +103,17 @@ export type DashboardWidgetType =
   | 'upcoming_deadlines'
   | 'recent_material'
   | 'continue_studying'
-  | 'achievement_progress';
+  | 'achievement_progress'
+  | 'daily_productivity'
+  | 'time_distribution'
+  | 'weekly_performance'
+  | 'goal_progress'
+  | 'project_overview'
+  | 'streak_tracker'
+  | 'achievement_showcase'
+  | 'focus_stats'
+  | 'overdue_tasks'
+  | 'activity_timeline';
 
 export type DashboardWidgetSize = 'small' | 'medium' | 'large';
 
@@ -129,6 +149,23 @@ export interface Settings extends BaseEntity {
     leadMinutes?: number;
     /** Phase 8: notify when a task's due date arrives. */
     taskDue?: boolean;
+    /* --- Desktop notification upgrade (all optional; existing rows stay valid) --- */
+    /** A block's start time ("starting now"), in addition to the lead-time heads-up. */
+    blockStartNow?: boolean;
+    /** A required block ended without being logged. */
+    blockMissed?: boolean;
+    /** Re-remind about a missed block every N minutes (0 = once). */
+    missedRepeatMinutes?: number;
+    /** Completions (blocks, tasks, checklists) — useful when an agent completes things. */
+    completions?: boolean;
+    /** Hard deadlines due within 24 h. */
+    deadlines?: boolean;
+    /** Achievements, level-ups, goals, milestones, payments. */
+    achievements?: boolean;
+    /** Overdue invoices, follow-ups, open checklists, close-the-day. */
+    alerts?: boolean;
+    /** Also show desktop notifications while LifeOS is the active window. */
+    desktopWhenVisible?: boolean;
   };
   lastDailyReviewDate: DateKey | null;
   lastWeeklyReviewDate: DateKey | null;
@@ -169,6 +206,8 @@ export interface Settings extends BaseEntity {
    * a default set of widgets the user didn't choose.
    */
   dashboardLayout?: DashboardWidgetConfig[];
+  /** Widget types already offered to this user (new widget types are introduced once). */
+  widgetsIntroduced?: DashboardWidgetType[];
 
   /**
    * The personalized app/study-space name shown in the sidebar brand, the
@@ -178,6 +217,55 @@ export interface Settings extends BaseEntity {
    * this one is the space.
    */
   spaceName?: string;
+
+  /**
+   * Generic repeating cycles (data, not code): "every 14 days, 7 days Prep
+   * then 7 days Exam", "alternating Sunday A / Sunday B". A RecurringRule may
+   * bind itself to one phase (`cyclePhase`) so it only fires on days inside
+   * that phase; achievements can count completed cycles/phases.
+   */
+  cycles?: CycleDefinition[];
+}
+
+/* ------------------------------------------------------------------ */
+/* Cycles — alternating / multi-phase recurrence                       */
+/* ------------------------------------------------------------------ */
+
+export interface CyclePhase {
+  /** Stable key referenced by RecurringRule.cyclePhase and metrics. */
+  key: string;
+  title: string;
+  /** Whole days this phase lasts. Phases run back to back from `anchorDate`. */
+  lengthDays: number;
+  /**
+   * Tracker whose completions decide whether the phase "happened" (for
+   * cycle-completion metrics). Null = any completion-type activity counts.
+   */
+  trackerId?: ID | null;
+  /** Free-form hints shown in the UI for the current phase. */
+  description?: string;
+  /**
+   * When the phase counts as "completed" for cycle metrics: a customMetrics
+   * key evaluated over the phase's own date range must reach `min`
+   * (e.g. { metric: 'papers:*', min: 4 } for an exam phase). Absent = any
+   * recorded work in the phase.
+   */
+  completion?: { metric: string; min: number } | null;
+}
+
+export interface CycleDefinition {
+  id: ID;
+  title: string;
+  /** Local day on which phase[0] of cycle #0 begins. */
+  anchorDate: DateKey;
+  phases: CyclePhase[];
+  active: boolean;
+  /**
+   * Weekdays (0 = Sunday) on which the cycle's phase is shown in the header.
+   * Omit to show it every day (e.g. "Exam Week · day 3 of 7"); a Sunday-only
+   * alternation would use [0].
+   */
+  showOn?: number[];
 }
 
 /** How and where the app persists its JSON files. */
@@ -287,7 +375,17 @@ export interface AppearancePreferences {
   density: 'comfortable' | 'compact';
   use24HourClock: boolean;
   reduceMotion: boolean;
+  /** App accent color id (see lib/accent.ts). */
+  accent?: string;
+  /** Simple hides power-user destinations and settings; Advanced shows everything. */
+  mode?: UiMode;
+  /** Animated stage background behind the content layer. */
+  background?: StageBackground;
 }
+
+export type UiMode = 'simple' | 'advanced';
+/** `galaxy`: animated ASCII spiral galaxy; `still`: one frame, no motion; `off`: plain charcoal. */
+export type StageBackground = 'galaxy' | 'still' | 'off';
 
 export interface BackupPreferences {
   autoBackupEnabled: boolean;
@@ -357,6 +455,14 @@ export interface Goal extends BaseEntity {
   progressComputedAt: Timestamp | null;
   completedAt: Timestamp | null;
   color?: TrackerColor;
+  /**
+   * Sequential rotation (data): goals sharing a `group` run one at a time in
+   * `order`. Only the first unfinished goal of a group is 'active'; the rest
+   * stay 'paused' (and their tasks are not auto-planned) until it completes.
+   */
+  sequence?: { group: string; order: number } | null;
+  /** XP banked once when this goal completes. Falls back to xp.awards.goal_completed. */
+  completionXP?: number;
 }
 
 export interface Milestone extends BaseEntity {
@@ -401,6 +507,24 @@ export interface TaskStatusChange {
   reason?: string;
   /** Set when an engine (not the user) made the change, for undo grouping. */
   planRunId?: ID;
+}
+
+/** A LifeOS task linked to a task in an external tool. */
+export interface ExternalTaskLink {
+  provider: 'clickup';
+  /** The external task id. */
+  id: string;
+  url: string;
+  listId: string;
+  listName?: string;
+  /** ClickUp workspace (team) id, for timers. */
+  teamId?: string;
+  /** Completion state of both sides at the last successful sync. */
+  lastSync?: { lifeosCompleted: boolean; clickupClosed: boolean; at: number } | null;
+  /** True when the external task no longer exists (it is never deleted here). */
+  missing?: boolean;
+  /** Set when both sides changed completion in opposite directions. */
+  conflict?: boolean;
 }
 
 export interface Task extends BaseEntity {
@@ -451,6 +575,8 @@ export interface Task extends BaseEntity {
   flexibility?: TaskFlexibility;
   /** External reference links (URLs) attached to the task. */
   links?: string[];
+  /** Set when this task mirrors a task in an external tool (ClickUp). Optional; not indexed. */
+  external?: ExternalTaskLink;
 }
 
 /* ------------------------------------------------------------------ */
@@ -511,6 +637,27 @@ export interface ScheduleBlock extends BaseEntity {
   detachedFromSeries?: boolean;
   /** Set when this block came from applying a ScheduleTemplate. */
   templateId?: ID | null;
+  /**
+   * Optional blocks (free time, flexible meals, entertainment) are never
+   * counted as missed, never feed "perfect day" / adherence stats and never
+   * earn productivity XP. Defaults to false.
+   */
+  optional?: boolean;
+  /**
+   * Countable output logged on this block (e.g. problems solved). Counts
+   * toward `units:<tracker>` achievements once the block is completed.
+   */
+  units?: number;
+  /** Tracker the block was planned under, when a more specific one was chosen on completion. */
+  plannedTrackerId?: ID;
+  /** Paper (exam/mock) planned for this block by the exam planner. */
+  paperId?: ID;
+  /**
+   * Set when the scheduler placed this task block INSIDE another block of a
+   * compatible tracker (e.g. Physics homework inside the Physics study slot)
+   * or over a block the user explicitly chose to overlap.
+   */
+  hostBlockId?: ID | null;
 }
 
 export interface ScheduleTemplateEntry {
@@ -557,6 +704,16 @@ export interface RecurringRule extends BaseEntity {
     title: string;
     kind: BlockKind;
     protected: boolean;
+    /** See ScheduleBlock.optional. */
+    optional?: boolean;
+    notes?: string;
+    /**
+     * Marks this as a paper slot (exam / mock / test): the exam planner lets
+     * the user pick one of these subjects per occurrence and creates a Paper.
+     */
+    paperSubjects?: ID[];
+    /** Default paper length in questions when the planner creates one. */
+    paperQuestions?: number;
   } | null;
   lastGeneratedDate: DateKey | null;
   active: boolean;
@@ -569,6 +726,15 @@ export interface RecurringRule extends BaseEntity {
    * "this occurrence only" edit mode so the series definition stays intact.
    */
   overrides?: Record<DateKey, RecurrenceOverride>;
+
+  /* --- Cycle-bound recurrence --- */
+  /**
+   * When set, the rule fires only on days that fall inside this phase of the
+   * named cycle (Settings.cycles). This is how "alternating Sunday A/B" and
+   * "exam-week-only" occurrences are expressed without hardcoding dates:
+   * the weekly/daily cadence selects candidate days, the phase filters them.
+   */
+  cyclePhase?: { cycleId: ID; phaseKey: string } | null;
 }
 
 /* ------------------------------------------------------------------ */
@@ -608,6 +774,7 @@ export interface RecurrenceOverride {
   trackerId?: ID;
   kind?: BlockKind;
   protected?: boolean;
+  optional?: boolean;
   notes?: string;
 }
 
@@ -905,7 +1072,12 @@ export type ActivityType =
   | 'level_up'
   | 'achievement_unlocked'
   | 'daily_review'
-  | 'weekly_review';
+  | 'weekly_review'
+  | 'checklist_completed'
+  | 'project_shipped'
+  | 'payment_received'
+  | 'source_read'
+  | 'skill_evidence';
 
 /**
  * The universal event record. One row per real thing that happened.
@@ -958,10 +1130,14 @@ export interface XPTransaction extends BaseEntity {
 export type AchievementCategory =
   | 'study' | 'goals' | 'skills' | 'consistency' | 'fitness' | 'mastery'
   /* --- Phase 9 additions. Existing values are unchanged. --- */
-  | 'revision' | 'focus' | 'planning' | 'personal';
+  | 'revision' | 'focus' | 'planning' | 'personal'
+  /* --- User-defined achievement categories. --- */
+  | 'academic' | 'projects' | 'discipline' | 'meta'
+  /* --- Work & Growth. --- */
+  | 'research' | 'earning';
 
 export interface Achievement extends BaseEntity {
-  /** Stable definition key from src/config/achievements.ts */
+  /** Stable definition key from src/config/achievements.ts, or a user key. */
   key: string;
   title: string;
   description: string;
@@ -971,6 +1147,24 @@ export interface Achievement extends BaseEntity {
   progress: number;
   unlockedAt: Timestamp | null;
   xpReward: number;
+
+  /* --- Data-defined achievements (optional; built-in rows omit these) --- */
+  /**
+   * 'builtin' rows mirror src/config/achievements.ts. 'custom' rows ARE the
+   * definition: their `condition` is evaluated generically by the
+   * ConditionEngine against the same metric source the built-ins use.
+   */
+  source?: 'builtin' | 'custom';
+  /**
+   * Serialised ConditionEngine AST (see src/engines/conditionEngine.ts).
+   * Metric keys may be any built-in stat or a dynamic tracker metric such as
+   * `minutes:<trackerId>`, `count:<trackerId>`, `streak:<trackerId>`,
+   * `sameDay:<id>,<id>` — see achievementService for the grammar.
+   */
+  condition?: unknown;
+  /** Display unit for progress, e.g. 'minutes'. */
+  unit?: string;
+  archived?: boolean;
 }
 
 /* ------------------------------------------------------------------ */
@@ -995,12 +1189,24 @@ export interface CustomReward extends BaseEntity {
   repeat: string;
   archived: boolean;
   sortOrder: number;
+
+  /* --- Redeemable rewards (optional; condition rewards omit these) --- */
+  /**
+   * 'condition' (default): earned automatically when `condition` holds.
+   * 'redeemable': bought by the user with reward currency for `cost`; the
+   * condition is ignored and the user decides when to redeem.
+   */
+  kind?: 'condition' | 'redeemable';
+  /** Reward-currency price of a redeemable reward. */
+  cost?: number;
 }
 
 /**
  * One earning of a CustomReward. `periodKey` is the repeat bucket ('once',
  * a date key, an ISO week key or a month key) and is uniquely indexed with the
- * reward id so a reward can never be earned twice in the same period.
+ * reward id so a reward can never be earned twice in the same period. For
+ * redeemable rewards the period key is the redemption's own id, so they can
+ * be redeemed any number of times (each redemption debits the ledger).
  */
 export interface RewardEarning extends BaseEntity {
   rewardId: ID;
@@ -1013,6 +1219,25 @@ export interface RewardEarning extends BaseEntity {
   claimedAt: Timestamp | null;
   /** Snapshot of the trace sentence at the moment it was earned. */
   summary: string;
+  /** Reward currency debited for a redemption. */
+  currencySpent?: number;
+}
+
+/**
+ * Reward-currency ledger (distinct from XP). Positive rows are earnings
+ * (configured ratio of banked XP), negative rows are redemptions. Deduped by
+ * key exactly like XPTransaction so nothing can be paid or charged twice.
+ */
+export interface CurrencyTransaction extends BaseEntity {
+  at: Timestamp;
+  date: DateKey;
+  amount: number;
+  reason: string;
+  description: string;
+  sourceType: string;
+  sourceId: ID | null;
+  dedupeKey: string;
+  balanceAfter: number;
 }
 
 /* ------------------------------------------------------------------ */
@@ -1134,6 +1359,28 @@ export interface XPConfig {
   minQualifyingMinutes: number;
   /** A task must live at least this long before completion earns XP (anti-farming). */
   minTaskAgeSeconds: number;
+
+  /* --- Data-driven per-activity XP (all optional; defaults keep old behaviour) --- */
+  /**
+   * Flat completion XP per tracker (walks up the tracker tree, nearest match
+   * wins). Replaces `awards.task_completed` / `awards.block_completed` for
+   * work belonging to that tracker, e.g. { trk_leetcode: 15, trk_cyber: 25 }.
+   */
+  trackerAwards?: Record<string, number>;
+  /**
+   * Trackers (and their descendants) whose completions earn NO productivity
+   * XP — breaks, free time, entertainment. Pillar 'system' trackers are
+   * excluded automatically; list extra ones here.
+   */
+  noXPTrackers?: string[];
+  /** One-off bonus when a streak first reaches N days: { 7: 150, 14: 300 }. */
+  streakMilestones?: Record<number, number>;
+  /** Bonus when every required block of a day is completed. 0 = off. */
+  fullDayBonus?: number;
+  /** Bonus when every required block of a Mon-Sun week is completed. 0 = off. */
+  fullWeekBonus?: number;
+  /** Reward currency minted per XP banked (0 = currency disabled). */
+  rewardCurrencyPerXP?: number;
 }
 
 export interface SchedulingConfig {
@@ -1235,3 +1482,5 @@ export interface SchedulingConfig {
   };
   xp: XPConfig;
 }
+
+export * from './workgrowth';
