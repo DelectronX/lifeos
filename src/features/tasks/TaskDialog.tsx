@@ -333,14 +333,14 @@ export function TaskDialog({
               <Input type="number" min={0} step={5} value={form.actualMinutes} onChange={(e) => set('actualMinutes', e.target.value)} disabled={!task} />
             </Field>
             <Field label="Remaining" hint="Estimate − done − already blocked out.">
-              <div className="flex h-9 items-center rounded-lg border border-line bg-surface-sunken px-3 text-sm text-ink t-num">
+              <div className="flex h-9 items-center rounded-[var(--r-lg)] bg-surface-sunken px-3 text-sm text-ink t-num">
                 {formatDuration(remaining)}
               </div>
             </Field>
           </div>
 
           {scheduledMinutes > 0 ? (
-            <div className="rounded-lg border border-line bg-surface-sunken px-3 py-2">
+            <div className="rounded-[var(--r-lg)] bg-surface-sunken px-3 py-2">
               <div className="t-meta">
                 {formatDuration(scheduledMinutes)} already on the calendar across {taskBlocks.length} block
                 {taskBlocks.length === 1 ? '' : 's'}.
@@ -415,7 +415,7 @@ export function TaskDialog({
           </div>
 
           <Field label="Resources" hint="Books, courses or notes this task works through.">
-            <div className="max-h-40 space-y-1 overflow-y-auto rounded-lg border border-line p-2">
+            <div className="max-h-40 space-y-1 overflow-y-auto rounded-[var(--r-lg)] p-2 bg-surface-sunken/50">
               {resources.length === 0 && <div className="t-meta px-1 py-2">No resources yet.</div>}
               {resources.map((r) => (
                 <label key={r.id} className="flex cursor-pointer items-center gap-2 rounded px-1 py-1 hover:bg-surface-sunken">
@@ -450,7 +450,7 @@ export function TaskDialog({
               {form.links.length > 0 && (
                 <ul className="space-y-1">
                   {form.links.map((l, i) => (
-                    <li key={`${l}-${i}`} className="flex items-center gap-2 rounded-md border border-line bg-surface-sunken px-2 py-1">
+                    <li key={`${l}-${i}`} className="flex items-center gap-2 rounded-[var(--r-md)] bg-surface-sunken px-2 py-1">
                       <span className="min-w-0 flex-1 truncate text-xs text-ink">{l}</span>
                       <IconButton
                         label="Remove link"
@@ -467,7 +467,7 @@ export function TaskDialog({
           </Field>
 
           <Field label="Depends on" hint="Not auto-scheduled until every dependency is complete.">
-            <div className="max-h-48 space-y-1 overflow-y-auto rounded-lg border border-line p-2">
+            <div className="max-h-48 space-y-1 overflow-y-auto rounded-[var(--r-lg)] p-2 bg-surface-sunken/50">
               {openTasks.filter((t) => t.id !== task?.id).length === 0 && (
                 <div className="t-meta px-1 py-2">No other open tasks.</div>
               )}
@@ -500,7 +500,7 @@ export function TaskDialog({
             <div className="t-label mb-2">Status history</div>
             <ol className="space-y-2">
               {[...task.statusHistory].reverse().map((h, i) => (
-                <li key={`${h.at}-${i}`} className="flex items-start gap-3 rounded-lg border border-line bg-surface-sunken px-3 py-2">
+                <li key={`${h.at}-${i}`} className="flex items-start gap-3 rounded-[var(--r-lg)] bg-surface-sunken px-3 py-2">
                   <Badge tone="neutral">{STATUS_LABELS[h.to]}</Badge>
                   <div className="min-w-0 flex-1">
                     <div className="t-meta">
@@ -521,7 +521,7 @@ export function TaskDialog({
             ) : (
               <ul className="space-y-1">
                 {taskBlocks.map((b) => (
-                  <li key={b.id} className="flex items-center gap-3 rounded-lg border border-line px-3 py-2">
+                  <li key={b.id} className="flex items-center gap-3 rounded-[var(--r-lg)] px-3 py-2 bg-surface-sunken/50">
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-sm text-ink">{b.date}</div>
                       <div className="t-meta">{formatTimeRange(b.start, b.end)} · {b.status}</div>
