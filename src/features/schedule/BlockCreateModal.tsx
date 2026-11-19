@@ -213,7 +213,7 @@ export function BlockCreateModal({
           </div>
         ) : null}
 
-        <div className="space-y-3 rounded-lg border border-line px-3 py-3">
+        <div className="space-y-3 rounded-[var(--r-lg)] px-3 py-3 bg-surface-sunken/50">
           <Toggle checked={isProtected} onChange={setIsProtected} label="Protected time" description="Engines never schedule over it." />
           <Toggle checked={locked} onChange={setLocked} label="Locked" description="Cannot be dragged or auto-moved." />
           <Toggle checked={repeat} onChange={setRepeat} label="Repeat" description="Creates a recurring series with editable occurrences." />
@@ -248,7 +248,7 @@ export function BlockCreateModal({
                       className={
                         weekdays.includes(i)
                           ? 'rounded-md border border-accent/30 bg-accent text-accent-contrast px-2 py-1 text-2xs font-medium'
-                          : 'rounded-md border border-line bg-surface px-2 py-1 text-2xs text-ink-muted hover:border-line-strong'
+                          : 'rounded-[var(--r-md)] bg-surface-sunken/60 px-2 py-1 text-2xs text-ink-muted'
                       }
                     >
                       {label}
