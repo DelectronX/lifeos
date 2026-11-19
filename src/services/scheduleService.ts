@@ -1,9 +1,11 @@
 import { db } from '@/db/db';
 import { newId } from '@/lib/id';
-import { dateKeyToTimestamp, MINUTE_MS, snapToGrid, toDateKey } from '@/lib/date';
+import { addDaysToKey, dateKeyToDate, dateKeyToTimestamp, MINUTE_MS, snapToGrid, toDateKey } from '@/lib/date';
 import { logActivity } from './activityService';
 import { setTaskStatus } from './taskService';
-import { awardXP, revokeXPFor } from './xpService';
+import { awardXP, bankBonus, revokeXPFor } from './xpService';
+import { getSchedulingConfig } from './settingsService';
+import { isRequiredBlock } from '@/engines/customMetrics';
 import type {
   BlockKind, BlockOrigin, BlockStatus, DateKey, ID, ScheduleBlock, Task, Timestamp,
 } from '@/types';
@@ -164,55 +166,147 @@ export async function deleteBlocksForTask(taskId: ID): Promise<number> {
   return blocks.length;
 }
 
+/** Outcome of a completion attempt — machine-readable for the UI and agents. */
+export type BlockCompletionResult =
+  | { status: 'completed'; blockId: ID; activityId: ID; durationMs: number }
+  | { status: 'already_completed'; blockId: ID }
+  | { status: 'not_found'; blockId: ID }
+  | { status: 'invalid_state'; blockId: ID; blockStatus: ScheduleBlock['status'] };
+
 /**
  * Completing a block records the real elapsed time as an Activity. When the
  * block is the last open one for its task, the task is completed too.
+ *
+ * The ONE completion path — the Done button, the completion sheet, the
+ * auto-settle of started blocks and the agent API all call this.
+ *
+ *  - Atomic: the status change and its `block_completed` activity are written
+ *    in one transaction, so a block is never "completed" without its event
+ *    (or vice versa).
+ *  - Idempotent: completing an already-completed block is a no-op that
+ *    returns `already_completed` — a double tap, a Done racing the
+ *    auto-settle timer, or two tabs can never log the event (or pay XP) twice.
+ *  - Graceful: a missing block returns `not_found`; a cancelled one
+ *    `invalid_state`. Neither throws.
+ *  - Follow-ups (XP, bonuses, the linked task) are each deduped by key, so a
+ *    failure there is logged and rethrown without leaving the block
+ *    half-completed; retrying is safe.
  */
-export async function completeBlock(id: ID, options: { at?: number; alsoCompleteTask?: boolean } = {}): Promise<void> {
+export async function completeBlock(
+  id: ID,
+  options: {
+    at?: number;
+    alsoCompleteTask?: boolean;
+    /** A more specific tracker chosen at completion (e.g. Physics for an "Academics" block). */
+    trackerId?: ID;
+    /** Countable output for this block (e.g. LeetCode problems solved). */
+    units?: number;
+  } = {},
+): Promise<BlockCompletionResult> {
   const at = options.at ?? Date.now();
-  const block = await db.blocks.get(id);
-  if (!block) return;
 
-  const actualStart = block.actualStart ?? block.start;
-  // Completing early records the real elapsed time; completing after the block
-  // has already ended records the planned duration rather than the wall gap.
-  const actualEnd = block.actualEnd ?? Math.min(Math.max(at, actualStart), block.end);
-  const durationMs = Math.max(0, actualEnd - actualStart);
+  const claim = await db.transaction('rw', db.blocks, db.activities, async () => {
+    const current = await db.blocks.get(id);
+    if (!current) return { result: { status: 'not_found', blockId: id } as const };
+    if (current.status === 'completed') return { result: { status: 'already_completed', blockId: id } as const };
+    if (current.status === 'cancelled') return { result: { status: 'invalid_state', blockId: id, blockStatus: current.status } as const };
 
-  await db.blocks.update(id, { status: 'completed', actualStart, actualEnd, updatedAt: at });
+    const patch: Partial<ScheduleBlock> = { status: 'completed', updatedAt: at };
+    if (options.trackerId && options.trackerId !== current.trackerId) {
+      patch.plannedTrackerId = current.plannedTrackerId ?? current.trackerId;
+      patch.trackerId = options.trackerId;
+    }
+    if (options.units !== undefined) patch.units = Math.max(0, Math.round(options.units));
 
-  await logActivity({
-    type: 'block_completed',
-    title: block.title,
-    at,
-    trackerId: block.trackerId,
-    taskId: block.taskId,
-    goalId: block.goalId,
-    blockId: block.id,
-    durationMs,
-    meta: { plannedMs: block.end - block.start, kind: block.kind, createdAt: block.createdAt },
+    const actualStart = current.actualStart ?? current.start;
+    // Completing early records the real elapsed time; completing after the
+    // block has already ended records the planned duration, not the wall gap.
+    const actualEnd = current.actualEnd ?? Math.min(Math.max(at, actualStart), current.end);
+    patch.actualStart = actualStart;
+    patch.actualEnd = actualEnd;
+    const block = { ...current, ...patch } as ScheduleBlock;
+    const durationMs = Math.max(0, actualEnd - actualStart);
+
+    await db.blocks.update(id, patch);
+    const activity = await logActivity({
+      type: 'block_completed',
+      title: block.title,
+      at,
+      trackerId: block.trackerId,
+      taskId: block.taskId,
+      goalId: block.goalId,
+      blockId: block.id,
+      durationMs,
+      meta: { plannedMs: block.end - block.start, kind: block.kind, createdAt: block.createdAt },
+    });
+    return { result: { status: 'completed', blockId: id, activityId: activity.id, durationMs } as const, block };
   });
 
-  await awardXP({
-    reason: 'block_completed',
-    sourceType: 'block',
-    sourceId: block.id,
-    minutes: durationMs / MINUTE_MS,
-    recordAgeSeconds: Math.max(0, (at - block.createdAt) / 1000),
-    description: block.title,
-  }, { at });
+  if (claim.result.status !== 'completed' || !('block' in claim) || !claim.block) return claim.result;
+  const block = claim.block;
+  const durationMs = claim.result.durationMs;
 
-  if (block.taskId) {
-    const task = await db.tasks.get(block.taskId);
-    if (task) {
-      const minutes = Math.round(durationMs / MINUTE_MS);
-      await db.tasks.update(task.id, { actualMinutes: task.actualMinutes + minutes, updatedAt: at });
-      const siblings = await db.blocks.where('taskId').equals(task.id).toArray();
-      const stillOpen = siblings.some((b) => b.id !== id && (b.status === 'planned' || b.status === 'in_progress'));
-      if (options.alsoCompleteTask ?? !stillOpen) {
-        await setTaskStatus(task.id, 'completed', { at, actualMinutes: task.actualMinutes + minutes });
+  try {
+    // Optional blocks (free time, flexible meals, entertainment) never earn XP.
+    if (!block.optional) {
+      await awardXP({
+        reason: 'block_completed',
+        sourceType: 'block',
+        sourceId: block.id,
+        minutes: durationMs / MINUTE_MS,
+        recordAgeSeconds: Math.max(0, (at - block.createdAt) / 1000),
+        description: block.title,
+        trackerId: block.trackerId,
+        workUnitKey: block.taskId ? `task:${block.taskId}` : `block:${block.id}`,
+      }, { at, activityId: claim.result.activityId });
+    }
+
+    await awardCompletionBonuses(block.date, at);
+
+    if (block.taskId) {
+      const task = await db.tasks.get(block.taskId);
+      if (task) {
+        const minutes = Math.round(durationMs / MINUTE_MS);
+        await db.tasks.update(task.id, { actualMinutes: task.actualMinutes + minutes, updatedAt: at });
+        const siblings = await db.blocks.where('taskId').equals(task.id).toArray();
+        const stillOpen = siblings.some((b) => b.id !== id && (b.status === 'planned' || b.status === 'in_progress'));
+        if ((options.alsoCompleteTask ?? !stillOpen) && task.status !== 'completed') {
+          await setTaskStatus(task.id, 'completed', { at, actualMinutes: task.actualMinutes + minutes });
+        }
       }
     }
+  } catch (error) {
+    console.error(`[completeBlock] ${id} was completed but a follow-up (XP / bonus / task) failed`, error);
+    throw error;
+  }
+  return claim.result;
+}
+
+/**
+ * Full-day / full-week bonuses (data: xp.fullDayBonus / xp.fullWeekBonus).
+ * Paid once per day / per Mon–Sun week, only when every REQUIRED block
+ * (non-optional; not sleep/meal/break/buffer) is completed. Deduped by date.
+ */
+async function awardCompletionBonuses(date: DateKey, at: number): Promise<void> {
+  const xp = (await getSchedulingConfig()).xp;
+  const dayBonus = xp.fullDayBonus ?? 0;
+  const weekBonus = xp.fullWeekBonus ?? 0;
+  if (dayBonus <= 0 && weekBonus <= 0) return;
+
+  const dayDone = async (d: DateKey): Promise<boolean> => {
+    const required = (await db.blocks.where('date').equals(d).toArray()).filter(isRequiredBlock);
+    return required.length > 0 && required.every((b) => b.status === 'completed');
+  };
+  if (!(await dayDone(date))) return;
+  if (dayBonus > 0) await bankBonus(`full_day:${date}`, dayBonus, 'full_day_bonus', `Every planned block done on ${date}`, at);
+
+  if (weekBonus > 0) {
+    const dow = dateKeyToDate(date).getDay();
+    const monday = addDaysToKey(date, -((dow + 6) % 7));
+    for (let i = 0; i < 7; i++) {
+      if (!(await dayDone(addDaysToKey(monday, i)))) return;
+    }
+    await bankBonus(`full_week:${monday}`, weekBonus, 'full_week_bonus', `Every planned block done in the week of ${monday}`, at);
   }
 }
 
@@ -233,6 +327,29 @@ export async function startBlock(id: ID): Promise<void> {
   await db.blocks.update(id, { status: 'in_progress', actualStart: at, updatedAt: at });
   const block = await db.blocks.get(id);
   if (block?.taskId) await setTaskStatus(block.taskId, 'in_progress', { at, reason: 'Block started' });
+}
+
+/**
+ * A block you STARTED counts as done when its planned end passes: it is
+ * completed with the real start time and the planned end, which logs the
+ * activity (Analytics) and pays its XP exactly as pressing Done would.
+ * Blocks you never started are left alone — nothing is credited that you
+ * did not begin. Returns how many were settled.
+ */
+export async function settleStartedBlocks(now = Date.now()): Promise<number> {
+  const started = await db.blocks.where('status').equals('in_progress').toArray();
+  let settled = 0;
+  for (const b of started) {
+    if (b.end > now) continue;
+    try {
+      const r = await completeBlock(b.id, { at: b.end });
+      if (r.status === 'completed') settled++;
+    } catch (error) {
+      // One bad block must not stop the others from settling.
+      console.error(`[settleStartedBlocks] could not settle ${b.id}`, error);
+    }
+  }
+  return settled;
 }
 
 /* ------------------------------------------------------------------ */
@@ -281,9 +398,14 @@ export async function convertBlockToTask(id: ID): Promise<ID | null> {
 }
 
 /** Places an existing task on the calendar at a given time. */
-export async function convertTaskToBlock(task: Task, start: Timestamp, minutes?: number): Promise<ScheduleBlock> {
+export async function convertTaskToBlock(
+  task: Task,
+  start: Timestamp,
+  minutes?: number,
+  hostBlockId: ID | null = null,
+): Promise<ScheduleBlock> {
   const duration = (minutes ?? task.estimatedMinutes) * MINUTE_MS;
-  return createBlock({
+  const block = await createBlock({
     title: task.title,
     start,
     end: start + duration,
@@ -293,6 +415,11 @@ export async function convertTaskToBlock(task: Task, start: Timestamp, minutes?:
     kind: 'task',
     origin: 'manual',
   });
+  if (hostBlockId) {
+    await db.blocks.update(block.id, { hostBlockId });
+    return { ...block, hostBlockId };
+  }
+  return block;
 }
 
 /** Schedules a task by id — the form-friendly wrapper around convertTaskToBlock. */
@@ -300,10 +427,11 @@ export async function scheduleTaskAt(
   taskId: ID,
   start: Timestamp,
   minutes?: number,
+  hostBlockId: ID | null = null,
 ): Promise<ScheduleBlock | null> {
   const task = await db.tasks.get(taskId);
   if (!task) return null;
-  return convertTaskToBlock(task, start, minutes);
+  return convertTaskToBlock(task, start, minutes, hostBlockId);
 }
 
 /** True when two intervals overlap by at least one millisecond. */
@@ -566,4 +694,31 @@ export function findGaps(
   }
   if (toMinute - cursor >= minMinutes) gaps.push({ startMinute: cursor, endMinute: toMinute });
   return gaps;
+}
+
+/**
+ * Swap two blocks' time slots for ONE day only (e.g. "today, Cybersecurity
+ * where SAT class was, and the other way round"). Each block takes the other's
+ * start and end. Recurring occurrences are detached from their series for
+ * that date so regeneration cannot pull them back; every other day keeps the
+ * normal timetable. Completed/skipped blocks cannot be swapped.
+ */
+export async function swapBlockSlots(aId: ID, bId: ID): Promise<{ ok: boolean; message: string }> {
+  if (aId === bId) return { ok: false, message: 'Pick a different block.' };
+  const [a, b] = await Promise.all([db.blocks.get(aId), db.blocks.get(bId)]);
+  if (!a || !b) return { ok: false, message: 'Block not found.' };
+  if (a.date !== b.date) return { ok: false, message: 'Both blocks must be on the same day.' };
+  const settled = (x: ScheduleBlock) => x.status === 'completed' || x.status === 'skipped' || x.status === 'cancelled';
+  if (settled(a) || settled(b)) return { ok: false, message: 'Finished or skipped blocks cannot be moved.' };
+  if (a.locked || b.locked) return { ok: false, message: 'One of these blocks is locked.' };
+
+  const { detachOccurrence } = await import('./recurrenceService');
+  await detachOccurrence(a.id);
+  await detachOccurrence(b.id);
+  const at = Date.now();
+  await db.transaction('rw', db.blocks, async () => {
+    await db.blocks.update(a.id, { start: b.start, end: b.end, updatedAt: at });
+    await db.blocks.update(b.id, { start: a.start, end: a.end, updatedAt: at });
+  });
+  return { ok: true, message: `“${a.title}” and “${b.title}” swapped for this day only.` };
 }
