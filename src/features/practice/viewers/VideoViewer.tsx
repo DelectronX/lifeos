@@ -167,7 +167,7 @@ export function VideoViewer({ resourceId, src }: { resourceId: ID; src: string }
                 setSpeed(s);
                 if (videoRef.current) videoRef.current.playbackRate = s;
               }}
-              className="h-8 rounded-[var(--r-sm)] border border-line bg-surface px-1.5 text-xs text-ink"
+              className="h-8 rounded-[var(--r-sm)] bg-surface-sunken/60 px-1.5 text-xs text-ink"
             >
               {SPEEDS.map((s) => <option key={s} value={s}>{s}×</option>)}
             </select>
