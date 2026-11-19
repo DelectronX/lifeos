@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Page } from '@/components/layout/Page';
 import { Tabs } from '@/components/ui/Tabs';
 import { Card } from '@/components/ui/Card';
@@ -17,11 +17,25 @@ import {
 } from './SchedulingSettings';
 import { DataSettings, NotificationSettings } from './DataSettings';
 import { StorageSettings } from './StorageSettings';
-import { DemoDataSettings } from './DemoDataSettings';
+import { ResetDataSettings } from './ResetDataSettings';
+import { ConfigImportSettings } from './ConfigImportSettings';
+import { StorageGuardCard } from './StorageGuardCard';
 import { MaintenanceSettings } from './MaintenanceSettings';
+import { InterfaceSettings, NotificationCenterSettings } from './InterfaceSettings';
+import { useUiMode } from '@/lib/uiMode';
+import { SoundSettings } from './SoundSettings';
+import { DashboardSettings } from './DashboardSettings';
+import { AgentSettings } from './AgentSettings';
+
+const TAB_LABELS: Record<string, string> = {
+  profile: 'Profile', focus: 'Focus', planning: 'Planning', appearance: 'Appearance', notifications: 'Notifications', agents: 'Agents', data: 'Data', about: 'About',
+};
 import type { DeepPartial, SchedulingConfig, Settings, ThemeMode } from '@/types';
 
-type Tab = 'profile' | 'focus' | 'planning' | 'appearance' | 'data' | 'about';
+type Tab = 'profile' | 'focus' | 'planning' | 'appearance' | 'notifications' | 'agents' | 'data' | 'about';
+const ALL_TABS: Tab[] = ['profile', 'focus', 'planning', 'appearance', 'notifications', 'agents', 'data', 'about'];
+/** Tabs only shown in Advanced mode. */
+const ADVANCED_TABS = new Set<Tab>(['planning']);
 
 /**
  * Settings, reorganized into iOS-style grouped sections. Every control here
@@ -34,13 +48,17 @@ type Tab = 'profile' | 'focus' | 'planning' | 'appearance' | 'data' | 'about';
  *   Planning     — scheduling, rescheduling, revision & XP, protected time,
  *                  notifications (auto-plan rule builder lands here later)
  *   Appearance   — theme, density, clock format, motion
- *   Data         — storage, export/import, snapshots, demo data
+ *   Data         — storage, export/import, snapshots, reset
  *   About        — version, blurb, reset to defaults
  */
 export function SettingsPage() {
   const settings = useLiveSettings();
   const config = useSchedulingConfig();
-  const [tab, setTab] = useState<Tab>('profile');
+  const [params] = useSearchParams();
+  const [tab, setTab] = useState<Tab>(() => (ALL_TABS.includes(params.get('tab') as Tab) ? params.get('tab') as Tab : 'profile'));
+  const { advanced, setMode } = useUiMode();
+  // A deep link to an advanced tab still works: it just shows that tab.
+  const visibleTabs = ALL_TABS.filter((t) => advanced || !ADVANCED_TABS.has(t) || t === tab);
   const navigate = useNavigate();
 
   const patch = useMemo(
@@ -87,14 +105,7 @@ export function SettingsPage() {
         <Tabs
           value={tab}
           onChange={setTab}
-          items={[
-            { value: 'profile' as const, label: 'Profile' },
-            { value: 'focus' as const, label: 'Focus' },
-            { value: 'planning' as const, label: 'Planning' },
-            { value: 'appearance' as const, label: 'Appearance' },
-            { value: 'data' as const, label: 'Data' },
-            { value: 'about' as const, label: 'About' },
-          ]}
+          items={visibleTabs.map((t) => ({ value: t, label: TAB_LABELS[t] }))}
         />
       }
     >
@@ -120,7 +131,6 @@ export function SettingsPage() {
           <ProtectedTimeSettings />
           <RevisionSettings config={config} onPatch={patchConfig} />
           <XPSettings config={config} onPatch={patchConfig} />
-          <NotificationSettings settings={settings} onPatch={patch} />
           <Card>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="min-w-0">
@@ -157,16 +167,43 @@ export function SettingsPage() {
       ) : null}
 
       {tab === 'appearance' ? (
-        <AppearanceSettings settings={settings} onPatch={patch} onTheme={changeTheme} />
+        <>
+          <InterfaceSettings />
+          <DashboardSettings />
+          <AppearanceSettings settings={settings} onPatch={patch} onTheme={changeTheme} />
+        </>
       ) : null}
+
+      {tab === 'notifications' ? (
+        <>
+          <NotificationSettings settings={settings} onPatch={patch} />
+          <SoundSettings />
+          <NotificationCenterSettings />
+        </>
+      ) : null}
+
+      {tab === 'agents' ? <AgentSettings /> : null}
 
       {tab === 'data' ? (
         <>
+          <StorageGuardCard />
           <StorageSettings settings={settings} />
           <DataSettings settings={settings} onPatch={patch} />
-          <MaintenanceSettings settings={settings} />
-          <DemoDataSettings settings={settings} />
+          <ConfigImportSettings />
+          {advanced ? (
+            <>
+              <MaintenanceSettings settings={settings} />
+              <ResetDataSettings />
+            </>
+          ) : null}
         </>
+      ) : null}
+
+      {!advanced ? (
+        <div className="mt-2 flex flex-col items-center gap-2 text-center">
+          <p className="t-meta max-w-md">Showing everyday settings. Planning tuning, maintenance and data reset live in Advanced mode.</p>
+          <Button size="sm" variant="subtle" onClick={() => void setMode('advanced')}>Show advanced settings</Button>
+        </div>
       ) : null}
 
       {tab === 'about' ? <AboutSettings /> : null}
