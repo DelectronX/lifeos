@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
 import { ArrowRight, Lock, Shield } from 'lucide-react';
 import { cn } from '@/lib/cn';
-import { formatDuration, formatTime, MINUTE_MS } from '@/lib/date';
-import { Checkbox } from '@/components/ui/Input';
+import { formatDateKeyShort, formatDuration, formatTime, MINUTE_MS } from '@/lib/date';
+import { Checkbox, Select } from '@/components/ui/Input';
+import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import type { PlanEntry, ProposedBlock, UnplacedTask } from '@/types/scheduling';
+import type { OverlapOption, PlanEntry, ProposedBlock, UnplacedTask } from '@/types/scheduling';
 import type { TaskPlacement } from '@/engines/scheduling';
 import type { ScheduleBlock } from '@/types';
 
@@ -28,6 +29,12 @@ export interface ImpactPreviewProps {
   /** Selected tempIds; omit for a read-only preview. */
   selected?: ReadonlySet<string>;
   onToggle?: (tempId: string) => void;
+  /**
+   * When provided, unplaced tasks that have `overlapOptions` get a picker so
+   * the user can choose to overlap an existing block (and which one). The
+   * caller is responsible for confirming and applying.
+   */
+  onOverlap?: (task: UnplacedTask, option: OverlapOption) => void;
   className?: string;
 }
 
@@ -44,7 +51,7 @@ interface Row {
 }
 
 export function ImpactPreview({
-  existing, proposals, placements, unplaced, selected, onToggle, className,
+  existing, proposals, placements, unplaced, selected, onToggle, onOverlap, className,
 }: ImpactPreviewProps) {
   const dates = useMemo(() => {
     const set = new Set<string>();
@@ -117,7 +124,7 @@ export function ImpactPreview({
           <h4 className="t-label mb-2">Why each task landed where it did</h4>
           <ul className="space-y-1.5">
             {placements.map((p) => (
-              <li key={p.taskId} className="rounded-md border border-line bg-surface px-3 py-2">
+              <li key={p.taskId} className="rounded-[var(--r-md)] bg-surface-sunken/60 px-3 py-2">
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="text-sm font-medium text-ink">{p.title}</span>
                   <span className="t-num shrink-0 text-2xs text-ink-faint">
@@ -148,6 +155,9 @@ export function ImpactPreview({
                   ) : null}
                 </div>
                 <p className="t-meta mt-0.5">{u.reason}</p>
+                {onOverlap && u.overlapOptions && u.overlapOptions.length > 0 ? (
+                  <OverlapPicker task={u} onPick={onOverlap} />
+                ) : null}
               </li>
             ))}
           </ul>
@@ -168,7 +178,7 @@ function PlanColumn({
   onToggle?: (tempId: string) => void;
 }) {
   return (
-    <div className="rounded-card border border-line bg-surface">
+    <div className="rounded-card bg-surface-sunken/60">
       <div className="border-b border-line px-3 py-2">
         <div className="t-label">{label}</div>
         <div className="t-meta mt-0.5">{caption}</div>
@@ -224,6 +234,34 @@ function PlanColumn({
  * Compact two-column diff for a conflict strategy, where both sides are
  * already-computed PlanEntry lists from the engine.
  */
+/** "Overlap an existing slot?" — the user picks which block to share. */
+function OverlapPicker({ task, onPick }: { task: UnplacedTask; onPick: (t: UnplacedTask, o: OverlapOption) => void }) {
+  const options = task.overlapOptions ?? [];
+  const [choice, setChoice] = useState(options[0]?.blockId ?? '');
+  const picked = options.find((o) => o.blockId === choice) ?? options[0];
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-2">
+      <span className="t-meta">Overlap an occupied slot instead?</span>
+      <Select
+        sizeVariant="sm"
+        className="min-w-[14rem] flex-1"
+        value={choice}
+        onChange={(e) => setChoice(e.target.value)}
+        aria-label="Slot to overlap"
+      >
+        {options.map((o) => (
+          <option key={o.blockId} value={o.blockId}>
+            {o.blockTitle} · {formatDateKeyShort(o.date)} {formatTime(o.start)}–{formatTime(o.end)}{o.hostProtected ? ' (protected)' : ''}
+          </option>
+        ))}
+      </Select>
+      <Button size="sm" disabled={!picked} onClick={() => picked && onPick(task, picked)}>
+        Overlap…
+      </Button>
+    </div>
+  );
+}
+
 export function PlanDiff({
   currentPlan, proposedPlan, className,
 }: {
@@ -247,7 +285,7 @@ function EntryColumn({
   highlightChanged?: boolean;
 }) {
   return (
-    <div className="rounded-card border border-line bg-surface">
+    <div className="rounded-card bg-surface-sunken/60">
       <div className="border-b border-line px-3 py-2 t-label">{label}</div>
       <ul className="max-h-64 divide-y divide-line overflow-y-auto">
         {entries.length === 0 ? (
