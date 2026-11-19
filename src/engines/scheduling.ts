@@ -2,7 +2,7 @@ import type {
   DateKey, Goal, ID, MinuteOfDay, SchedulingConfig, ScheduleBlock, Task, TimeWindow, Timestamp,
 } from '@/types';
 import type {
-  AvailabilityInput, DayAvailability, FreeSlot, ProposedBlock,
+  AvailabilityInput, DayAvailability, FreeSlot, OverlapOption, ProposedBlock,
   SchedulingPreferences, SubjectWindowRule, UnplacedTask, UnplacedReasonCode,
 } from '@/types/scheduling';
 import {
@@ -147,6 +147,38 @@ export interface PlanScheduleInput {
    * rejection, not a scoring preference, unlike `Task.preferredWindow`.
    */
   subjectWindowRules?: readonly SubjectWindowRule[];
+  /**
+   * Tracker id -> [itself, parent, grandparent, ...]. Enables SAME-AREA
+   * hosting: an existing block whose tracker is the task's tracker or one of
+   * its ancestors (e.g. a "Physics" study slot for a Physics homework task)
+   * is treated as usable time for that task instead of as occupied time.
+   * Absent = no hosting (historical behaviour).
+   */
+  trackerAncestors?: Readonly<Record<ID, readonly ID[]>>;
+}
+
+/**
+ * Block kinds that represent personal time, never a "subject slot" another
+ * task may be placed inside.
+ */
+const NON_HOST_KINDS = new Set(['sleep', 'meal', 'break', 'buffer']);
+
+/** True when a task of `taskTrackerId` belongs to the area of `hostTrackerId`. */
+export function isSameArea(
+  taskTrackerId: ID,
+  hostTrackerId: ID,
+  ancestors?: Readonly<Record<ID, readonly ID[]>>,
+): boolean {
+  if (taskTrackerId === hostTrackerId) return true;
+  return (ancestors?.[taskTrackerId] ?? []).includes(hostTrackerId);
+}
+
+/** A block that can host same-area tasks: a container, not a task's own time. */
+export function canHost(block: ScheduleBlock): boolean {
+  return !block.taskId
+    && !NON_HOST_KINDS.has(block.kind)
+    && (block.status === 'planned' || block.status === 'in_progress')
+    && !block.optional;
 }
 
 export interface TaskPlacement {
@@ -175,6 +207,10 @@ interface MutableSlot {
   date: DateKey;
   start: Timestamp;
   end: Timestamp;
+  /** Set for time INSIDE an existing block, usable only by same-area tasks. */
+  hostBlockId?: ID;
+  hostTrackerId?: ID;
+  hostTitle?: string;
 }
 
 /**
@@ -238,6 +274,9 @@ export function planSchedule(
   const slots: MutableSlot[] = [];
   for (const day of availability) {
     for (const s of day.slots) slots.push({ date: s.date, start: s.start, end: s.end });
+  }
+  if (input.trackerAncestors) {
+    slots.push(...hostSlots(input.blocks, input.ignoreBlockIds, input.now, from, to, config));
   }
   slots.sort((a, b) => a.start - b.start);
 
@@ -317,6 +356,7 @@ export function planSchedule(
         lastIntensiveEnd,
         originTs: atMinute(from, 0),
         allowedWindows,
+        trackerAncestors: input.trackerAncestors,
       });
 
       if (!pick) break;
@@ -325,6 +365,7 @@ export function planSchedule(
       const slot = slots[index]!;
       const end = start + minutes * MINUTE_MS;
 
+      const hosted = slot.hostBlockId !== undefined;
       const block: ProposedBlock = {
         tempId: `${runId}:${task.id}:${seq++}`,
         title: task.title,
@@ -342,7 +383,9 @@ export function planSchedule(
         splitGroupId: null,
         splitIndex: 0,
         splitCount: 1,
-        reason: placementReason(task, slot.date, start, minutes, score, input.preferences, config),
+        reason: placementReason(task, slot.date, start, minutes, score, input.preferences, config)
+          + (hosted ? ` Inside "${slot.hostTitle}" — same area, so it shares that slot.` : ''),
+        hostBlockId: hosted ? slot.hostBlockId! : null,
       };
       taskBlocks.push(block);
       reasons.push(block.reason);
@@ -357,23 +400,28 @@ export function planSchedule(
       }
       consumeSlot(slots, index, start, consumedEnd);
 
-      loadByDate[slot.date] = (loadByDate[slot.date] ?? 0) + minutes;
+      // Hosted time is already counted as the host block's committed load.
+      if (!hosted) loadByDate[slot.date] = (loadByDate[slot.date] ?? 0) + minutes;
       remaining -= minutes;
 
       if (!task.splittable) break;
     }
 
     if (taskBlocks.length === 0) {
-      if (allowedWindows !== null) {
-        unplaced.push(reject(task, 'outside_allowed_window',
+      const freeOnly = slots.filter((s) => s.hostBlockId === undefined);
+      const rejection = allowedWindows !== null
+        ? reject(task, 'outside_allowed_window',
           allowedWindows.length === 0
             ? 'This subject has an active rule but no window falls inside the planning horizon (check its days/times).'
             : `No free time falls inside this subject's allowed window${allowedWindows.length === 1 ? '' : 's'} — it can only ever be scheduled there.`,
-          remaining));
-      } else {
-        unplaced.push(reject(task, noSlotCode(task, dueTs, slots, config),
-          noSlotReason(task, dueTs, slots, config), remaining));
-      }
+          remaining)
+        : reject(task, noSlotCode(task, dueTs, freeOnly, config),
+          noSlotReason(task, dueTs, freeOnly, config), remaining);
+      rejection.overlapOptions = overlapOptionsFor(
+        task, remaining, dueTs, input.blocks, input.ignoreBlockIds, input.now, from, to,
+        allowedWindows, input.trackerAncestors, config,
+      );
+      unplaced.push(rejection);
       continue;
     }
 
@@ -411,7 +459,7 @@ export function planSchedule(
   }
 
   const remainingAvailability = availability.map((day) => {
-    const daySlots = slots.filter((s) => s.date === day.date && (s.end - s.start) / MINUTE_MS >= config.slots.minUsableSlotMinutes);
+    const daySlots = slots.filter((s) => s.hostBlockId === undefined && s.date === day.date && (s.end - s.start) / MINUTE_MS >= config.slots.minUsableSlotMinutes);
     const mapped: FreeSlot[] = daySlots.map((s) => ({
       date: s.date,
       start: s.start,
@@ -456,6 +504,7 @@ interface PickArgs {
    * may be placed at all.
    */
   allowedWindows: Interval[] | null;
+  trackerAncestors?: Readonly<Record<ID, readonly ID[]>>;
 }
 
 interface Pick { index: number; start: Timestamp; minutes: number; score: number }
@@ -515,14 +564,20 @@ function pickSlot(args: PickArgs): Pick | null {
   for (let i = 0; i < slots.length; i++) {
     const slot = slots[i]!;
 
+    // Time inside an existing block is only usable by a task of that area.
+    if (slot.hostTrackerId !== undefined
+      && !isSameArea(task.trackerId, slot.hostTrackerId, args.trackerAncestors)) continue;
+
     // Break padding after an intensive session on the same day.
     const padUntil = args.lastIntensiveEnd[slot.date] ?? 0;
     const earliestBase = snapUp(Math.max(slot.start, padUntil), config.slots.granularityMinutes);
     if (earliestBase >= slot.end) continue;
 
-    // Daily ceiling.
+    // Daily ceiling. Time inside a same-area host block is already counted
+    // as that block's committed load, so hosting adds no new load.
+    const hosted = slot.hostBlockId !== undefined;
     const dayLoad = (args.loadByDate[slot.date] ?? 0) + (args.existingLoad[slot.date] ?? 0);
-    const dayRoom = config.slots.maxDailyLoadMinutes - dayLoad;
+    const dayRoom = hosted ? Number.POSITIVE_INFINITY : config.slots.maxDailyLoadMinutes - dayLoad;
     if (dayRoom < floor) continue;
 
     // Hard deadline: the session must END by the deadline.
@@ -549,7 +604,9 @@ function pickSlot(args: PickArgs): Pick | null {
       const rangeSlot: MutableSlot = { date: slot.date, start: earliest, end: hardEnd };
       for (const start of candidateStarts(rangeSlot, earliest, minutes, task, config, preferences)) {
         if (start + minutes * MINUTE_MS > hardEnd) continue;
-        const score = scoreSlot(start, minutes, slot, task, config, preferences, dueTs, args.originTs);
+        let score = scoreSlot(start, minutes, slot, task, config, preferences, dueTs, args.originTs);
+        // The subject's own slot is the natural home for its work.
+        if (slot.hostBlockId !== undefined) score += config.scoring.focusHourBonus + config.scoring.windowFit;
         if (!best || score > best.score) best = { index: i, start, minutes, score };
       }
     }
@@ -618,15 +675,99 @@ function inWindow(minute: number, window: TimeWindow, config: SchedulingConfig):
     : minute >= lo && minute < hi;
 }
 
+/**
+ * Time inside existing "container" blocks (see `canHost`), minus whatever
+ * other blocks already sit inside them. These slots are only offered to
+ * tasks of the same area (enforced in pickSlot).
+ */
+function hostSlots(
+  blocks: readonly ScheduleBlock[],
+  ignoreIds: readonly ID[] | undefined,
+  now: Date,
+  from: DateKey,
+  to: DateKey,
+  config: SchedulingConfig,
+): MutableSlot[] {
+  const ignore = new Set(ignoreIds ?? []);
+  const live = blocks.filter((b) => !ignore.has(b.id) && !RELEASED_STATUSES.has(b.status));
+  const earliest = snapUp(now.getTime() + config.slots.leadTimeMinutes * MINUTE_MS, config.slots.granularityMinutes);
+  const out: MutableSlot[] = [];
+  for (const host of live) {
+    if (host.date < from || host.date > to || !canHost(host)) continue;
+    const others = live
+      .filter((b) => b.id !== host.id && b.start < host.end && host.start < b.end)
+      .map((b) => ({ start: b.start, end: b.end }));
+    const free = subtractIntervals([{ start: Math.max(host.start, earliest), end: host.end }], others);
+    for (const i of free) {
+      if ((i.end - i.start) / MINUTE_MS < config.slots.granularityMinutes) continue;
+      out.push({
+        date: host.date, start: i.start, end: i.end,
+        hostBlockId: host.id, hostTrackerId: host.trackerId, hostTitle: host.title,
+      });
+    }
+  }
+  return out;
+}
+
+/**
+ * When a task cannot be placed, list existing blocks of a DIFFERENT area it
+ * could overlap. Nothing is decided here — the UI asks the user whether to
+ * overlap, and which block. Sleep blocks are never offered.
+ */
+function overlapOptionsFor(
+  task: Task,
+  minutes: number,
+  dueTs: Timestamp | null,
+  blocks: readonly ScheduleBlock[],
+  ignoreIds: readonly ID[] | undefined,
+  now: Date,
+  from: DateKey,
+  to: DateKey,
+  allowedWindows: Interval[] | null,
+  ancestors: Readonly<Record<ID, readonly ID[]>> | undefined,
+  config: SchedulingConfig,
+): OverlapOption[] {
+  if (minutes <= 0) return [];
+  const ignore = new Set(ignoreIds ?? []);
+  const earliest = snapUp(now.getTime() + config.slots.leadTimeMinutes * MINUTE_MS, config.slots.granularityMinutes);
+  const out: OverlapOption[] = [];
+  for (const b of blocks) {
+    if (ignore.has(b.id) || RELEASED_STATUSES.has(b.status)) continue;
+    if (b.date < from || b.date > to || b.kind === 'sleep') continue;
+    if (b.taskId === task.id) continue;
+    if (b.end <= earliest) continue;
+    if (canHost(b) && isSameArea(task.trackerId, b.trackerId, ancestors)) continue; // already hostable
+    const start = snapUp(Math.max(b.start, earliest), config.slots.granularityMinutes);
+    const end = start + minutes * MINUTE_MS;
+    if (dueTs !== null && task.deadlineHard && end > dueTs) continue;
+    if (allowedWindows !== null && !allowedWindows.some((w) => start >= w.start && start < w.end)) continue;
+    out.push({
+      blockId: b.id,
+      blockTitle: b.title,
+      blockTrackerId: b.trackerId,
+      date: b.date,
+      start, end,
+      durationMinutes: minutes,
+      hostProtected: b.protected || b.locked,
+    });
+  }
+  // Unprotected blocks first, then chronological; a short, decidable list.
+  out.sort((a, b) => Number(a.hostProtected) - Number(b.hostProtected) || a.start - b.start);
+  return out.slice(0, 8);
+}
+
 /** Removes [start,end) from slot `index`, splitting it if the cut is interior. */
 function consumeSlot(slots: MutableSlot[], index: number, start: Timestamp, end: Timestamp): void {
   const slot = slots[index]!;
   const head: MutableSlot | null = start > slot.start ? { date: slot.date, start: slot.start, end: start } : null;
   const tail: MutableSlot | null = end < slot.end ? { date: slot.date, start: end, end: slot.end } : null;
 
+  const host = slot.hostBlockId !== undefined
+    ? { hostBlockId: slot.hostBlockId, hostTrackerId: slot.hostTrackerId, hostTitle: slot.hostTitle }
+    : {};
   const replacement: MutableSlot[] = [];
-  if (head) replacement.push(head);
-  if (tail) replacement.push(tail);
+  if (head) replacement.push({ ...head, ...host });
+  if (tail) replacement.push({ ...tail, ...host });
   slots.splice(index, 1, ...replacement);
   slots.sort((a, b) => a.start - b.start);
 }
