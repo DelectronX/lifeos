@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   addWidget, availableWidgetTypes, removeWidget, reorderWidgets, updateWidgetSettings,
 } from '../layout';
+import { cycleWidgetSize, introduceWidgets, moveWidget, setWidgetHidden } from '../layout';
+import { RECOMMENDED_LAYOUT, WIDGET_TYPES } from '../registry';
 import type { DashboardWidgetConfig } from '@/types';
 
 /**
@@ -88,6 +90,39 @@ describe('dashboard layout editing', () => {
     const available = availableWidgetTypes([]);
     expect(available).toContain('today_tasks');
     expect(available).toContain('achievement_progress');
-    expect(available.length).toBe(11);
+    expect(available.length).toBe(WIDGET_TYPES.length);
+  });
+});
+
+describe('introduceWidgets / hide / size / move', () => {
+  it('gives an empty layout the recommended arrangement once', () => {
+    const r = introduceWidgets([], undefined);
+    expect(r.layout.map((w) => w.type)).toEqual(RECOMMENDED_LAYOUT);
+    expect(r.changed).toBe(true);
+    const again = introduceWidgets(r.layout, r.introduced);
+    expect(again.changed).toBe(false);
+    expect(again.layout).toBe(r.layout);
+  });
+
+  it('appends only never-seen types to an existing layout and never re-adds removed ones', () => {
+    const existing = addWidget(addWidget([], 'xp_progress'), 'today_schedule');
+    const r = introduceWidgets(existing, ['xp_progress', 'today_schedule']);
+    expect(r.layout.slice(0, 2).map((w) => w.type)).toEqual(['xp_progress', 'today_schedule']);
+    expect(r.layout.filter((w) => w.type === 'today_schedule')).toHaveLength(1);
+    const removed = removeWidget(r.layout, r.layout.find((w) => w.type === 'focus_stats')!.id);
+    const again = introduceWidgets(removed, r.introduced);
+    expect(again.layout.some((w) => w.type === 'focus_stats')).toBe(false);
+  });
+
+  it('hides without losing settings, cycles size and moves by one', () => {
+    let l = addWidget(addWidget([], 'xp_progress'), 'study_streak');
+    const id = l[0].id;
+    l = setWidgetHidden(l, id, true);
+    expect(l[0].hidden).toBe(true);
+    l = cycleWidgetSize(l, id);
+    expect(l[0].size).not.toBe(addWidget([], 'xp_progress')[0].size);
+    l = moveWidget(l, id, 1);
+    expect(l[1].id).toBe(id);
+    expect(moveWidget(l, id, 1)[1].id).toBe(id);
   });
 });
