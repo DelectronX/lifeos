@@ -1,5 +1,4 @@
-import { db } from '@/db/db';
-import { MINUTE_MS, todayKey } from '@/lib/date';
+import { MINUTE_MS } from '@/lib/date';
 import { getSettings } from './settingsService';
 import type { ID, Settings } from '@/types';
 
@@ -51,14 +50,22 @@ export interface NotifyOptions {
 /** Shows a notification if allowed. Returns false when it could not be shown. */
 export function notify(title: string, options: NotifyOptions = {}): boolean {
   if (!isEnabled()) return false;
+  const init = {
+    body: options.body,
+    tag: options.tag,
+    silent: options.silent ?? false,
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
+  };
+  // iPad/iPhone Home Screen apps (and Android) only support notifications
+  // through the service worker; `new Notification()` throws there.
+  const sw = typeof navigator !== 'undefined' ? navigator.serviceWorker : undefined;
+  if (sw?.controller) {
+    void sw.ready.then((reg) => reg.showNotification(title, init)).catch(() => undefined);
+    return true;
+  }
   try {
-    const n = new Notification(title, {
-      body: options.body,
-      tag: options.tag,
-      silent: options.silent ?? false,
-      icon: '/icons/icon-192.png',
-      badge: '/icons/icon-192.png',
-    });
+    const n = new Notification(title, init);
     if (options.onClick) {
       n.onclick = () => {
         window.focus();
@@ -120,94 +127,27 @@ export interface SweepResult {
 }
 
 /**
- * Looks at the next half hour and arms reminders for it. Called on a timer by
- * `startNotificationLoop`, and again whenever the schedule changes, so a block
- * created five minutes before it starts still gets its reminder.
+ * Runs the reminder sweep now. Reminders are owned by the Notification Center
+ * engine (`notificationCenter.sweepReminders`), which files them, plays the
+ * alert sound and mirrors them to the desktop — so there is exactly one source
+ * and an upcoming block can never produce two OS notifications.
  */
 export async function sweep(now = Date.now()): Promise<SweepResult> {
-  if (!isEnabled()) return { armed: 0, skipped: 'Notifications are not permitted.' };
-
+  if (getSupport() === 'unsupported') return { armed: 0, skipped: 'This browser does not support notifications.' };
   const settings = await getSettings();
-  if (!settings.notifications.enabled) {
-    return { armed: 0, skipped: 'Notifications are switched off in Settings.' };
-  }
-
-  let armed = 0;
-  const lead = Math.max(0, settings.notifications.leadMinutes ?? 5) * MINUTE_MS;
-  const horizon = now + MAX_TIMEOUT_MS;
-
-  if (settings.notifications.blockStart) {
-    const today = todayKey(now);
-    const blocks = await db.blocks
-      .where('[date+start]')
-      .between([today, now - MINUTE_MS], [today, horizon + lead])
-      .toArray();
-
-    for (const block of blocks) {
-      if (block.status !== 'planned') continue;
-      const at = block.start - lead;
-      if (at <= now || at > horizon) continue;
-      schedule(`block:${block.id}`, at, () => {
-        const mins = Math.max(0, Math.round((block.start - Date.now()) / MINUTE_MS));
-        notify(block.title, {
-          body: mins <= 0 ? 'Starting now.' : `Starts in ${mins} min.`,
-          tag: `block:${block.id}`,
-        });
-      });
-      armed++;
-    }
-  }
-
-  if (settings.notifications.revisionDue) {
-    const due = await db.revisionEntries
-      .where('[status+dueDate]')
-      .between(['scheduled', ''], ['scheduled', todayKey(now)], true, true)
-      .toArray();
-    if (due.length > 0) {
-      // One digest rather than N pings — a wall of notifications is noise.
-      const key = `revision:${todayKey(now)}`;
-      if (!scheduled.has(key)) {
-        schedule(key, now + 5_000, () => {
-          notify(`${due.length} revision${due.length === 1 ? '' : 's'} due`, {
-            body: 'Open the Revision dashboard to work through them.',
-            tag: key,
-          });
-        });
-        armed++;
-      }
-    }
-  }
-
-  if (settings.notifications.taskDue) {
-    const today = todayKey(now);
-    const tasks = await db.tasks
-      .where('[status+dueDate]')
-      .between(['planned', today], ['planned', today], true, true)
-      .toArray();
-    if (tasks.length > 0) {
-      const key = `taskdue:${today}`;
-      if (!scheduled.has(key)) {
-        schedule(key, now + 5_000, () => {
-          notify(`${tasks.length} task${tasks.length === 1 ? '' : 's'} due today`, {
-            body: tasks.slice(0, 3).map((t) => t.title).join(', '),
-            tag: key,
-          });
-        });
-        armed++;
-      }
-    }
-  }
-
-  return { armed, skipped: null };
+  if (!settings.notifications.enabled) return { armed: 0, skipped: 'Notifications are switched off in Settings.' };
+  const { sweepReminders } = await import('./notificationCenter');
+  return { armed: await sweepReminders(now), skipped: null };
 }
 
-let loopTimer: ReturnType<typeof setInterval> | null = null;
+let loopTimer: ReturnType<typeof setInterval> | null = null; // legacy handle; no longer armed
 
-/** Starts the periodic sweep. Idempotent; returns a stop function. */
-export function startNotificationLoop(intervalMs = 5 * MINUTE_MS): () => void {
+/**
+ * Kept for compatibility: the Notification Center runs the minute sweep, so
+ * this only cancels any one-off manual reminders on stop. Idempotent.
+ */
+export function startNotificationLoop(_intervalMs = 5 * MINUTE_MS): () => void {
   stopNotificationLoop();
-  void sweep();
-  loopTimer = setInterval(() => { void sweep(); }, intervalMs);
   return stopNotificationLoop;
 }
 
@@ -222,7 +162,7 @@ export function stopNotificationLoop(): void {
 /** Fires a sample so the user can confirm the OS actually shows them. */
 export function sendTestNotification(): boolean {
   return notify('LifeOS notifications are working', {
-    body: 'You will get reminders like this while a LifeOS tab is open.',
+    body: 'You will get reminders like this while LifeOS is open (on iPad: opened from the Home Screen).',
     tag: 'test',
   });
 }
@@ -253,5 +193,5 @@ export function describeStatus(settings: Settings | undefined): string {
   if (!settings?.notifications.enabled) {
     return 'Permission granted, but reminders are switched off below.';
   }
-  return `Reminders are active${scheduledCount() > 0 ? ` — ${scheduledCount()} armed for the next 30 minutes` : ''}. They only fire while a LifeOS tab is open.`;
+  return 'Desktop notifications are on. They are generated by LifeOS itself, so a LifeOS window must be open (it can be minimised or in the background).';
 }
