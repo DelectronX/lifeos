@@ -38,15 +38,9 @@ export class IndexedDbAdapter implements StorageAdapter {
 
   private open(): Promise<IDBDatabase> {
     if (this.opening) return this.opening;
-    this.opening = new Promise<IDBDatabase>((resolve, reject) => {
-      const request = indexedDB.open(DB_NAME, 1);
-      request.onupgradeneeded = () => {
-        if (!request.result.objectStoreNames.contains(STORE)) {
-          request.result.createObjectStore(STORE);
-        }
-      };
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error ?? new Error('Could not open the local cache.'));
+    this.opening = openWithRetry().catch((e) => {
+      this.opening = null; // allow a later retry instead of caching the failure
+      throw e;
     });
     return this.opening;
   }
@@ -88,4 +82,64 @@ export class IndexedDbAdapter implements StorageAdapter {
   async remove(name: string): Promise<void> {
     await this.tx('readwrite', (s) => s.delete(name) as IDBRequest<undefined>);
   }
+}
+
+/**
+ * WebKit (iPad/iPhone Safari, especially Home Screen apps) sometimes never
+ * answers the FIRST indexedDB.open() of a session: no success, no error, the
+ * app just waits forever on a black screen. Each attempt is time-boxed; on a
+ * stall we "wake" IndexedDB by touching a throwaway database and try again.
+ */
+function openOnce(timeoutMs: number): Promise<IDBDatabase> {
+  return new Promise<IDBDatabase>((resolve, reject) => {
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      reject(new Error('timeout'));
+    }, timeoutMs);
+    const request = indexedDB.open(DB_NAME, 1);
+    request.onupgradeneeded = () => {
+      if (!request.result.objectStoreNames.contains(STORE)) request.result.createObjectStore(STORE);
+    };
+    request.onsuccess = () => {
+      clearTimeout(timer);
+      if (settled) { request.result.close(); return; }
+      settled = true;
+      resolve(request.result);
+    };
+    request.onerror = () => {
+      clearTimeout(timer);
+      if (settled) return;
+      settled = true;
+      reject(request.error ?? new Error('Could not open the local cache.'));
+    };
+  });
+}
+
+function wakeIndexedDb(): Promise<void> {
+  return new Promise((resolve) => {
+    try {
+      const probe = indexedDB.open('lifeos-wake');
+      probe.onsuccess = () => { probe.result.close(); resolve(); };
+      probe.onerror = () => resolve();
+      setTimeout(resolve, 500);
+    } catch {
+      resolve();
+    }
+  });
+}
+
+async function openWithRetry(): Promise<IDBDatabase> {
+  let last: unknown;
+  for (let attempt = 0; attempt < 4; attempt++) {
+    try {
+      return await openOnce(2500);
+    } catch (e) {
+      last = e;
+      if (e instanceof Error && e.message !== 'timeout') throw e;
+      await wakeIndexedDb();
+    }
+  }
+  throw new Error(`The browser storage did not respond (${last instanceof Error ? last.message : 'unknown'}). Close LifeOS completely and open it again.`);
 }
