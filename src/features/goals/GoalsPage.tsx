@@ -5,7 +5,8 @@ import { Page } from '@/components/layout/Page';
 import { Card, EmptyState } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge, Dot } from '@/components/ui/Badge';
-import { ProgressBar } from '@/components/ui/Progress';
+import { MilestoneTrack } from '@/components/charts/MilestoneTrack';
+import { trackerHex } from '@/features/schedule/dayRibbon';
 import { Tabs } from '@/components/ui/Tabs';
 import {
   useActivitiesForRange, useGoals, useMilestones, useTasks, useTrackerMap,
@@ -103,7 +104,7 @@ export function GoalsPage() {
             const c = countGoal(goal, milestones, tasks);
             const tracker = trackerMap[goal.trackerId];
             return (
-              <Card key={goal.id} className="flex flex-col">
+              <Card key={goal.id} className="surface-hover flex flex-col">
                 <div className="flex items-start justify-between gap-2">
                   <Link to={`/goals/${goal.id}`} className="min-w-0 flex-1">
                     <div className="t-section truncate hover:underline underline-offset-4">{goal.title}</div>
@@ -127,11 +128,14 @@ export function GoalsPage() {
                 </div>
 
                 <div className="mt-4">
-                  <ProgressBar
-                    value={result.progress}
-                    color={goal.color ?? tracker?.color ?? 'indigo'}
-                    showLabel
+                  <MilestoneTrack
+                    progress={result.progress}
+                    color={trackerHex(goal.color ?? tracker?.color)}
                     label={`${result.current} / ${result.target} ${result.unitLabel}`.trim()}
+                    markers={milestones
+                      .filter((m) => m.goalId === goal.id)
+                      .sort((a, b) => a.sortOrder - b.sortOrder)
+                      .map((m) => ({ id: m.id, label: m.title, done: m.completedAt !== null }))}
                   />
                 </div>
 
