@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, ListTodo } from 'lucide-react';
 import { WidgetShell, WidgetEmpty } from './WidgetShell';
 import { useTasks, useTrackerMap } from '@/state/useLiveData';
 import { todayKey } from '@/lib/date';
@@ -19,7 +19,7 @@ export function TodayTasksWidget(_props: WidgetComponentProps) {
     .sort((a, b) => (a.dueDate ?? '').localeCompare(b.dueDate ?? ''));
 
   return (
-    <WidgetShell title="Today's Tasks">
+    <WidgetShell icon={ListTodo} tone="positive" href="/tasks" title="Today's Tasks">
       {dueToday.length === 0 ? (
         <WidgetEmpty text="No tasks for today." />
       ) : (
