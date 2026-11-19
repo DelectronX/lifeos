@@ -312,54 +312,23 @@ const iosWebview: DetectionEnvironment = {
   hasIndexedDb: true,
 };
 
-describe('detectAdapter — bound file precedence', () => {
-  it('a bound file beats the folder mode and the download fallback', async () => {
-    const result = await detectAdapter(desktop, {
-      makeHttp: () => fake('http', false),
-      makeSingleFile: () => fake('singlefile', true),
-      makeFsAccess: () => fake('fsaccess', true),
-    });
-
-    expect(result.adapter.id).toBe('singlefile');
-  });
-
-  it('a working HTTP server still wins — it needs no permission at all', async () => {
+describe('detectAdapter — browser storage only', () => {
+  it('never auto-selects a bound file, folder, HTTP server or download mode', async () => {
     const result = await detectAdapter(desktop, {
       makeHttp: () => fake('http', true),
       makeSingleFile: () => fake('singlefile', true),
-    });
-
-    expect(result.adapter.id).toBe('http');
-  });
-
-  it('falls through to the folder mode when no file is bound yet', async () => {
-    const result = await detectAdapter(desktop, {
-      makeHttp: () => fake('http', false),
-      makeSingleFile: () => fake('singlefile', false),
       makeFsAccess: () => fake('fsaccess', true),
+      makeCache: () => new MemoryAdapter(),
     });
 
-    expect(result.adapter.id).toBe('fsaccess');
-    expect(result.considered.find((c) => c.id === 'singlefile')?.reason).toMatch(/no file is bound yet/i);
+    expect(result.adapter.id).not.toMatch(/^(http|singlefile|fsaccess|download)$/);
+    expect(result.adapter.capabilities.canAutoSave).toBe(true);
   });
 
-  it('the iOS webview lands in manual mode, and is told why', async () => {
+  it('the iOS webview also saves into its own website data, automatically', async () => {
     const result = await detectAdapter(iosWebview, { makeCache: () => new MemoryAdapter() });
 
-    expect(result.adapter.id).toBe('download');
-    expect(result.adapter.capabilities.canAutoSave).toBe(false);
-    expect(result.considered.find((c) => c.id === 'singlefile')?.reason).toMatch(
-      /cannot bind a single save file/i,
-    );
-  });
-
-  it('honours a pinned singlefile preference over HTTP', async () => {
-    const result = await detectAdapter(desktop, {
-      prefer: 'singlefile',
-      makeHttp: () => fake('http', true),
-      makeSingleFile: () => fake('singlefile', true),
-    });
-
-    expect(result.adapter.id).toBe('singlefile');
+    expect(result.adapter.id).not.toBe('download');
+    expect(result.adapter.capabilities.canAutoSave).toBe(true);
   });
 });
