@@ -163,10 +163,19 @@ export class StorageRepository {
 
     const warnings: string[] = [];
     let hydrated = 0;
-    try {
-      hydrated = await this.hydrateFromFiles(warnings);
-    } catch (e) {
-      warnings.push(e instanceof Error ? e.message : String(e));
+    // Browser-only storage: the Dexie database IS the persistent store and is
+    // always the newest copy. The adapter's mirror is written on a debounce
+    // and can lag behind it (the app closed before a save landed — iPad
+    // Safari kills background apps abruptly), so it must NEVER overwrite a
+    // working set that has data. It is only used to recover an empty one.
+    const browserOnly = this.adapter?.id === 'indexeddb' || this.adapter?.id === 'memory';
+    const workingSetHasData = (await countWorkingSet()) > 0;
+    if (!(browserOnly && workingSetHasData)) {
+      try {
+        hydrated = await this.hydrateFromFiles(warnings);
+      } catch (e) {
+        warnings.push(e instanceof Error ? e.message : String(e));
+      }
     }
 
     let migrated = false;
@@ -279,6 +288,12 @@ export class StorageRepository {
       return 0;
     }
 
+    // Only replace collections that were actually read from storage. Tables a
+    // migration step adds (as empty arrays) must not wipe live data.
+    bundle = {
+      ...bundle,
+      tables: Object.fromEntries(Object.entries(bundle.tables).filter(([name]) => name in collections)),
+    };
     await this.writeToWorkingSet(bundle);
 
     this.patch({ lastSavedAt: manifest?.savedAt ?? null });
@@ -289,12 +304,17 @@ export class StorageRepository {
   private async writeToWorkingSet(bundle: ExportBundle): Promise<void> {
     this.suspended++;
     try {
-      for (const [name, rows] of Object.entries(bundle.tables)) {
-        const table = tableByName(name);
-        if (!table || !Array.isArray(rows)) continue;
-        await table.clear();
-        if (rows.length) await table.bulkPut(rows as Record<string, unknown>[]);
-      }
+      const entries = Object.entries(bundle.tables)
+        .map(([name, rows]) => ({ table: tableByName(name), rows }))
+        .filter((e): e is { table: NonNullable<ReturnType<typeof tableByName>>; rows: unknown[] } => !!e.table && Array.isArray(e.rows));
+      // One transaction: a reload or crash half-way leaves the data exactly
+      // as it was, never with some tables cleared and not yet refilled.
+      await db.transaction('rw', entries.map((e) => e.table), async () => {
+        for (const { table, rows } of entries) {
+          await table.clear();
+          if (rows.length) await table.bulkPut(rows as Record<string, unknown>[]);
+        }
+      });
     } finally {
       this.suspended--;
     }
