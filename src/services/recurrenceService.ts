@@ -3,8 +3,9 @@ import { newId } from '@/lib/id';
 import { addDaysToKey, atMinute, dateKeyToDate, diffDays, MINUTE_MS, todayKey } from '@/lib/date';
 import { buildBlock } from './scheduleService';
 import { buildTask } from './taskService';
+import { isInPhase } from '@/engines/cycles';
 import type {
-  BlockKind, DateKey, ID, MinuteOfDay, RecurrenceEditScope, RecurrenceOverride,
+  BlockKind, CycleDefinition, DateKey, ID, MinuteOfDay, RecurrenceEditScope, RecurrenceOverride,
   RecurrenceFreq, RecurringRule, ScheduleBlock, Task,
 } from '@/types';
 
@@ -33,6 +34,7 @@ export interface RecurringRuleDraft {
   taskTemplate?: Partial<Task> | null;
   blockTemplate?: RecurringRule['blockTemplate'];
   active?: boolean;
+  cyclePhase?: RecurringRule['cyclePhase'];
 }
 
 export function buildRecurringRule(draft: RecurringRuleDraft, now = Date.now()): RecurringRule {
@@ -55,6 +57,7 @@ export function buildRecurringRule(draft: RecurringRuleDraft, now = Date.now()):
     active: draft.active ?? true,
     exceptions: [],
     overrides: {},
+    cyclePhase: draft.cyclePhase ?? null,
   };
 }
 
@@ -86,11 +89,29 @@ export async function deleteRecurringRule(id: ID, removeFutureBlocks = true): Pr
 /* Occurrence maths                                                    */
 /* ------------------------------------------------------------------ */
 
-/** True when the rule nominally fires on `date` (ignores exceptions). */
-export function ruleFiresOn(rule: RecurringRule, date: DateKey): boolean {
+/**
+ * True when the rule nominally fires on `date` (ignores exceptions).
+ *
+ * `cycles` lets a rule bound to a cycle phase (`rule.cyclePhase`) be filtered
+ * generically: the cadence picks candidate days, the phase keeps only days
+ * inside e.g. "Exam Week" or "Sunday A". A bound rule whose cycle is missing
+ * or inactive never fires — silently generating on every day would be worse
+ * than generating on none.
+ */
+export function ruleFiresOn(rule: RecurringRule, date: DateKey, cycles: readonly CycleDefinition[] = []): boolean {
   if (date < rule.startDate) return false;
   if (rule.endDate && date > rule.endDate) return false;
+  if (!cadenceFiresOn(rule, date)) return false;
 
+  if (rule.cyclePhase) {
+    const cycle = cycles.find((c) => c.id === rule.cyclePhase!.cycleId);
+    if (!cycle || !cycle.active) return false;
+    return isInPhase(cycle, rule.cyclePhase.phaseKey, date);
+  }
+  return true;
+}
+
+function cadenceFiresOn(rule: RecurringRule, date: DateKey): boolean {
   const d = dateKeyToDate(date);
   switch (rule.freq) {
     case 'daily':
@@ -119,7 +140,12 @@ function startOfWeekAnchor(key: DateKey): DateKey {
 }
 
 /** Every real occurrence date in [from, to], honouring exceptions and count. */
-export function occurrencesInRange(rule: RecurringRule, from: DateKey, to: DateKey): DateKey[] {
+export function occurrencesInRange(
+  rule: RecurringRule,
+  from: DateKey,
+  to: DateKey,
+  cycles: readonly CycleDefinition[] = [],
+): DateKey[] {
   const out: DateKey[] = [];
   const exceptions = new Set(rule.exceptions ?? []);
   let cursor = from < rule.startDate ? rule.startDate : from;
@@ -130,7 +156,7 @@ export function occurrencesInRange(rule: RecurringRule, from: DateKey, to: DateK
     let c = rule.startDate;
     let guard = 0;
     while (c < cursor && guard++ < 4000) {
-      if (ruleFiresOn(rule, c) && !exceptions.has(c)) emittedBeforeRange++;
+      if (ruleFiresOn(rule, c, cycles) && !exceptions.has(c)) emittedBeforeRange++;
       c = addDaysToKey(c, 1);
     }
   }
@@ -138,7 +164,7 @@ export function occurrencesInRange(rule: RecurringRule, from: DateKey, to: DateK
   let guard = 0;
   while (cursor <= to && guard++ < 4000) {
     if (rule.count !== null && emittedBeforeRange + out.length >= rule.count) break;
-    if (ruleFiresOn(rule, cursor) && !exceptions.has(cursor)) out.push(cursor);
+    if (ruleFiresOn(rule, cursor, cycles) && !exceptions.has(cursor)) out.push(cursor);
     cursor = addDaysToKey(cursor, 1);
   }
   return out;
@@ -153,6 +179,7 @@ export interface ResolvedOccurrence {
   trackerId: ID;
   kind: BlockKind;
   protected: boolean;
+  optional: boolean;
   notes?: string;
 }
 
@@ -168,7 +195,8 @@ export function resolveOccurrence(rule: RecurringRule, date: DateKey): ResolvedO
     trackerId: override.trackerId ?? base.trackerId,
     kind: override.kind ?? base.kind,
     protected: override.protected ?? base.protected,
-    notes: override.notes,
+    optional: override.optional ?? base.optional ?? false,
+    notes: override.notes ?? base.notes,
   };
 }
 
@@ -191,11 +219,12 @@ export async function materialiseRule(
   rule: RecurringRule,
   from: DateKey,
   to: DateKey,
+  cycles?: readonly CycleDefinition[],
 ): Promise<MaterialiseResult> {
   const result: MaterialiseResult = { blocksCreated: 0, tasksCreated: 0, skipped: 0 };
   if (!rule.active) return result;
 
-  const dates = occurrencesInRange(rule, from, to);
+  const dates = occurrencesInRange(rule, from, to, cycles ?? (await loadCycles()));
   if (!dates.length) return result;
 
   if (rule.target === 'block' && rule.blockTemplate) {
@@ -219,6 +248,7 @@ export async function materialiseRule(
           origin: 'recurring',
           notes: spec.notes,
         }),
+        optional: spec.optional,
         recurringRuleId: rule.id,
         occurrenceDate: date,
         detachedFromSeries: false,
@@ -269,14 +299,21 @@ export async function materialiseRule(
 /** Materialises every active rule across a horizon. Safe to run repeatedly. */
 export async function materialiseAllRules(from: DateKey, to: DateKey): Promise<MaterialiseResult> {
   const rules = (await db.recurringRules.toArray()).filter((r) => r.active);
+  const cycles = await loadCycles();
   const total: MaterialiseResult = { blocksCreated: 0, tasksCreated: 0, skipped: 0 };
   for (const rule of rules) {
-    const r = await materialiseRule(rule, from, to);
+    const r = await materialiseRule(rule, from, to, cycles);
     total.blocksCreated += r.blocksCreated;
     total.tasksCreated += r.tasksCreated;
     total.skipped += r.skipped;
   }
   return total;
+}
+
+/** Cycle definitions live in Settings; an empty list disables phase-bound rules. */
+export async function loadCycles(): Promise<CycleDefinition[]> {
+  const settings = await db.settings.get('settings');
+  return settings?.cycles ?? [];
 }
 
 /* ------------------------------------------------------------------ */
