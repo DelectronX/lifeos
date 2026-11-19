@@ -18,14 +18,17 @@ import { cn } from '@/lib/cn';
  * </Field>
  */
 
+/*
+ * Filled text fields (Apple: tertiary system fill, no stroke). Focus shows an
+ * accent ring; the fill never jumps.
+ */
 const FIELD_BASE =
-  'w-full rounded-[var(--r-md)] border border-line bg-surface-sunken px-3 text-sm text-ink ' +
-  'placeholder:text-ink-faint transition-colors duration-base ease-calm ' +
-  'hover:border-line-strong ' +
-  'focus:border-accent/70 focus:bg-surface focus:outline-none ' +
-  'disabled:cursor-not-allowed disabled:opacity-55';
+  'w-full rounded-[var(--r-md)] border-0 bg-surface-sunken px-3.5 text-[0.9375rem] text-ink ' +
+  'placeholder:text-ink-faint transition-[box-shadow,background-color] duration-base ease-calm ' +
+  'focus:outline-none focus:ring-2 focus:ring-accent/60 focus-visible:outline-none ' +
+  'disabled:cursor-not-allowed disabled:opacity-55 [color-scheme:inherit]';
 
-const FIELD_INVALID = 'border-critical/60 focus:border-critical';
+const FIELD_INVALID = 'ring-2 ring-critical/60 focus:ring-critical/70';
 
 export interface FieldProps {
   label?: ReactNode;
@@ -41,7 +44,7 @@ export function Field({ label, hint, error, required, className, children }: Fie
   return (
     <label className={cn('block', className)}>
       {label ? (
-        <span className="mb-1.5 flex items-center gap-1 text-xs font-medium text-ink-muted">
+        <span className="mb-1.5 flex items-center gap-1 px-0.5 text-[0.8125rem] font-medium text-ink-muted">
           {label}
           {required ? <span className="text-critical">*</span> : null}
         </span>
@@ -65,7 +68,7 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   numeric?: boolean;
 }
 
-const FIELD_HEIGHT = { sm: 'h-8', md: 'h-9', lg: 'h-11' } as const;
+const FIELD_HEIGHT = { sm: 'h-8', md: 'h-10', lg: 'h-12' } as const;
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   { className, invalid, sizeVariant = 'md', iconLeft, numeric, ...rest },
@@ -170,14 +173,14 @@ export function Checkbox({
         className,
       )}
     >
-      <span className="relative flex h-4 w-4 shrink-0 items-center justify-center">
+      <span className="relative flex h-5 w-5 shrink-0 items-center justify-center">
         <input
           type="checkbox"
           checked={checked}
           disabled={disabled}
           ref={(el) => { if (el) el.indeterminate = Boolean(indeterminate) && !checked; }}
           onChange={(e) => onChange(e.target.checked)}
-          className="peer absolute inset-0 h-4 w-4 cursor-[inherit] appearance-none rounded-[5px] border border-line-strong bg-surface-sunken transition-colors duration-fast ease-calm checked:border-accent checked:bg-accent indeterminate:border-accent indeterminate:bg-accent"
+          className="peer absolute inset-0 h-5 w-5 cursor-[inherit] appearance-none rounded-full border-[1.5px] border-line-strong bg-transparent transition-colors duration-fast ease-calm checked:border-accent checked:bg-accent indeterminate:border-accent indeterminate:bg-accent"
         />
         {indeterminate && !checked ? (
           <Minus className="pointer-events-none relative h-3 w-3 text-accent-contrast" strokeWidth={3} />
@@ -190,7 +193,7 @@ export function Checkbox({
       </span>
       {(label || description) && (
         <span className="min-w-0">
-          {label ? <span className="block text-sm leading-tight text-ink">{label}</span> : null}
+          {label ? <span className="block text-[0.9375rem] leading-tight text-ink">{label}</span> : null}
           {description ? <span className="t-meta mt-0.5 block">{description}</span> : null}
         </span>
       )}
@@ -238,7 +241,7 @@ export function Radio<T extends string>({
       </span>
       {(label || description) && (
         <span className="min-w-0">
-          {label ? <span className="block text-sm leading-tight text-ink">{label}</span> : null}
+          {label ? <span className="block text-[0.9375rem] leading-tight text-ink">{label}</span> : null}
           {description ? <span className="t-meta mt-0.5 block">{description}</span> : null}
         </span>
       )}
@@ -301,7 +304,7 @@ export function Toggle({
     <div className={cn('flex items-start justify-between gap-4', className)}>
       {(label || description) && (
         <div className="min-w-0">
-          {label ? <div className="text-sm font-medium text-ink">{label}</div> : null}
+          {label ? <div className="text-[0.9375rem] text-ink">{label}</div> : null}
           {description ? <div className="t-meta mt-0.5">{description}</div> : null}
         </div>
       )}
@@ -313,15 +316,17 @@ export function Toggle({
         disabled={disabled}
         onClick={() => onChange(!checked)}
         className={cn(
-          'relative h-5 w-9 shrink-0 rounded-full border transition-colors duration-slow ease-calm',
-          checked ? 'border-accent bg-accent' : 'border-line-strong bg-surface-sunken',
+          // iOS switch proportions (51×31pt) with the system green "on" state.
+          'relative h-[1.625rem] w-[2.75rem] shrink-0 rounded-full transition-colors duration-slow ease-calm',
+          checked ? 'bg-positive' : 'bg-surface-sunken ring-1 ring-inset ring-line',
           disabled && 'cursor-not-allowed opacity-50',
         )}
       >
         <span
           className={cn(
-            'absolute top-[0.1875rem] h-3 w-3 rounded-full transition-transform duration-slow ease-calm',
-            checked ? 'translate-x-[1.1875rem] bg-accent-contrast' : 'translate-x-[0.1875rem] bg-ink-faint',
+            'absolute left-0 top-[0.125rem] h-[1.375rem] w-[1.375rem] rounded-full bg-white',
+            'shadow-[0_3px_8px_rgb(0_0_0/0.15),0_3px_1px_rgb(0_0_0/0.06)] transition-transform duration-slow ease-spring',
+            checked ? 'translate-x-[1.25rem]' : 'translate-x-[0.125rem]',
           )}
         />
       </button>
