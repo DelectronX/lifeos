@@ -124,7 +124,7 @@ export function PeriodNav({
         <button
           type="button"
           onClick={onToday}
-          className="t-meta rounded-md border border-line px-2 py-1 hover:text-ink"
+          className="t-meta rounded-[var(--r-md)] px-2 py-1 hover:text-ink bg-surface-sunken/50"
         >
           {todayLabel}
         </button>
