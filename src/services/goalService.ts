@@ -2,6 +2,7 @@ import { db } from '@/db/db';
 import { newId } from '@/lib/id';
 import { todayKey } from '@/lib/date';
 import { logActivity } from './activityService';
+import { awardXP, revokeXPFor } from './xpService';
 import { computeGoalProgress, type GoalProgressInput } from '@/engines/goalProgress';
 import type { Goal, GoalType, ID, Milestone, TrackerColor } from '@/types';
 
@@ -96,7 +97,7 @@ export async function toggleMilestone(id: ID): Promise<void> {
 
   if (completed) {
     const goal = await db.goals.get(milestone.goalId);
-    await logActivity({
+    const activity = await logActivity({
       type: 'milestone_completed',
       title: milestone.title,
       at,
@@ -104,7 +105,16 @@ export async function toggleMilestone(id: ID): Promise<void> {
       trackerId: goal?.trackerId ?? null,
       meta: { milestoneId: id, createdAt: milestone.createdAt },
     });
+    // Reaching a milestone is real progress: bank the configured award
+    // (xp.awards.milestone_completed), once per milestone.
+    await awardXP({
+      reason: 'milestone_completed',
+      sourceType: 'milestone',
+      sourceId: id,
+      description: `Milestone: ${milestone.title}`,
+    }, { activityId: activity.id, at });
   } else {
+    await revokeXPFor('milestone', id);
     // Reverting a milestone removes its completion event so counters stay honest.
     const rows = await db.activities
       .where('goalId').equals(milestone.goalId)
@@ -164,21 +174,62 @@ export async function recomputeGoalProgress(goalId: ID): Promise<number> {
   if (result.progress >= 1 && goal.status === 'active') {
     patch.status = 'completed';
     patch.completedAt = at;
-    await logActivity({
+    const activity = await logActivity({
       type: 'goal_completed',
       title: goal.title,
       at,
       goalId: goal.id,
       trackerId: goal.trackerId,
-      meta: { goalType: goal.type, createdAt: goal.createdAt },
+      meta: { goalType: goal.type, createdAt: goal.createdAt, sequence: goal.sequence ?? null },
     });
+    await awardXP({
+      reason: 'goal_completed',
+      sourceType: 'goal',
+      sourceId: goal.id,
+      flatOverride: goal.completionXP,
+      description: `Completed: ${goal.title}`,
+    }, { activityId: activity.id, at });
   } else if (result.progress < 1 && goal.status === 'completed') {
     patch.status = 'active';
     patch.completedAt = null;
+    await revokeXPFor('goal', goal.id);
   }
 
   await db.goals.update(goalId, patch);
+  if (goal.sequence) await syncSequence(goal.sequence.group);
   return result.progress;
+}
+
+/**
+ * Pure: which goal of a sequence group is current — the lowest `order` that
+ * is not completed/abandoned. Null when the whole group is finished.
+ */
+export function currentInSequence(goals: readonly Goal[], group: string): Goal | null {
+  const members = goals
+    .filter((g) => g.sequence?.group === group && g.status !== 'completed' && g.status !== 'abandoned')
+    .sort((a, b) => a.sequence!.order - b.sequence!.order);
+  return members[0] ?? null;
+}
+
+/**
+ * Enforces one-at-a-time for a sequence group: the current goal becomes
+ * 'active', every later unfinished one 'paused'. Idempotent.
+ */
+export async function syncSequence(group: string): Promise<Goal | null> {
+  const goals = await db.goals.toArray();
+  const current = currentInSequence(goals, group);
+  const now = Date.now();
+  for (const g of goals) {
+    if (g.sequence?.group !== group || g.status === 'completed' || g.status === 'abandoned') continue;
+    const want = g.id === current?.id ? 'active' : 'paused';
+    if (g.status !== want) await db.goals.update(g.id, { status: want, updatedAt: now });
+  }
+  return current;
+}
+
+export async function syncAllSequences(): Promise<void> {
+  const groups = new Set((await db.goals.toArray()).map((g) => g.sequence?.group).filter((x): x is string => !!x));
+  for (const group of groups) await syncSequence(group);
 }
 
 export async function recomputeAllGoalProgress(): Promise<void> {
@@ -188,4 +239,23 @@ export async function recomputeAllGoalProgress(): Promise<void> {
 
 function clamp01(n: number): number {
   return Math.min(1, Math.max(0, n));
+}
+
+/**
+ * Backbone link: Task → Milestone → Goal. Called whenever a task's status
+ * changes. A milestone with tasks completes when its LAST live task completes
+ * (logging milestone_completed and recomputing goal progress, which in turn
+ * banks goal XP and advances project sequences); reopening one of its tasks
+ * reopens it. Milestones without tasks stay manual.
+ */
+export async function syncMilestoneFromTasks(milestoneId: ID | null | undefined): Promise<'completed' | 'reopened' | null> {
+  if (!milestoneId) return null;
+  const milestone = await db.milestones.get(milestoneId);
+  if (!milestone) return null;
+  const tasks = (await db.tasks.where('milestoneId').equals(milestoneId).toArray()).filter((t) => t.status !== 'cancelled');
+  if (tasks.length === 0) return null;
+  const allDone = tasks.every((t) => t.status === 'completed');
+  if (allDone && !milestone.completedAt) { await toggleMilestone(milestoneId); return 'completed'; }
+  if (!allDone && milestone.completedAt) { await toggleMilestone(milestoneId); return 'reopened'; }
+  return null;
 }
