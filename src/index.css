@@ -20,7 +20,7 @@
  *   --c-surface-*   background luminance steps
  *   --c-line-*      hairline / divider colours
  *   --c-ink-*       foreground text levels
- *   --c-accent-*    the single accent (blue-violet)
+ *   --c-accent-*    the app accent (Apple system color, user-selectable)
  *   --c-positive|caution|critical   semantic, desaturated for dark
  *   --r-*           radii
  *   --shadow-*      ambient elevation
@@ -31,100 +31,149 @@
   /* DARK — the default theme                                          */
   /* ---------------------------------------------------------------- */
   :root {
-    /* Surfaces: the desktop backdrop is the darkest; panels step up. */
-    --c-surface-base: 11 13 16;        /* #0B0D10 — the "desktop" */
-    --c-surface-sunken: 15 17 21;      /* #0F1115 — wells, inset regions */
-    --c-surface: 19 22 25;             /* #131619 — chrome, rails */
-    --c-surface-raised: 25 29 34;      /* #191D22 — panels, cards */
-    --c-surface-overlay: 32 37 43;     /* #20252B — menus, modals, palette */
+    /*
+     * Graphite, layered by luminance (Apple dark: elevated surfaces get
+     * lighter, never shadowed). Contrast figures are against --surface-raised.
+     *   base #0A0A0B → bars #111113 → cells #18181B → sheets #222226
+     */
+    --c-surface-base: 10 10 11;
+    --c-chrome: 20 20 23;            /* floating bars */        /* #0A0A0B window background */
+    --c-surface: 17 17 19;             /* #111113 sidebar + bars */
+    --c-surface-raised: 24 24 27;      /* #18181B cells, cards */
+    --c-surface-overlay: 34 34 38;     /* #222226 sheets, menus, popovers */
+    --c-surface-sunken: 39 39 44;      /* #27272C fills: inputs, tracks, gray buttons */
 
-    /* Hairlines: white @ 6–12% composited over the surfaces above. */
-    --c-line: 38 42 48;
-    --c-line-strong: 54 60 68;
-    --c-line-faint: 28 32 37;
+    --c-line: 44 44 49;                /* #2C2C31 separators */
+    --c-line-strong: 63 63 70;         /* #3F3F46 */
+    --c-line-faint: 33 33 37;          /* #212125 in-cell separators */
 
-    /* Ink */
-    --c-ink: 233 236 241;
-    --c-ink-muted: 156 165 177;
-    --c-ink-faint: 110 119 130;
-    --c-ink-inverse: 11 13 16;
+    --c-ink: 244 244 246;              /* label      16.9:1 */
+    --c-ink-muted: 161 161 170;        /* secondary   7.0:1 */
+    --c-ink-faint: 143 143 152;        /* tertiary    5.4:1 (≥4.5 on bars too) */
+    --c-ink-inverse: 10 10 11;
 
-    /* One restrained accent: calm blue-violet. */
-    --c-accent: 124 141 248;
-    --c-accent-soft: 30 35 58;
-    --c-accent-ink: 173 185 253;
-    --c-accent-contrast: 8 10 14;      /* text/icon colour on an accent fill */
+    /* App accent — overridden by [data-accent]. Blue #0071E3: 4.7:1 under white labels. */
+    --c-accent: 0 113 227;
+    --c-accent-soft: 14 38 70;
+    --c-accent-ink: 100 178 255;
+    --c-accent-contrast: 255 255 255;
 
-    /* Semantics, desaturated for dark backgrounds. */
-    --c-positive: 82 187 143;
-    --c-caution: 216 168 88;
-    --c-critical: 232 114 114;
+    --c-positive: 48 209 88;           /* systemGreen  */
+    --c-caution: 255 159 10;           /* systemOrange */
+    --c-critical: 255 99 88;           /* systemRed, lifted for text on tints */
 
-    /* Radii — soft, OS-like. */
+    /* Continuous-feeling radii. */
     --r-xs: 6px;
     --r-sm: 8px;
     --r-md: 10px;
     --r-lg: 12px;
     --r-xl: 16px;
-    --r-2xl: 20px;
+    --r-2xl: 26px;
 
-    /* Ambient elevation. Soft and wide, never a hard drop shadow. */
-    --shadow-ambient: 0 1px 0 0 rgb(255 255 255 / 0.02) inset, 0 1px 2px rgb(0 0 0 / 0.28);
-    --shadow-panel: 0 1px 2px rgb(0 0 0 / 0.22), 0 8px 24px -16px rgb(0 0 0 / 0.55);
-    --shadow-pop: 0 4px 12px -4px rgb(0 0 0 / 0.4), 0 16px 48px -24px rgb(0 0 0 / 0.7);
-    --shadow-overlay: 0 8px 24px -8px rgb(0 0 0 / 0.5), 0 32px 80px -32px rgb(0 0 0 / 0.8);
+    /*
+     * Elevation in dark = a hairline of light, not a shadow: a 1px ring at
+     * 6% white plus a top-edge highlight. Popovers add real depth.
+     */
+    --shadow-ambient: 0 0 0 1px rgb(255 255 255 / 0.05);
+    --shadow-panel: inset 0 1px 0 0 rgb(255 255 255 / 0.045), 0 0 0 1px rgb(255 255 255 / 0.055);
+    --shadow-pop: inset 0 1px 0 0 rgb(255 255 255 / 0.06), 0 0 0 1px rgb(255 255 255 / 0.08), 0 12px 32px -8px rgb(0 0 0 / 0.6), 0 32px 64px -24px rgb(0 0 0 / 0.7);
+    --shadow-overlay: inset 0 1px 0 0 rgb(255 255 255 / 0.07), 0 0 0 1px rgb(255 255 255 / 0.09), 0 24px 80px -12px rgb(0 0 0 / 0.85);
 
-    /* Motion */
+    /* Materials (functional layer only: bars, sheets backdrop). */
+    --material-bar: 17 17 19;
+    --material-alpha: 0.72;
+    --scrim: 0 0 0 / 0.5;
+
+    /* Motion — Apple-like springs approximated with curves. */
     --dur-fast: 120ms;
-    --dur-base: 160ms;
-    --dur-slow: 200ms;
-    --dur-lazy: 320ms;
+    --dur-base: 180ms;
+    --dur-slow: 260ms;
+    --dur-lazy: 420ms;
     --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
     --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-spring: cubic-bezier(0.34, 1.36, 0.64, 1);
 
-    /* Shell metrics — consumed by the AppShell layout. */
-    --rail-w: 15rem;
-    --rail-w-collapsed: 3.75rem;
-    --chrome-h: 3rem;
+    --rail-w: 16.25rem;
+    --rail-w-collapsed: 4rem;
+    --chrome-h: 3.25rem;
     --sp-gutter: 1.5rem;
 
     color-scheme: dark;
   }
 
-  /* ---------------------------------------------------------------- */
-  /* LIGHT — same token names, paper-calm palette                      */
-  /* ---------------------------------------------------------------- */
   :root:not(.dark) {
-    --c-surface-base: 241 243 246;
-    --c-surface-sunken: 246 247 250;
-    --c-surface: 255 255 255;
-    --c-surface-raised: 255 255 255;
-    --c-surface-overlay: 255 255 255;
+    --c-surface-base: 245 245 247;     /* #F5F5F7 */
+    --c-chrome: 255 255 255;
+    --c-surface: 250 250 251;          /* bars, sidebar */
+    --c-surface-raised: 255 255 255;   /* cells */
+    --c-surface-overlay: 255 255 255;  /* sheets */
+    --c-surface-sunken: 236 236 240;   /* fills */
 
-    --c-line: 226 230 236;
-    --c-line-strong: 203 210 220;
-    --c-line-faint: 236 239 243;
+    --c-line: 222 222 227;
+    --c-line-strong: 200 200 206;
+    --c-line-faint: 236 236 240;
 
-    --c-ink: 17 24 34;
-    --c-ink-muted: 82 93 108;
-    --c-ink-faint: 140 150 163;
+    --c-ink: 29 29 31;                 /* 16.7:1 on white */
+    --c-ink-muted: 99 99 105;          /*  6.1:1 */
+    --c-ink-faint: 102 102 108;        /*  5.8:1 on white, ≥4.6 on bars */
     --c-ink-inverse: 255 255 255;
 
-    --c-accent: 79 70 229;
-    --c-accent-soft: 238 240 254;
-    --c-accent-ink: 67 56 202;
+    --c-accent: 0 113 227;
+    --c-accent-soft: 229 240 255;
+    --c-accent-ink: 0 88 196;
     --c-accent-contrast: 255 255 255;
 
-    --c-positive: 16 122 87;
-    --c-caution: 170 112 8;
-    --c-critical: 190 42 42;
+    /* Accessible system colours: ≥4.5:1 as text on white AND on their 15% tints. */
+    --c-positive: 20 104 40;
+    --c-caution: 178 46 0;
+    --c-critical: 192 0 20;
 
-    --shadow-ambient: 0 1px 2px rgb(15 23 42 / 0.05);
-    --shadow-panel: 0 1px 2px rgb(15 23 42 / 0.05), 0 8px 24px -18px rgb(15 23 42 / 0.28);
-    --shadow-pop: 0 4px 12px -4px rgb(15 23 42 / 0.1), 0 16px 40px -20px rgb(15 23 42 / 0.24);
-    --shadow-overlay: 0 8px 24px -8px rgb(15 23 42 / 0.14), 0 32px 72px -32px rgb(15 23 42 / 0.3);
+    --shadow-ambient: 0 0 0 1px rgb(0 0 0 / 0.06);
+    --shadow-panel: 0 0 0 1px rgb(0 0 0 / 0.05), 0 1px 2px rgb(0 0 0 / 0.04), 0 6px 20px -10px rgb(0 0 0 / 0.10);
+    --shadow-pop: 0 0 0 1px rgb(0 0 0 / 0.06), 0 12px 32px -8px rgb(0 0 0 / 0.18), 0 2px 6px rgb(0 0 0 / 0.06);
+    --shadow-overlay: 0 0 0 1px rgb(0 0 0 / 0.06), 0 24px 72px -12px rgb(0 0 0 / 0.28);
+
+    --material-bar: 250 250 251;
+    --scrim: 0 0 0 / 0.28;
 
     color-scheme: light;
+  }
+
+  /* ---------------------------------------------------------------- */
+  /* App accent (Settings → Appearance). Apple system colors, dark/light */
+  /* ---------------------------------------------------------------- */
+  :root[data-accent='indigo'] { --c-accent: 88 86 214; --c-accent-soft: 34 33 80; --c-accent-ink: 150 148 255; --c-accent-contrast: 255 255 255; }
+  :root[data-accent='purple'] { --c-accent: 157 70 204; --c-accent-soft: 62 30 80; --c-accent-ink: 218 150 255; --c-accent-contrast: 255 255 255; }
+  :root[data-accent='teal']   { --c-accent: 64 200 224; --c-accent-soft: 18 60 68; --c-accent-ink: 120 220 238; --c-accent-contrast: 0 0 0; }
+  :root[data-accent='green']  { --c-accent: 48 209 88;  --c-accent-soft: 16 62 30; --c-accent-ink: 110 226 140; --c-accent-contrast: 0 0 0; }
+  :root[data-accent='orange'] { --c-accent: 255 159 10; --c-accent-soft: 74 46 6;  --c-accent-ink: 255 190 90; --c-accent-contrast: 0 0 0; }
+  :root[data-accent='brass']  { --c-accent: 214 178 112; --c-accent-soft: 56 46 28; --c-accent-ink: 232 205 152; --c-accent-contrast: 20 16 10; }
+  :root:not(.dark)[data-accent='indigo'] { --c-accent: 88 86 214; --c-accent-soft: 236 236 252; --c-accent-ink: 72 70 190; }
+  :root:not(.dark)[data-accent='purple'] { --c-accent: 157 70 204; --c-accent-soft: 245 234 252; --c-accent-ink: 137 50 180; }
+  :root:not(.dark)[data-accent='teal']   { --c-accent: 0 130 153; --c-accent-soft: 226 244 247; --c-accent-ink: 0 110 130; --c-accent-contrast: 255 255 255; }
+  :root:not(.dark)[data-accent='green']  { --c-accent: 36 138 61;  --c-accent-soft: 230 245 234; --c-accent-ink: 28 115 50; --c-accent-contrast: 255 255 255; }
+  :root:not(.dark)[data-accent='orange'] { --c-accent: 201 52 0;   --c-accent-soft: 252 236 228; --c-accent-ink: 170 44 0; --c-accent-contrast: 255 255 255; }
+  :root:not(.dark)[data-accent='brass']  { --c-accent: 156 112 38; --c-accent-soft: 246 238 222; --c-accent-ink: 128 90 26; --c-accent-contrast: 255 255 255; }
+
+  /*
+   * Touch devices (iPad/iPhone): text at Apple's 17pt body size range and
+   * 44pt hit targets. Root scaling raises every rem-based size together.
+   */
+  @media (pointer: coarse) {
+    html { font-size: 112.5%; }
+    /*
+     * 44pt minimum hit area for every compact control on touch screens
+     * (HIG › Accessibility). An invisible expansion — the visuals keep their
+     * size; only the tappable region grows.
+     */
+    .touch-hit { position: relative; }
+    .touch-hit::after { content: ''; position: absolute; left: 50%; top: 50%; width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%); }
+    [role='radiogroup'] > [role='radio'] { min-height: 2.25rem; }
+  }
+
+  /* Reduce Transparency: bars become solid. */
+  @media (prefers-reduced-transparency: reduce) {
+    .material-bar { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; background-color: rgb(var(--c-surface)) !important; }
   }
 
   /*
@@ -162,15 +211,18 @@
   body {
     @apply bg-surface-base text-ink antialiased;
     font-family: theme('fontFamily.sans');
-    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11', 'ss01';
     text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    letter-spacing: -0.006em;
     overscroll-behavior: none;
   }
 
   h1, h2, h3, h4 {
     @apply text-ink font-semibold;
-    letter-spacing: -0.014em;
+    letter-spacing: -0.018em;
+    text-wrap: balance;
   }
+  p { text-wrap: pretty; }
 
   /* Slim, self-effacing scrollbars — OS chrome, not decoration. */
   ::-webkit-scrollbar { width: 10px; height: 10px; }
@@ -189,11 +241,8 @@
 
   /* One focus ring for the whole system. */
   :focus-visible {
-    outline: none;
-    box-shadow:
-      0 0 0 2px rgb(var(--c-surface-base)),
-      0 0 0 4px rgb(var(--c-accent) / 0.7);
-    border-radius: var(--r-sm);
+    outline: 3px solid rgb(var(--c-accent) / 0.55);
+    outline-offset: 2px;
   }
 
   ::selection {
@@ -213,28 +262,35 @@
   /* --------------------------------------------------------------- */
   /* Typographic scale — the primary hierarchy device                  */
   /* --------------------------------------------------------------- */
-  .t-display { @apply text-[1.625rem] font-semibold leading-tight tracking-[-0.025em] text-ink; }
-  .t-title { @apply text-base font-semibold tracking-[-0.015em] text-ink; }
-  .t-section { @apply text-sm font-semibold tracking-[-0.006em] text-ink; }
-  .t-body { @apply text-sm leading-relaxed text-ink; }
-  .t-muted { @apply text-sm leading-relaxed text-ink-muted; }
-  .t-meta { @apply text-xs leading-relaxed text-ink-faint; }
-  .t-label { @apply text-2xs font-medium uppercase tracking-[0.09em] text-ink-faint; }
+  /* Apple text styles (iOS sizes; desktop is the same scale at 1rem = 16px). */
+  .t-display { @apply text-[2.125rem] font-bold leading-[1.18] tracking-[-0.028em] text-ink; }   /* Large Title 34 */
+  .t-title1  { @apply text-[1.75rem] font-bold leading-[1.2] tracking-[-0.024em] text-ink; }     /* Title 1 28 */
+  .t-title2  { @apply text-[1.375rem] font-bold leading-[1.25] tracking-[-0.02em] text-ink; }    /* Title 2 22 */
+  .t-title3  { @apply text-[1.25rem] font-semibold leading-[1.25] tracking-[-0.018em] text-ink; } /* Title 3 20 */
+  .t-title   { @apply text-[1.0625rem] font-semibold leading-snug tracking-[-0.014em] text-ink; } /* Headline 17 */
+  .t-section { @apply text-[0.9375rem] font-semibold tracking-[-0.01em] text-ink; }              /* Subhead-bold 15 */
+  .t-body    { @apply text-[0.9375rem] leading-relaxed text-ink; }
+  .t-muted   { @apply text-[0.9375rem] leading-relaxed text-ink-muted; }
+  .t-meta    { @apply text-[0.8125rem] leading-snug text-ink-faint; }                            /* Footnote 13 */
+  .t-label   { @apply text-[0.8125rem] font-medium tracking-[-0.004em] text-ink-muted; }         /* Section header */
+  .t-eyebrow { @apply text-[0.6875rem] font-semibold uppercase tracking-[0.08em] text-ink-faint; }
   .t-num { font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
   .t-mono { @apply font-mono; font-variant-numeric: tabular-nums; }
 
-  /* Large metric numerals: tight tracking, tabular figures. */
+  /* SF Pro Rounded for numerals — the Fitness/Health voice. Metrics only. */
+  .t-rounded { font-family: ui-rounded, 'SF Pro Rounded', 'SF Pro Display', system-ui, sans-serif; }
   .t-metric {
-    @apply text-2xl font-semibold text-ink;
+    @apply text-[1.75rem] font-semibold leading-none text-ink;
+    font-family: ui-rounded, 'SF Pro Rounded', 'SF Pro Display', system-ui, sans-serif;
     font-variant-numeric: tabular-nums;
-    letter-spacing: -0.03em;
+    letter-spacing: -0.02em;
   }
 
   .hairline { @apply border-line; }
 
   /* A surface panel: hairline + soft ambient depth. The core OS container. */
   .panel {
-    @apply rounded-panel border border-line bg-surface-raised;
+    @apply rounded-panel bg-surface-raised;
     box-shadow: var(--shadow-panel);
   }
 }
@@ -245,16 +301,50 @@
 
   .tabular { font-variant-numeric: tabular-nums; }
 
+  /* Functional-layer material (bars only, never content). */
+  .material-bar {
+    background-color: rgb(var(--material-bar) / var(--material-alpha, 0.72));
+    -webkit-backdrop-filter: saturate(180%) blur(24px);
+    backdrop-filter: saturate(180%) blur(24px);
+  }
+  .material-thick {
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.06), rgb(255 255 255 / 0.02)),
+      rgb(var(--c-surface-overlay) / 0.80);
+    -webkit-backdrop-filter: saturate(180%) blur(36px);
+    backdrop-filter: saturate(180%) blur(36px);
+  }
+  :root:not(.dark) .material-thick { background: rgb(255 255 255 / 0.86); }
+  .scrim { background-color: rgb(var(--scrim)); }
+
+  /* Press feedback (Apple: content dims/compresses under the finger). */
+  .pressable { transition: transform var(--dur-fast) var(--ease-out), background-color var(--dur-base) var(--ease-out), opacity var(--dur-base) var(--ease-out); }
+  .pressable:active { transform: scale(0.97); }
+
+  /* Elevated cell surface used by cards, widgets and grouped lists. */
+  /* Content surfaces: near-opaque over the galaxy, hairline edge, faint top light. */
+  .surface-card {
+    background-color: rgb(var(--c-surface-raised) / 0.94);
+    box-shadow: inset 0 0 0 1px rgb(var(--c-ink) / 0.06), inset 0 1px 0 0 rgb(var(--c-ink) / 0.04);
+  }
+  :root:not(.dark) .surface-card { background-color: rgb(255 255 255); box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.07), 0 1px 2px rgb(0 0 0 / 0.04); }
+  /* Interactive rows/cards: lift the surface one step on hover. */
+  .surface-hover { transition: background-color var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out); }
+  .surface-hover:hover { background-color: rgb(var(--c-surface-overlay) / 0.96); box-shadow: inset 0 0 0 1px rgb(var(--c-ink) / 0.10); }
+
   .animate-in-fade { animation: lo-fade var(--dur-base) var(--ease-out) both; }
   .animate-in-rise { animation: lo-rise var(--dur-slow) var(--ease-out) both; }
   .animate-in-scale { animation: lo-scale var(--dur-slow) var(--ease-out) both; }
+  .animate-in-sheet { animation: lo-sheet var(--dur-lazy) var(--ease-out) both; }
+  .live-dot { animation: lo-pulse-ring 2s var(--ease-out) infinite; }
   .animate-in-slide-right { animation: lo-slide-right var(--dur-slow) var(--ease-out) both; }
 
   /* 1–2px hover lift, nothing more. */
   .lift {
-    transition: transform var(--dur-base) var(--ease-out), border-color var(--dur-base) var(--ease-out);
+    transition: transform var(--dur-base) var(--ease-out), background-color var(--dur-base) var(--ease-out);
   }
-  .lift:hover { transform: translateY(-1px); }
+  .lift:hover { background-color: rgb(var(--c-surface-overlay)); }
+  .lift:active { transform: scale(0.985); }
 
   /* Safe-area padding utilities — additive to existing padding via env(). */
   .pt-safe { padding-top: var(--safe-top); }
@@ -266,6 +356,22 @@
 @keyframes lo-fade {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+@keyframes lo-wiggle {
+  from { transform: rotate(-0.35deg); }
+  to { transform: rotate(0.35deg); }
+}
+
+@keyframes lo-sheet {
+  from { opacity: 0; transform: translateY(24px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes lo-pulse-ring {
+  0% { box-shadow: 0 0 0 0 rgb(var(--c-accent) / 0.55); }
+  70% { box-shadow: 0 0 0 6px rgb(var(--c-accent) / 0); }
+  100% { box-shadow: 0 0 0 0 rgb(var(--c-accent) / 0); }
 }
 
 @keyframes lo-rise {
@@ -288,6 +394,117 @@
   to { background-position: -200% 0; }
 }
 
+/* ===================================================================== */
+/* Chrome surfaces. Dark, near-opaque, hairline-bordered. One cheap blur  */
+/* on the two small floating bars only — never on large areas.           */
+/* ===================================================================== */
+@layer components {
+  .glass {
+    position: relative;
+    background: rgb(var(--c-chrome) / 0.88);
+    border: 1px solid rgb(var(--c-ink) / 0.075);
+    box-shadow: 0 1px 0 0 rgb(255 255 255 / 0.04) inset, 0 12px 32px -16px rgb(0 0 0 / 0.7);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+  }
+  /* Panels, sheets, popovers: fully opaque, no blur cost at all. */
+  .glass-regular, .panel {
+    background: rgb(var(--c-surface-overlay));
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    border: 1px solid rgb(var(--c-ink) / 0.08);
+    box-shadow: 0 24px 64px -24px rgb(0 0 0 / 0.8), 0 0 0 1px rgb(0 0 0 / 0.2);
+  }
+  :root:not(.dark) .glass { background: rgb(255 255 255 / 0.9); border-color: rgb(0 0 0 / 0.08); box-shadow: 0 10px 28px -16px rgb(0 0 0 / 0.25); }
+  :root:not(.dark) .glass-regular, :root:not(.dark) .panel { background: rgb(255 255 255); border-color: rgb(0 0 0 / 0.08); box-shadow: 0 24px 60px -24px rgb(0 0 0 / 0.25); }
+
+  /* The notch: pure black in both themes. */
+  .island {
+    background: #000;
+    color: #fff;
+    box-shadow: 0 0 0 1px rgb(255 255 255 / 0.09), 0 16px 40px -18px rgb(0 0 0 / 0.9);
+  }
+
+  /* Selection: a faint illuminated well with an accent rim on top. */
+  .glass-pill {
+    background: rgb(var(--c-ink) / 0.08);
+    box-shadow: inset 0 1px 0 rgb(var(--c-ink) / 0.10);
+  }
+  :root:not(.dark) .glass-pill { background: rgb(0 0 0 / 0.055); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.9); }
+
+  /* Base field under the galaxy: flat charcoal with a soft vignette. */
+  .ambient-stage {
+    background:
+      radial-gradient(120% 90% at 50% 40%, transparent 55%, rgb(0 0 0 / 0.55) 100%),
+      rgb(var(--c-surface-base));
+  }
+  :root:not(.dark) .ambient-stage { background: rgb(var(--c-surface-base)); }
+
+  /* The galaxy layer: a fixed-size canvas scaled on the GPU to cover. */
+  .galaxy-layer {
+    position: absolute; left: 50%; top: 46%;
+    transform: translate(-50%, -50%) scale(var(--galaxy-scale, 2));
+    transform-origin: center;
+    opacity: 0.34;
+    color: rgb(var(--c-ink));
+    will-change: transform;
+    contain: strict;
+    width: var(--galaxy-w, 900px); height: var(--galaxy-h, 600px);
+    display: grid; place-items: center;
+  }
+  :root:not(.dark) .galaxy-layer { opacity: 0.14; filter: invert(1) hue-rotate(180deg); }
+  .galaxy-mask {
+    -webkit-mask-image: radial-gradient(ellipse 70% 62% at 50% 46%, #000 30%, rgb(0 0 0 / 0.35) 70%, transparent 100%);
+    mask-image: radial-gradient(ellipse 70% 62% at 50% 46%, #000 30%, rgb(0 0 0 / 0.35) 70%, transparent 100%);
+  }
+  /* Readability veil behind the content column. */
+  .content-veil {
+    background: radial-gradient(ellipse 48% 70% at 50% 45%, rgb(var(--c-surface-base) / 0.55), transparent 75%);
+  }
+
+  /* Scroll-edge: content fades where it meets the floating chrome. Cheap: gradient only. */
+  .scroll-edge-top { background: linear-gradient(180deg, rgb(var(--c-surface-base)) 0%, rgb(var(--c-surface-base) / 0.85) 40%, transparent 100%); }
+  .scroll-edge-bottom { background: linear-gradient(0deg, rgb(var(--c-surface-base)) 10%, rgb(var(--c-surface-base) / 0.7) 45%, transparent); }
+}
+
+@layer utilities {
+  .ease-spring-soft { transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1); }
+  /* Route + section entrances: transform/opacity only (no filter — it was costing frames). */
+  .route-enter { animation: lo-route 320ms cubic-bezier(0.32, 0.72, 0, 1) both; }
+  .stagger > * { animation: lo-rise 420ms cubic-bezier(0.32, 0.72, 0, 1) both; }
+  .stagger > *:nth-child(1) { animation-delay: 0ms; }
+  .stagger > *:nth-child(2) { animation-delay: 40ms; }
+  .stagger > *:nth-child(3) { animation-delay: 80ms; }
+  .stagger > *:nth-child(4) { animation-delay: 120ms; }
+  .stagger > *:nth-child(n+5) { animation-delay: 160ms; }
+  .toast-in { animation: lo-toast-in 380ms cubic-bezier(0.32, 0.72, 0, 1) both; }
+  .toast-out { animation: lo-toast-out 200ms cubic-bezier(0.4, 0, 1, 1) both; }
+  .animate-in-pop { animation: lo-pop 260ms cubic-bezier(0.32, 0.72, 0, 1) both; }
+  .animate-launch { animation: lo-launch 360ms cubic-bezier(0.32, 0.72, 0, 1) both; }
+  .animate-drawer { animation: lo-drawer 300ms cubic-bezier(0.32, 0.72, 0, 1) both; }
+}
+
+@keyframes lo-route { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes lo-toast-in { from { opacity: 0; transform: translateY(-12px) scale(0.97); } to { opacity: 1; transform: none; } }
+@keyframes lo-toast-out { to { opacity: 0; transform: translateY(-8px) scale(0.98); } }
+@keyframes lo-pop { from { opacity: 0; transform: scale(0.97) translateY(-4px); } to { opacity: 1; transform: none; } }
+@keyframes lo-launch { from { opacity: 0; transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: none; } }
+@keyframes lo-drawer { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
+@keyframes lo-bell {
+  0%, 100% { transform: rotate(0); }
+  20% { transform: rotate(12deg); } 40% { transform: rotate(-9deg); } 60% { transform: rotate(5deg); } 80% { transform: rotate(-2deg); }
+}
+@keyframes lo-check { 0% { transform: scale(0.6); } 60% { transform: scale(1.18); } 100% { transform: scale(1); } }
+@keyframes lo-count { from { opacity: 0.2; transform: translateY(0.25em); } to { opacity: 1; transform: none; } }
+@keyframes lo-shrink { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+
+@media (prefers-reduced-transparency: reduce) {
+  .glass { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; background: rgb(var(--c-chrome)) !important; }
+}
+@media (prefers-contrast: more) {
+  .glass, .panel, .glass-regular { border-color: rgb(var(--c-ink) / 0.4) !important; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -296,3 +513,18 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Boot screen (also inlined in index.html for the pre-JS splash). */
+.lo-boot{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:radial-gradient(120% 90% at 50% 40%,transparent 55%,rgba(0,0,0,.55) 100%),#0A0A0B;color:#8F8F98;font:13px -apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-serif;letter-spacing:-.01em;overflow:hidden}
+.lo-boot-art{width:min(560px,92vw);display:flex;justify-content:center;opacity:.9;margin-bottom:8px;-webkit-mask-image:radial-gradient(ellipse 60% 60% at 50% 50%,#000 45%,transparent 100%);mask-image:radial-gradient(ellipse 60% 60% at 50% 50%,#000 45%,transparent 100%)}
+.lo-boot-art ascii-art{color:#F4F4F6}
+.lo-boot-title{margin:0;color:#F4F4F6;font:600 22px/1.1 -apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif;letter-spacing:-.02em}
+.lo-boot-msg{margin:0;color:#8F8F98}
+.lo-boot-dots::after{content:'';display:inline-block;width:1.2em;text-align:left;animation:lo-boot-dots 1.4s steps(4,end) infinite}
+@keyframes lo-boot-dots{0%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}}
+@media (prefers-reduced-motion:reduce){.lo-boot-dots::after{animation:none;content:'…'}}
+
+/* Schedule block textures (cheap: static gradients, no animation). */
+.block-night { background-image: repeating-linear-gradient(135deg, rgb(var(--c-ink) / 0.035) 0 1px, transparent 1px 7px); }
+.block-protected { background-image: repeating-linear-gradient(-45deg, rgb(var(--c-ink) / 0.07) 0 2px, transparent 2px 9px); }
+.timeline-past { background: linear-gradient(180deg, rgb(var(--c-ink) / 0.025), rgb(var(--c-ink) / 0.025)); }
