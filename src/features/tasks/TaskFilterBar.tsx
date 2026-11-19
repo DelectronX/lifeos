@@ -178,7 +178,7 @@ export function TaskFilterBar({
 
 function FilterChipGroup({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-1.5 rounded-lg border border-line bg-surface-raised px-2 py-1">
+    <div className="flex items-center gap-1.5 rounded-[var(--r-lg)] px-2 py-1 surface-card">
       <span className="t-label shrink-0">{label}</span>
       <div className="flex flex-wrap items-center gap-1">{children}</div>
     </div>
