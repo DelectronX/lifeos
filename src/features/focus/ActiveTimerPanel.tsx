@@ -105,7 +105,7 @@ export function ActiveTimerPanel() {
           />
         </div>
 
-        <div className="mb-5 grid grid-cols-3 gap-3 rounded-lg border border-line bg-surface-sunken px-3 py-2.5 text-center">
+        <div className="mb-5 grid grid-cols-3 gap-3 rounded-[var(--r-lg)] bg-surface-sunken px-3 py-2.5 text-center">
           <Metric label="Work" value={formatDuration(reading.workMs / 60_000)} />
           <Metric label="Break" value={formatDuration(reading.breakMs / 60_000)} />
           <Metric
