@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  AlertTriangle, CalendarDays, ChevronLeft, ChevronRight, LayoutTemplate, ListOrdered, Plus,
+  CalendarDays, ChevronLeft, ChevronRight, LayoutTemplate, ListOrdered, Plus,
   Repeat, Sparkles, Undo2, ZoomIn, ZoomOut,
 } from 'lucide-react';
 import { Page } from '@/components/layout/Page';
@@ -29,6 +29,7 @@ import { PlanConflictDialog } from './PlanConflictDialog';
 import { PlanRescheduleDialog } from './PlanRescheduleDialog';
 import { getLastUndoableRun, undoPlanRun } from '@/services/planService';
 import { cn } from '@/lib/cn';
+import { useMediaQuery } from '@/lib/platform';
 import type { DateKey, ID, PlanRun, ScheduleBlock } from '@/types';
 
 type ViewMode = 'day' | 'week' | 'agenda';
@@ -44,6 +45,7 @@ export function SchedulePage() {
   const [view, setView] = useState<ViewMode>(() => (isNarrow() ? 'agenda' : 'day'));
   const [anchor, setAnchor] = useState<DateKey>(todayKey());
   const [zoomIndex, setZoomIndex] = useState(3);
+  const desktop = useMediaQuery('(min-width: 1024px)');
   const [selectedId, setSelectedId] = useState<ID | null>(null);
   const [createSlot, setCreateSlot] = useState<{ date: DateKey; startMinute: number } | null>(null);
   const [templatesOpen, setTemplatesOpen] = useState(false);
@@ -228,7 +230,7 @@ export function SchedulePage() {
       />
 
       {trackerTotals.length > 0 ? (
-        <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-card border border-line bg-surface-raised px-3 py-2">
+        <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-card px-3 py-2 surface-card">
           {trackerTotals.map(({ tracker, minutes }) => (
             <span key={tracker!.id} className="inline-flex items-center gap-1.5 text-xs text-ink-muted">
               <Dot color={tracker!.color} />
@@ -239,7 +241,12 @@ export function SchedulePage() {
         </div>
       ) : null}
 
-      <div className={cn('grid gap-4', selected ? 'lg:grid-cols-[1fr_22rem]' : 'grid-cols-1')}>
+      {/* When the drawer is open on desktop, inset the timeline by exactly the
+          amount the drawer overlaps the content column — never covered. */}
+      <div
+        className="transition-[padding] duration-slow ease-calm"
+        style={selected && desktop ? { paddingRight: 'max(0px, calc(25rem - (100vw - min(100vw, 96rem)) / 2 + 0.5rem - 2.5rem))' } : undefined}
+      >
         <div className="min-w-0">
           {view === 'agenda' ? (
             <AgendaView
@@ -287,51 +294,27 @@ export function SchedulePage() {
                 onSelect={(b) => setSelectedId(b.id)}
                 onMoved={handleMoved}
                 onCreateAt={(date, startMinute) => setCreateSlot({ date, startMinute })}
-                className="max-h-[min(70vh,calc(100vh-17rem))] min-h-[24rem]"
+                className="h-[max(22rem,calc(100dvh-23rem))]"
               />
 
-              <p className="t-meta mt-2">
-                Drag a block to move it, drag its top or bottom edge to resize, click empty space to add one.
-                Snapping to {snapMinutes} minutes. Arrow keys change {view === 'day' ? 'day' : 'week'}; press T for today.
+              <p className="t-meta mt-2 text-center">
+                Drag to move · drag an edge to resize · click empty time to add · snaps to {snapMinutes} min · ← → change {view === 'day' ? 'day' : 'week'} · T today
               </p>
             </>
           )}
         </div>
 
-        {selected ? (
-          <div className="space-y-3">
-            <BlockInspector
-              block={selected}
-              onClose={() => setSelectedId(null)}
-              onSelectBlock={setSelectedId}
-              className="lg:sticky lg:top-4 lg:max-h-[calc(100vh-8rem)]"
-            />
-            {/* Overrun handling lives beside the inspector so the block it
-                refers to is always the one on screen. */}
-            <div className="rounded-card border border-line bg-surface-raised p-3">
-              <div className="t-label">Ran over?</div>
-              <p className="t-meta mt-1">
-                If this block took longer than planned, see exactly what it does to the rest of the
-                day before anything moves.
-              </p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                <Button
-                  size="sm"
-                  iconLeft={<AlertTriangle className="h-3.5 w-3.5" />}
-                  onClick={() => setConflictBlockId(selected.id)}
-                >
-                  Resolve overrun
-                </Button>
-                {selected.taskId ? (
-                  <Button size="sm" onClick={() => setRescheduleTaskId(selected.taskId)}>
-                    Reschedule task
-                  </Button>
-                ) : null}
-              </div>
-            </div>
-          </div>
-        ) : null}
       </div>
+
+      {selected ? (
+        <BlockInspector
+          block={selected}
+          onClose={() => setSelectedId(null)}
+          onSelectBlock={setSelectedId}
+          onResolveOverrun={(id) => setConflictBlockId(id)}
+          onRescheduleTask={(taskId) => setRescheduleTaskId(taskId)}
+        />
+      ) : null}
 
       {blocks.length === 0 && view !== 'agenda' ? (
         <Card className="mt-4">
