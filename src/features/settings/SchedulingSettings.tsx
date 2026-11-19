@@ -191,7 +191,7 @@ export function ReschedulingSettings({
         <p className="t-meta mb-2">Auto mode tries these in order and recommends the first that fits.</p>
         <ul className="space-y-1">
           {order.map((strategy, i) => (
-            <li key={strategy} className="flex items-center gap-2 rounded-md border border-line bg-surface px-2.5 py-1.5">
+            <li key={strategy} className="flex items-center gap-2 rounded-[var(--r-md)] bg-surface-sunken/60 px-2.5 py-1.5">
               <span className="t-num w-5 text-xs text-ink-faint">{i + 1}</span>
               <span className="flex-1 text-sm text-ink">{STRATEGY_LABELS[strategy]}</span>
               <Button size="xs" disabled={i === 0} onClick={() => move(i, -1)}>Up</Button>
@@ -239,7 +239,7 @@ export function AutoRescheduleModeSettings({
         {(['off', 'suggest', 'automatic'] as const).map((mode) => (
           <label
             key={mode}
-            className="flex cursor-pointer items-start gap-2.5 rounded-md border border-line bg-surface px-3 py-2.5 has-[:checked]:border-accent/50 has-[:checked]:bg-accent/5"
+            className="flex cursor-pointer items-start gap-2.5 rounded-[var(--r-md)] bg-surface-sunken/60 px-3 py-2.5 has-[:checked]:border-accent/50 has-[:checked]:bg-accent/5"
           >
             <input
               type="radio"
@@ -315,7 +315,7 @@ export function ProtectedTimeSettings() {
               <div className="t-label mb-1">{relativeDayLabel(date)}</div>
               <ul className="space-y-1">
                 {dayBlocks.map((b) => (
-                  <li key={b.id} className="flex items-center gap-2 rounded-md border border-line bg-surface px-2.5 py-1.5">
+                  <li key={b.id} className="flex items-center gap-2 rounded-[var(--r-md)] bg-surface-sunken/60 px-2.5 py-1.5">
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-sm text-ink">{b.title}</div>
                       <span className="t-num text-2xs text-ink-muted">
