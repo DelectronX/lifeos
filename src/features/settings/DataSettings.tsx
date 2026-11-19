@@ -14,6 +14,7 @@ import {
 import {
   describeStatus, getSupport, requestPermission, sendTestNotification, sweep,
 } from '@/services/notificationService';
+import { sendTestAlert } from '@/services/notificationCenter';
 import type { BackupSnapshot, Settings } from '@/types';
 import { DEFAULT_BACKUP_PREFERENCES } from '@/types';
 
@@ -39,7 +40,7 @@ export function NotificationSettings({ settings, onPatch }: { settings: Settings
         </>
       }
     >
-      <div className="flex flex-wrap items-center gap-2 rounded-md border border-line bg-surface px-3 py-2">
+      <div className="flex flex-wrap items-center gap-2 rounded-[var(--r-md)] bg-surface-sunken/60 px-3 py-2">
         <Bell className="h-4 w-4 shrink-0 text-ink-faint" />
         <span className="flex-1 text-sm text-ink-muted">{describeStatus(settings)}</span>
         {support === 'default' ? (
@@ -65,6 +66,7 @@ export function NotificationSettings({ settings, onPatch }: { settings: Settings
             onClick={() => {
               const ok = sendTestNotification();
               if (!ok) toast.warning('Could not show a notification', 'Your browser or OS may be suppressing them.');
+              else void sendTestAlert('blockUpcoming');
             }}
           >
             Send a test
@@ -73,8 +75,8 @@ export function NotificationSettings({ settings, onPatch }: { settings: Settings
       </div>
 
       <Toggle
-        label="Enable reminders"
-        description="Master switch. Off means nothing is scheduled at all."
+        label="Enable desktop notifications"
+        description="Master switch for notifications outside the app. In-app banners and the Notification Center keep working either way."
         disabled={support !== 'granted'}
         checked={notifications.enabled}
         onChange={(v) => {
@@ -116,6 +118,63 @@ export function NotificationSettings({ settings, onPatch }: { settings: Settings
         disabled={!notifications.enabled}
         checked={notifications.breakEnd}
         onChange={(v) => set({ breakEnd: v })}
+      />
+      <Toggle
+        label="Starting now"
+        description="A second notification at the block's start time."
+        disabled={!notifications.enabled}
+        checked={notifications.blockStartNow ?? notifications.blockStart}
+        onChange={(v) => set({ blockStartNow: v })}
+      />
+      <Toggle
+        label="Missed blocks"
+        description="A required block ended and wasn't logged."
+        disabled={!notifications.enabled}
+        checked={notifications.blockMissed ?? true}
+        onChange={(v) => set({ blockMissed: v })}
+      />
+      <SettingRow label="Remind again about a missed block" hint="Minutes between reminders, up to 2 h after it ended. 0 = once.">
+        <Input
+          type="number" min={0} max={120}
+          disabled={!notifications.enabled || notifications.blockMissed === false}
+          value={notifications.missedRepeatMinutes ?? 0}
+          onChange={(e) => set({ missedRepeatMinutes: clampNumber(e.target.value, 0, 120, 0) })}
+        />
+      </SettingRow>
+      <Toggle
+        label="Hard deadlines"
+        description="Tasks with a hard deadline today or tomorrow."
+        disabled={!notifications.enabled}
+        checked={notifications.deadlines ?? true}
+        onChange={(v) => set({ deadlines: v })}
+      />
+      <Toggle
+        label="Achievements & milestones"
+        description="Level-ups, achievements, goals, milestones, payments received."
+        disabled={!notifications.enabled}
+        checked={notifications.achievements ?? true}
+        onChange={(v) => set({ achievements: v })}
+      />
+      <Toggle
+        label="Completions"
+        description="Blocks, tasks and checklists completed — handy when an agent completes things for you."
+        disabled={!notifications.enabled}
+        checked={notifications.completions ?? false}
+        onChange={(v) => set({ completions: v })}
+      />
+      <Toggle
+        label="Overdue & attention alerts"
+        description="Overdue tasks and invoices, follow-ups, open checklists, close the day."
+        disabled={!notifications.enabled}
+        checked={notifications.alerts ?? true}
+        onChange={(v) => set({ alerts: v })}
+      />
+      <Toggle
+        label="Also while LifeOS is in front"
+        description="By default desktop notifications only appear when LifeOS is minimised or behind other windows (in front you get the in-app banner)."
+        disabled={!notifications.enabled}
+        checked={notifications.desktopWhenVisible ?? false}
+        onChange={(v) => set({ desktopWhenVisible: v })}
       />
       <SettingRow label="Daily review reminder hour" hint="0–23, local time.">
         <Input
@@ -160,7 +219,7 @@ export function DataSettings({ settings, onPatch }: { settings: Settings; onPatc
         title="Your data"
         description="Everything lives in this browser's IndexedDB. There is no account, no sync and no server — which also means a cleared browser profile takes your data with it, so export regularly."
       >
-        <div className="flex flex-wrap items-center gap-2 rounded-md border border-line bg-surface px-3 py-2">
+        <div className="flex flex-wrap items-center gap-2 rounded-[var(--r-md)] bg-surface-sunken/60 px-3 py-2">
           <HardDrive className="h-4 w-4 shrink-0 text-ink-faint" />
           <span className="flex-1 text-sm text-ink-muted">
             {totalRows.toLocaleString()} records stored
@@ -283,7 +342,7 @@ export function DataSettings({ settings, onPatch }: { settings: Settings; onPatc
         ) : (
           <ul className="max-h-64 space-y-1 overflow-y-auto">
             {snapshots.map((s) => (
-              <li key={s.id} className="flex items-center gap-2 rounded-md border border-line bg-surface px-2.5 py-1.5">
+              <li key={s.id} className="flex items-center gap-2 rounded-[var(--r-md)] bg-surface-sunken/60 px-2.5 py-1.5">
                 <div className="min-w-0 flex-1">
                   <div className="text-sm text-ink">{new Date(s.at).toLocaleString()}</div>
                   <span className="t-num text-2xs text-ink-faint">
