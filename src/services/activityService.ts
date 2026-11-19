@@ -1,6 +1,7 @@
 import { db } from '@/db/db';
 import { newId } from '@/lib/id';
 import { toDateKey } from '@/lib/date';
+import { currentActor } from '@/agent/actor';
 import type { Activity, ActivityType, ID } from '@/types';
 
 /**
@@ -52,8 +53,14 @@ export function buildActivity(input: LogActivityInput): Activity {
     value: input.value ?? null,
     unit: input.unit ?? null,
     title: input.title,
-    meta: input.meta ?? {},
+    meta: withSource(input.meta ?? {}),
   };
+}
+
+/** Tags events written during an agent operation (see agent/actor). */
+function withSource(meta: Record<string, unknown>): Record<string, unknown> {
+  const actor = currentActor();
+  return actor.kind === 'agent' ? { ...meta, source: 'agent', agentClient: actor.client, agentOp: actor.op } : meta;
 }
 
 export async function logActivity(input: LogActivityInput): Promise<Activity> {
