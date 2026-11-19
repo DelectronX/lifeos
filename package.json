@@ -9,7 +9,17 @@
     "preview": "vite preview",
     "serve:data": "node scripts/serve.mjs",
     "serve:lan": "node scripts/serve.mjs --host 0.0.0.0",
+    "ipad": "npm run build && node scripts/serve-ipad.mjs",
+    "serve:ipad": "node scripts/serve-ipad.mjs",
     "test": "vitest run",
+    "agent:build": "node scripts/build-agent.mjs",
+    "agent:typecheck": "tsc -p agent/tsconfig.json",
+    "agent": "node agent/dist/lifeos-agent.mjs",
+    "agent:start": "node agent/dist/lifeos-agent.mjs start",
+    "agent:serve": "node agent/dist/lifeos-agent.mjs serve",
+    "agent:stop": "node agent/dist/lifeos-agent.mjs stop",
+    "agent:status": "node agent/dist/lifeos-agent.mjs status",
+    "agent:test": "node scripts/agent-e2e.mjs",
     "test:watch": "vitest"
   },
   "dependencies": {
@@ -36,6 +46,7 @@
   },
   "devDependencies": {
     "@capacitor/cli": "^8.5.2",
+    "@modelcontextprotocol/sdk": "^1.32.2",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.7",
@@ -47,6 +58,7 @@
     "autoprefixer": "^10.4.20",
     "fake-indexeddb": "^6.0.0",
     "jsdom": "^30.0.1",
+    "node-forge": "^1.4.0",
     "postcss": "^8.4.45",
     "tailwindcss": "^3.4.11",
     "typescript": "^5.5.4",
