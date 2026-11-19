@@ -93,7 +93,7 @@ export function PaperRunnerPage() {
           <div className="t-section mb-3">Ready to start</div>
           <ul className="mb-5 space-y-1.5">
             {paper.sections.map((s) => (
-              <li key={s.id} className="flex items-center justify-between rounded-lg border border-line px-3 py-2">
+              <li key={s.id} className="flex items-center justify-between rounded-[var(--r-lg)] px-3 py-2 bg-surface-sunken/50">
                 <span className="text-sm text-ink">{s.name}</span>
                 <span className="t-meta">
                   {s.questionCount} × {s.marksPerQuestion} marks
@@ -246,7 +246,7 @@ export function PaperRunnerPage() {
               </div>
 
               {currentStatus === 'incorrect' ? (
-                <div className="mb-4 rounded-lg border border-line bg-surface-sunken p-3">
+                <div className="mb-4 rounded-[var(--r-lg)] bg-surface-sunken p-3">
                   <div className="t-label mb-2">Why was it wrong?</div>
                   <MistakePicker
                     size="sm"
