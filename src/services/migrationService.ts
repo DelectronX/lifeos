@@ -170,7 +170,60 @@ const V6_TO_V7: Migration = {
   }),
 };
 
-export const MIGRATIONS: Migration[] = [V1_TO_V2, V2_TO_V3, V3_TO_V4, V4_TO_V5, V5_TO_V6, V6_TO_V7];
+/**
+ * v7 -> v8: reward currency. A `currency` ledger table (earnings minted from
+ * banked XP, debits for redeemed rewards) and optional fields on existing
+ * rows — Achievement.source/condition (data-defined achievements),
+ * CustomReward.kind/cost (redeemable catalogue), ScheduleBlock.optional,
+ * RecurringRule.cyclePhase, Settings.cycles. Optional fields need no
+ * rewrite; the new table arrives empty. Idempotent and non-destructive.
+ */
+const V7_TO_V8: Migration = {
+  from: 7,
+  to: 8,
+  description: 'Adds the reward-currency ledger and data-defined achievement/cycle fields.',
+  migrate: (bundle) => ({
+    ...bundle,
+    schemaVersion: 8,
+    tables: {
+      ...bundle.tables,
+      currency: bundle.tables.currency ?? [],
+      achievements: (bundle.tables.achievements ?? []).map((row) => ({
+        source: 'builtin',
+        ...(row as Record<string, unknown>),
+      })),
+    },
+  }),
+};
+
+/**
+ * v8 → v9: Work & Growth modules. Purely additive — new empty tables; no
+ * existing row changes.
+ */
+const V8_TO_V9: Migration = {
+  from: 8,
+  to: 9,
+  description: 'Adds checklists, projects, contacts, money ledger, skills, research studies, sources, exam tracks and scores.',
+  migrate: (bundle) => ({
+    ...bundle,
+    schemaVersion: 9,
+    tables: {
+      ...bundle.tables,
+      checklists: bundle.tables.checklists ?? [],
+      checklistRuns: bundle.tables.checklistRuns ?? [],
+      projects: bundle.tables.projects ?? [],
+      contacts: bundle.tables.contacts ?? [],
+      money: bundle.tables.money ?? [],
+      skills: bundle.tables.skills ?? [],
+      studies: bundle.tables.studies ?? [],
+      sources: bundle.tables.sources ?? [],
+      examTracks: bundle.tables.examTracks ?? [],
+      scores: bundle.tables.scores ?? [],
+    },
+  }),
+};
+
+export const MIGRATIONS: Migration[] = [V1_TO_V2, V2_TO_V3, V3_TO_V4, V4_TO_V5, V5_TO_V6, V6_TO_V7, V7_TO_V8, V8_TO_V9];
 
 export interface MigrationOutcome {
   bundle: ExportBundle;
