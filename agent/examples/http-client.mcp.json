@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "lifeos": {
+      "type": "http",
+      "url": "http://127.0.0.1:7457/mcp",
+      "headers": {
+        "Authorization": "Bearer <paste the output of: node agent/dist/lifeos-agent.mjs token>"
+      }
+    }
+  }
+}
