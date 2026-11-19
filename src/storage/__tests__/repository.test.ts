@@ -5,7 +5,7 @@ import { MemoryAdapter } from '../adapters/memoryAdapter';
 import { makeEnvelope, serializeEnvelope } from '../envelope';
 import { MANIFEST_NAME } from '../types';
 import { db } from '@/db/db';
-import { SCHEMA_VERSION } from '@/db/db';
+import { EXPORTABLE_TABLES, SCHEMA_VERSION } from '@/db/db';
 
 /**
  * End-to-end behaviour of the repository against a fake adapter and a fake
@@ -13,9 +13,7 @@ import { SCHEMA_VERSION } from '@/db/db';
  */
 
 async function clearWorkingSet() {
-  await db.tasks.clear();
-  await db.settings.clear();
-  await db.goals.clear();
+  for (const name of EXPORTABLE_TABLES) await db.table(name).clear();
 }
 
 function seedFile(adapter: MemoryAdapter, collection: string, records: unknown[]) {
@@ -40,6 +38,26 @@ describe('StorageRepository boot', () => {
     expect(await db.tasks.get('t1')).toMatchObject({ title: 'From a file' });
     // Settings come out of the files, not localStorage.
     expect(await db.settings.get('settings')).toMatchObject({ theme: 'dark' });
+  });
+
+  it('never lets a stale mirror overwrite live browser data (the "data vanished" bug)', async () => {
+    // Live data in the database: a schedule rule and a task the mirror never saw.
+    await db.tasks.put({ id: 'live', title: 'Made after the last mirror save' } as never);
+    await db.recurringRules.put({ id: 'rr_live', title: 'LeetCode' } as never);
+    // The mirror lags behind: an OLDER copy of tasks and no recurringRules at all.
+    const adapter = new MemoryAdapter();
+    await seedFile(adapter, 'tasks', [{ id: 'old', title: 'Stale' }]);
+
+    const repo = new StorageRepository();
+    await repo.init(adapter);
+
+    expect(await db.tasks.get('live')).toBeTruthy();
+    expect(await db.recurringRules.get('rr_live')).toBeTruthy();
+    expect(await db.tasks.get('old')).toBeUndefined();
+    // ...and the mirror is refreshed from the live data.
+    await repo.flush();
+    expect(await adapter.read('tasks')).toContain('live');
+    await db.recurringRules.delete('rr_live');
   });
 
   it('falls back to existing IndexedDB data and marks it for a first save', async () => {
