@@ -11,6 +11,7 @@ import {
   type Condition, type ConditionEvaluation, type MetricSource, type RepeatMode,
 } from '@/engines/conditionEngine';
 import { defaultCondition } from '@/config/rewards';
+import { refund, spend } from './currencyService';
 import type { CustomReward, ID, RewardEarning } from '@/types';
 
 /**
@@ -74,6 +75,9 @@ export interface RewardInput {
   treat?: string;
   condition: Condition;
   repeat: RepeatMode;
+  /** 'redeemable' rewards are bought with reward currency at `cost`; default 'condition'. */
+  kind?: 'condition' | 'redeemable';
+  cost?: number;
 }
 
 export async function createReward(input: RewardInput): Promise<CustomReward> {
@@ -91,6 +95,7 @@ export async function createReward(input: RewardInput): Promise<CustomReward> {
     repeat: input.repeat,
     archived: false,
     sortOrder: count,
+    ...(input.kind === 'redeemable' ? { kind: 'redeemable' as const, cost: Math.max(1, Math.round(input.cost ?? 1)) } : {}),
   };
   await db.rewards.add(reward);
   return reward;
@@ -217,8 +222,9 @@ export async function evaluateRewardsWith(
     db.rewardEarnings.toArray(),
   ]);
 
+  // Redeemable rewards are bought by the user, never auto-earned.
   const views = buildRewardViews(
-    rewards.filter((r) => !r.archived).sort((a, b) => a.sortOrder - b.sortOrder),
+    rewards.filter((r) => !r.archived && r.kind !== 'redeemable').sort((a, b) => a.sortOrder - b.sortOrder),
     earnings,
     metrics,
     now,
@@ -272,6 +278,61 @@ async function recordEarning(view: RewardView, now: Date): Promise<RewardEarning
     await bankRewardXP(view.reward, view.periodKey, at);
   }
   return earning;
+}
+
+/* ------------------------------------------------------------------ */
+/* Redeemable catalogue (reward currency)                              */
+/* ------------------------------------------------------------------ */
+
+export async function listRedeemable(): Promise<CustomReward[]> {
+  const rows = await db.rewards.toArray();
+  return rows
+    .filter((r) => r.kind === 'redeemable' && !r.archived)
+    .sort((a, b) => (a.cost ?? 0) - (b.cost ?? 0) || a.sortOrder - b.sortOrder);
+}
+
+export interface RedeemOutcome {
+  ok: boolean;
+  message: string;
+  earning: RewardEarning | null;
+}
+
+/**
+ * The user chose to redeem a reward: debit its cost from the reward-currency
+ * ledger and record an earning row (already claimed — they are taking it
+ * now). Nothing here ever runs automatically.
+ */
+export async function redeemReward(rewardId: ID, now = Date.now()): Promise<RedeemOutcome> {
+  const reward = await db.rewards.get(rewardId);
+  if (!reward || reward.kind !== 'redeemable' || reward.archived) {
+    return { ok: false, message: 'This reward cannot be redeemed.', earning: null };
+  }
+  const id = newId('rwe');
+  const cost = Math.max(0, Math.round(reward.cost ?? 0));
+  const paid = await spend(cost, `redeem:${id}`, `Redeemed: ${reward.name}`, id, now);
+  if (!paid.ok) return { ok: false, message: paid.message, earning: null };
+
+  const earning: RewardEarning = {
+    id, createdAt: now, updatedAt: now, rewardId, at: now, date: toDateKey(now),
+    periodKey: `redeem:${id}`, xpAwarded: 0, claimedAt: now,
+    summary: `Redeemed for ${cost}`, currencySpent: cost,
+  };
+  try {
+    await db.rewardEarnings.add(earning);
+  } catch {
+    await refund(`redeem:${id}`);
+    return { ok: false, message: 'Could not record the redemption.', earning: null };
+  }
+  return { ok: true, message: paid.message, earning };
+}
+
+/** Undoes a redemption: refunds the currency and deletes its earning row. */
+export async function undoRedemption(earningId: ID): Promise<number> {
+  const earning = await db.rewardEarnings.get(earningId);
+  if (!earning || !earning.currencySpent) return 0;
+  const amount = await refund(`redeem:${earningId}`);
+  await db.rewardEarnings.delete(earningId);
+  return amount;
 }
 
 /** Marks the treat as taken. */
