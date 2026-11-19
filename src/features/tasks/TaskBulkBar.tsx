@@ -39,7 +39,7 @@ export function TaskBulkBar({
 
   return (
     <>
-      <div className="sticky bottom-4 z-30 mx-auto mt-4 flex w-full max-w-3xl flex-wrap items-center gap-2 rounded-card border border-line bg-surface-raised px-3 py-2 shadow-pop">
+      <div className="sticky bottom-4 z-30 mx-auto mt-4 flex w-full max-w-3xl flex-wrap items-center gap-2 rounded-card px-3 py-2 shadow-pop surface-card">
         <span className="t-num text-sm font-medium text-ink">{ids.length} selected</span>
 
         <Select
