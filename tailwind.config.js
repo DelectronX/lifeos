@@ -1,4 +1,5 @@
 /** @type {import('tailwindcss').Config} */
+import { TRACKER_HUES } from './tracker-hues.js';
 /**
  * Every colour, radius, shadow and duration below resolves to a CSS custom
  * property declared in src/index.css. Utilities therefore stay SEMANTIC
@@ -40,17 +41,19 @@ export default {
           ink: 'rgb(var(--c-accent-ink) / <alpha-value>)',
           contrast: 'rgb(var(--c-accent-contrast) / <alpha-value>)',
         },
+        ...TRACKER_HUES,
         positive: 'rgb(var(--c-positive) / <alpha-value>)',
         caution: 'rgb(var(--c-caution) / <alpha-value>)',
         critical: 'rgb(var(--c-critical) / <alpha-value>)',
       },
       fontFamily: {
         // System stack only — works fully offline, no CDN, no vendored font.
+        // SF Pro on Apple devices, Segoe UI Variable on Windows. Offline-only.
         sans: [
-          'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont',
-          'Segoe UI Variable Text', 'Segoe UI', 'Inter', 'Roboto',
-          'Helvetica Neue', 'Arial', 'sans-serif',
+          '-apple-system', 'BlinkMacSystemFont', 'SF Pro Text', 'system-ui',
+          'Segoe UI Variable Text', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif',
         ],
+        rounded: ['ui-rounded', 'SF Pro Rounded', 'SF Pro Display', 'system-ui', 'sans-serif'],
         mono: [
           'ui-monospace', 'SFMono-Regular', 'SF Mono', 'Cascadia Mono',
           'Menlo', 'Consolas', 'Liberation Mono', 'monospace',
@@ -73,9 +76,11 @@ export default {
         overlay: 'var(--shadow-overlay)',
         // A 1px inner hairline highlight, used on the top edge of chrome.
         edge: 'inset 0 1px 0 0 rgb(255 255 255 / 0.04)',
+        none: 'none',
       },
       transitionTimingFunction: {
         calm: 'var(--ease-out)',
+        spring: 'var(--ease-spring)',
         out: 'var(--ease-out)',
       },
       transitionDuration: {
@@ -98,6 +103,10 @@ export default {
           from: { opacity: '0', transform: 'translateY(-4px) scale(0.985)' },
           to: { opacity: '1', transform: 'translateY(0) scale(1)' },
         },
+        'lo-sheet': {
+          from: { opacity: '0', transform: 'translateY(24px) scale(0.98)' },
+          to: { opacity: '1', transform: 'translateY(0) scale(1)' },
+        },
         'lo-shimmer': {
           from: { backgroundPosition: '200% 0' },
           to: { backgroundPosition: '-200% 0' },
@@ -108,6 +117,7 @@ export default {
         rise: 'lo-rise var(--dur-slow) var(--ease-out) both',
         scale: 'lo-scale var(--dur-slow) var(--ease-out) both',
         shimmer: 'lo-shimmer 1.8s linear infinite',
+        sheet: 'lo-sheet var(--dur-lazy) var(--ease-out) both',
       },
       zIndex: {
         rail: '30',
