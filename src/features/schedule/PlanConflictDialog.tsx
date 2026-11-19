@@ -140,7 +140,7 @@ export function PlanConflictDialog({
         </div>
       ) : !preview ? null : (
         <>
-          <p className="mb-3 rounded-md border border-line bg-surface-sunken px-3 py-2 text-sm text-ink">
+          <p className="mb-3 rounded-[var(--r-md)] bg-surface-sunken px-3 py-2 text-sm text-ink">
             {detection?.summary}
           </p>
 
@@ -177,7 +177,7 @@ export function PlanConflictDialog({
                     {chosen.changes
                       .filter((c) => c.action !== 'unchanged')
                       .map((c) => (
-                        <li key={c.blockId} className="rounded-md border border-line bg-surface px-3 py-1.5">
+                        <li key={c.blockId} className="rounded-[var(--r-md)] bg-surface-sunken/60 px-3 py-1.5">
                           <div className="flex flex-wrap items-baseline justify-between gap-2">
                             <span className="text-sm text-ink">{c.title}</span>
                             <TimeShift from={c.from} to={c.to} />
