@@ -1,3 +1,4 @@
+import { BookOpen } from 'lucide-react';
 import { WidgetShell } from './WidgetShell';
 import { useAnalytics, resolveRange } from '@/services/analyticsService';
 import { useTrackers } from '@/state/useLiveData';
@@ -30,7 +31,7 @@ export function SubjectProgressWidget({ config }: WidgetComponentProps) {
   }
 
   return (
-    <WidgetShell
+    <WidgetShell icon={BookOpen} tone="teal" href="/trackers"
       title="Subject Progress"
       trailing={
         <Select
