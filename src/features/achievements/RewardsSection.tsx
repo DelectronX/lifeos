@@ -217,7 +217,7 @@ function RewardCard({ view, onEdit, onDuplicate, onDelete, onClaim, onUnclaim }:
       ) : null}
 
       {reward.treat ? (
-        <p className="mt-3 rounded-md border border-line bg-surface-sunken/60 px-2.5 py-2 text-xs text-ink-muted">
+        <p className="mt-3 rounded-[var(--r-md)] bg-surface-sunken/60 px-2.5 py-2 text-xs text-ink-muted">
           Treat: {reward.treat}
         </p>
       ) : null}
