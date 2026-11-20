@@ -1,0 +1,4167 @@
+{
+  "format": "lifeos-config",
+  "version": 1,
+  "startDate": "2026-10-08",
+  "profile": {
+    "displayName": "Aksh"
+  },
+  "workingHours": {
+    "0": [
+      {
+        "start": "05:00",
+        "end": "24:00"
+      }
+    ],
+    "1": [
+      {
+        "start": "05:00",
+        "end": "24:00"
+      }
+    ],
+    "2": [
+      {
+        "start": "05:00",
+        "end": "24:00"
+      }
+    ],
+    "3": [
+      {
+        "start": "05:00",
+        "end": "24:00"
+      }
+    ],
+    "4": [
+      {
+        "start": "05:00",
+        "end": "24:00"
+      }
+    ],
+    "5": [
+      {
+        "start": "05:00",
+        "end": "24:00"
+      }
+    ],
+    "6": [
+      {
+        "start": "05:00",
+        "end": "24:00"
+      }
+    ]
+  },
+  "focusHours": [
+    {
+      "start": "14:30",
+      "end": "17:15"
+    },
+    {
+      "start": "18:00",
+      "end": "20:00"
+    },
+    {
+      "start": "21:50",
+      "end": "22:40"
+    }
+  ],
+  "trackers": [
+    {
+      "id": "trk_study",
+      "name": "Study",
+      "pillar": "study",
+      "parentId": null,
+      "color": "indigo",
+      "weeklyTargetMinutes": 900
+    },
+    {
+      "id": "trk_fitness",
+      "name": "Fitness",
+      "pillar": "fitness",
+      "parentId": null,
+      "color": "teal",
+      "weeklyTargetMinutes": 360
+    },
+    {
+      "id": "trk_skills",
+      "name": "Skills",
+      "pillar": "skills",
+      "parentId": null,
+      "color": "violet",
+      "weeklyTargetMinutes": 600
+    },
+    {
+      "id": "trk_personal",
+      "name": "Personal",
+      "pillar": "personal",
+      "parentId": null,
+      "color": "amber",
+      "weeklyTargetMinutes": 180
+    },
+    {
+      "id": "trk_sleep",
+      "name": "Sleep",
+      "pillar": "system",
+      "parentId": null,
+      "color": "slate",
+      "defaultProtected": true
+    },
+    {
+      "id": "trk_school",
+      "name": "School",
+      "pillar": "system",
+      "parentId": null,
+      "color": "sky",
+      "defaultProtected": true
+    },
+    {
+      "id": "trk_meals",
+      "name": "Meals",
+      "pillar": "system",
+      "parentId": null,
+      "color": "stone",
+      "defaultProtected": true
+    },
+    {
+      "id": "trk_break",
+      "name": "Break",
+      "pillar": "system",
+      "parentId": null,
+      "color": "lime"
+    },
+    {
+      "id": "trk_free",
+      "name": "Free",
+      "pillar": "system",
+      "parentId": null,
+      "color": "stone"
+    },
+    {
+      "id": "trk_academic",
+      "name": "Academics",
+      "pillar": "study",
+      "parentId": "trk_study",
+      "color": "indigo",
+      "weeklyTargetMinutes": 900
+    },
+    {
+      "id": "trk_physics",
+      "name": "Physics",
+      "pillar": "study",
+      "parentId": "trk_academic",
+      "color": "indigo"
+    },
+    {
+      "id": "trk_chemistry",
+      "name": "Chemistry",
+      "pillar": "study",
+      "parentId": "trk_academic",
+      "color": "indigo"
+    },
+    {
+      "id": "trk_maths",
+      "name": "Maths",
+      "pillar": "study",
+      "parentId": "trk_academic",
+      "color": "indigo"
+    },
+    {
+      "id": "trk_sat",
+      "name": "SAT practice",
+      "pillar": "study",
+      "parentId": "trk_academic",
+      "color": "sky"
+    },
+    {
+      "id": "trk_revision",
+      "name": "Revision",
+      "pillar": "study",
+      "parentId": "trk_academic",
+      "color": "indigo"
+    },
+    {
+      "id": "trk_exam",
+      "name": "Exams & mock papers",
+      "pillar": "study",
+      "parentId": "trk_academic",
+      "color": "rose"
+    },
+    {
+      "id": "trk_exam_analysis",
+      "name": "Exam analysis",
+      "pillar": "study",
+      "parentId": "trk_academic",
+      "color": "rose"
+    },
+    {
+      "id": "trk_sat_class",
+      "name": "SAT class",
+      "pillar": "study",
+      "parentId": "trk_study",
+      "color": "sky"
+    },
+    {
+      "id": "trk_leetcode",
+      "name": "LeetCode",
+      "pillar": "skills",
+      "parentId": "trk_skills",
+      "color": "violet",
+      "weeklyTargetMinutes": 180,
+      "unitLabel": "problems"
+    },
+    {
+      "id": "trk_cyber",
+      "name": "Cybersecurity",
+      "pillar": "skills",
+      "parentId": "trk_skills",
+      "color": "violet",
+      "weeklyTargetMinutes": 360
+    },
+    {
+      "id": "trk_build",
+      "name": "Project / Course",
+      "pillar": "skills",
+      "parentId": "trk_skills",
+      "color": "violet"
+    },
+    {
+      "id": "trk_projects",
+      "name": "Major projects",
+      "pillar": "skills",
+      "parentId": "trk_build",
+      "color": "violet"
+    },
+    {
+      "id": "trk_courses",
+      "name": "Courses",
+      "pillar": "skills",
+      "parentId": "trk_build",
+      "color": "violet"
+    },
+    {
+      "id": "trk_skills_light",
+      "name": "Light skills work",
+      "pillar": "skills",
+      "parentId": "trk_skills",
+      "color": "violet"
+    },
+    {
+      "id": "trk_workout",
+      "name": "Workout",
+      "pillar": "fitness",
+      "parentId": "trk_fitness",
+      "color": "teal",
+      "weeklyTargetMinutes": 330
+    },
+    {
+      "id": "trk_mobility",
+      "name": "Core & mobility",
+      "pillar": "fitness",
+      "parentId": "trk_fitness",
+      "color": "teal"
+    },
+    {
+      "id": "trk_routine",
+      "name": "Morning routine",
+      "pillar": "personal",
+      "parentId": "trk_personal",
+      "color": "amber"
+    },
+    {
+      "id": "trk_music",
+      "name": "Music & recovery",
+      "pillar": "personal",
+      "parentId": "trk_personal",
+      "color": "lime"
+    },
+    {
+      "id": "trk_reflection",
+      "name": "Reflection",
+      "pillar": "personal",
+      "parentId": "trk_personal",
+      "color": "amber"
+    },
+    {
+      "id": "trk_weekly_review",
+      "name": "Weekly review & planning",
+      "pillar": "personal",
+      "parentId": "trk_reflection",
+      "color": "amber"
+    },
+    {
+      "id": "trk_english",
+      "name": "English / SAT Reading & Writing",
+      "pillar": "study",
+      "parentId": "trk_sat",
+      "color": "sky"
+    },
+    {
+      "id": "trk_sat_math",
+      "name": "SAT Math",
+      "pillar": "study",
+      "parentId": "trk_sat",
+      "color": "sky"
+    },
+    {
+      "id": "trk_entertainment",
+      "name": "Anime / entertainment",
+      "pillar": "personal",
+      "parentId": "trk_free",
+      "color": "rose"
+    },
+    {
+      "id": "trk_research",
+      "name": "Research",
+      "pillar": "study",
+      "parentId": "trk_study",
+      "color": "teal"
+    },
+    {
+      "id": "trk_ap",
+      "name": "AP",
+      "pillar": "study",
+      "parentId": "trk_academic",
+      "color": "indigo"
+    },
+    {
+      "id": "trk_ap_calc",
+      "name": "AP Calculus BC",
+      "pillar": "study",
+      "parentId": "trk_ap",
+      "color": "indigo"
+    },
+    {
+      "id": "trk_ap_cyber",
+      "name": "AP Cybersecurity",
+      "pillar": "study",
+      "parentId": "trk_ap",
+      "color": "indigo"
+    },
+    {
+      "id": "trk_app",
+      "name": "App development",
+      "pillar": "skills",
+      "parentId": "trk_build",
+      "color": "violet"
+    },
+    {
+      "id": "trk_earning",
+      "name": "Freelancing & earning",
+      "pillar": "skills",
+      "parentId": "trk_skills",
+      "color": "lime"
+    }
+  ],
+  "cycles": [
+    {
+      "id": "cyc_academic",
+      "title": "Prep / Exam cycle",
+      "anchorDate": "2026-10-05",
+      "active": true,
+      "phases": [
+        {
+          "key": "prep",
+          "title": "Prep Week",
+          "lengthDays": 7,
+          "description": "Learn, practise, revise and solve problems for the coming exams.",
+          "completion": {
+            "metric": "sessions:trk_academic",
+            "min": 5
+          }
+        },
+        {
+          "key": "exam",
+          "title": "Exam Week",
+          "lengthDays": 7,
+          "description": "Four 2-hour papers (Chemistry, Physics, Maths, SAT); remaining time for analysis and weak areas.",
+          "completion": {
+            "metric": "papers:*",
+            "min": 4
+          }
+        }
+      ]
+    },
+    {
+      "id": "cyc_sunday",
+      "title": "Sunday A / B",
+      "anchorDate": "2026-10-05",
+      "active": true,
+      "phases": [
+        {
+          "key": "test",
+          "title": "Sunday Test",
+          "lengthDays": 7
+        },
+        {
+          "key": "normal",
+          "title": "Normal Sunday",
+          "lengthDays": 7
+        }
+      ],
+      "showOn": [
+        0
+      ]
+    }
+  ],
+  "recurring": [
+    {
+      "id": "rr_sleep",
+      "title": "Sleep",
+      "trackerId": "trk_sleep",
+      "days": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "start": "00:00",
+      "end": "05:00",
+      "kind": "sleep",
+      "protected": true
+    },
+    {
+      "id": "rr_wake",
+      "title": "Wake up + water",
+      "trackerId": "trk_routine",
+      "days": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "start": "05:00",
+      "end": "05:10",
+      "kind": "fixed"
+    },
+    {
+      "id": "rr_wake_music",
+      "title": "Music / wake-up time",
+      "trackerId": "trk_music",
+      "days": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "start": "05:10",
+      "end": "05:20",
+      "kind": "break"
+    },
+    {
+      "id": "rr_workout_1",
+      "title": "Workout — Legs + Glutes",
+      "trackerId": "trk_workout",
+      "days": [
+        1
+      ],
+      "start": "05:20",
+      "end": "06:15",
+      "kind": "fixed"
+    },
+    {
+      "id": "rr_workout_2",
+      "title": "Workout — Chest + Triceps",
+      "trackerId": "trk_workout",
+      "days": [
+        2
+      ],
+      "start": "05:20",
+      "end": "06:15",
+      "kind": "fixed"
+    },
+    {
+      "id": "rr_workout_3",
+      "title": "Workout — Back + Biceps",
+      "trackerId": "trk_workout",
+      "days": [
+        3
+      ],
+      "start": "05:20",
+      "end": "06:15",
+      "kind": "fixed"
+    },
+    {
+      "id": "rr_workout_4",
+      "title": "Workout — Legs + Calves",
+      "trackerId": "trk_workout",
+      "days": [
+        4
+      ],
+      "start": "05:20",
+      "end": "06:15",
+      "kind": "fixed"
+    },
+    {
+      "id": "rr_workout_5",
+      "title": "Workout — Shoulders + Arms",
+      "trackerId": "trk_workout",
+      "days": [
+        5
+      ],
+      "start": "05:20",
+      "end": "06:15",
+      "kind": "fixed"
+    },
+    {
+      "id": "rr_workout_6",
+      "title": "Workout — Core + Conditioning",
+      "trackerId": "trk_workout",
+      "days": [
+        6
+      ],
+      "start": "05:20",
+      "end": "06:15",
+      "kind": "fixed"
+    },
+    {
+      "id": "rr_core",
+      "title": "Core / mobility / light cardio",
+      "trackerId": "trk_mobility",
+      "days": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "start": "06:15",
+      "end": "06:30",
+      "kind": "fixed"
+    },
+    {
+      "id": "rr_shower",
+      "title": "Shower + get ready",
+      "trackerId": "trk_routine",
+      "days": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "start": "06:30",
+      "end": "07:00",
+      "kind": "fixed"
+    },
+    {
+      "id": "rr_breakfast",
+      "title": "Breakfast at school",
+      "trackerId": "trk_meals",
+      "days": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "start": "07:00",
+      "end": "07:15",
+      "kind": "meal",
+      "protected": true
+    },
+    {
+      "id": "rr_school",
+      "title": "School",
+      "trackerId": "trk_school",
+      "days": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "start": "07:15",
+      "end": "13:30",
+      "kind": "fixed",
+      "protected": true
+    },
+    {
+      "id": "rr_lunch",
+      "title": "Lunch",
+      "trackerId": "trk_meals",
+      "days": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "start": "13:30",
+      "end": "14:00",
+      "kind": "meal",
+      "protected": true
+    },
+    {
+      "id": "rr_leetcode",
+      "title": "LeetCode",
+      "trackerId": "trk_leetcode",
+      "days": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "start": "14:00",
+      "end": "14:30",
+      "kind": "fixed"
+    },
+    {
+      "id": "rr_cyber",
+      "title": "Cybersecurity learning + hands-on",
+      "trackerId": "trk_cyber",
+      "days": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "start": "14:30",
+      "end": "15:30",
+      "kind": "fixed"
+    },
+    {
+      "id": "rr_break_afternoon",
+      "title": "Short break",
+      "trackerId": "trk_break",
+      "days": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "start": "15:30",
+      "end": "15:45",
+      "kind": "break"
+    },
+    {
+      "id": "rr_refresh",
+      "title": "Refreshment",
+      "trackerId": "trk_meals",
+      "days": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "start": "15:45",
+      "end": "16:00",
+      "kind": "meal"
+    },
+    {
+      "id": "rr_build",
+      "title": "Current project / course",
+      "trackerId": "trk_build",
+      "days": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "start": "16:00",
+      "end": "17:15",
+      "kind": "fixed",
+      "notes": "Work on the active project (or current course). Add project/course tasks — they slot into this block."
+    },
+    {
+      "id": "rr_chill",
+      "title": "Music / chill",
+      "trackerId": "trk_music",
+      "days": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "start": "17:15",
+      "end": "17:30",
+      "kind": "break"
+    },
+    {
+      "id": "rr_light_skills",
+      "title": "Skills practice, notes or planning",
+      "trackerId": "trk_skills_light",
+      "days": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "start": "17:30",
+      "end": "18:00",
+      "kind": "fixed"
+    },
+    {
+      "id": "rr_deep1_prep",
+      "title": "Academic self-study",
+      "trackerId": "trk_academic",
+      "days": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "start": "18:00",
+      "end": "18:50",
+      "kind": "fixed",
+      "cyclePhase": {
+        "cycleId": "cyc_academic",
+        "phaseKey": "prep"
+      }
+    },
+    {
+      "id": "rr_acbreak_prep",
+      "title": "Break",
+      "trackerId": "trk_break",
+      "days": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "start": "18:50",
+      "end": "19:05",
+      "kind": "break",
+      "cyclePhase": {
+        "cycleId": "cyc_academic",
+        "phaseKey": "prep"
+      }
+    },
+    {
+      "id": "rr_deep2_prep",
+      "title": "Academic self-study",
+      "trackerId": "trk_academic",
+      "days": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "start": "19:05",
+      "end": "19:55",
+      "kind": "fixed",
+      "cyclePhase": {
+        "cycleId": "cyc_academic",
+        "phaseKey": "prep"
+      }
+    },
+    {
+      "id": "rr_reset_prep",
+      "title": "Reset",
+      "trackerId": "trk_break",
+      "days": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "start": "19:55",
+      "end": "20:00",
+      "kind": "buffer",
+      "cyclePhase": {
+        "cycleId": "cyc_academic",
+        "phaseKey": "prep"
+      }
+    },
+    {
+      "id": "rr_exam_paper",
+      "title": "Exam paper (2h)",
+      "trackerId": "trk_exam",
+      "days": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "start": "18:00",
+      "end": "20:00",
+      "kind": "fixed",
+      "cyclePhase": {
+        "cycleId": "cyc_academic",
+        "phaseKey": "exam"
+      },
+      "notes": "One of Chemistry / Physics / Maths / SAT. Run it as a paper in Papers so score, accuracy and questions are recorded.",
+      "paperSubjects": [
+        "trk_chemistry",
+        "trk_physics",
+        "trk_maths",
+        "trk_sat"
+      ],
+      "paperQuestions": 30
+    },
+    {
+      "id": "rr_analysis1_exam",
+      "title": "Exam analysis",
+      "trackerId": "trk_exam_analysis",
+      "days": [
+        5,
+        6
+      ],
+      "start": "18:00",
+      "end": "18:50",
+      "kind": "fixed",
+      "cyclePhase": {
+        "cycleId": "cyc_academic",
+        "phaseKey": "exam"
+      }
+    },
+    {
+      "id": "rr_acbreak_exam",
+      "title": "Break",
+      "trackerId": "trk_break",
+      "days": [
+        5,
+        6
+      ],
+      "start": "18:50",
+      "end": "19:05",
+      "kind": "break",
+      "cyclePhase": {
+        "cycleId": "cyc_academic",
+        "phaseKey": "exam"
+      }
+    },
+    {
+      "id": "rr_analysis2_exam",
+      "title": "Mistakes, weak areas & revision",
+      "trackerId": "trk_revision",
+      "days": [
+        5,
+        6
+      ],
+      "start": "19:05",
+      "end": "19:55",
+      "kind": "fixed",
+      "cyclePhase": {
+        "cycleId": "cyc_academic",
+        "phaseKey": "exam"
+      }
+    },
+    {
+      "id": "rr_reset_exam",
+      "title": "Reset",
+      "trackerId": "trk_break",
+      "days": [
+        5,
+        6
+      ],
+      "start": "19:55",
+      "end": "20:00",
+      "kind": "buffer",
+      "cyclePhase": {
+        "cycleId": "cyc_academic",
+        "phaseKey": "exam"
+      }
+    },
+    {
+      "id": "rr_sat_class",
+      "title": "Online SAT class",
+      "trackerId": "trk_sat_class",
+      "days": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "start": "20:00",
+      "end": "21:30",
+      "kind": "fixed"
+    },
+    {
+      "id": "rr_decompress",
+      "title": "Decompression / music / free time",
+      "trackerId": "trk_free",
+      "days": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "start": "21:30",
+      "end": "21:50",
+      "kind": "break",
+      "optional": true
+    },
+    {
+      "id": "rr_academic_night",
+      "title": "Academic self-study",
+      "trackerId": "trk_academic",
+      "days": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "start": "21:50",
+      "end": "22:40",
+      "kind": "fixed"
+    },
+    {
+      "id": "rr_reflection",
+      "title": "Reflection + plan tomorrow",
+      "trackerId": "trk_reflection",
+      "days": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "start": "22:40",
+      "end": "23:00",
+      "kind": "fixed",
+      "notes": "What did I finish? What did I learn? What went wrong? What needs fixing? How am I feeling? What is tomorrow's priority?"
+    },
+    {
+      "id": "rr_night_free",
+      "title": "Optional anime, music, free time or extra study",
+      "trackerId": "trk_entertainment",
+      "days": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "start": "23:00",
+      "end": "24:00",
+      "kind": "break",
+      "optional": true
+    },
+    {
+      "id": "rr_suna_wake",
+      "title": "Wake up + water",
+      "trackerId": "trk_routine",
+      "days": [
+        0
+      ],
+      "start": "05:00",
+      "end": "05:15",
+      "kind": "fixed",
+      "cyclePhase": {
+        "cycleId": "cyc_sunday",
+        "phaseKey": "test"
+      }
+    },
+    {
+      "id": "rr_suna_workout",
+      "title": "Light workout / mobility — Recovery + Mobility",
+      "trackerId": "trk_workout",
+      "days": [
+        0
+      ],
+      "start": "05:15",
+      "end": "06:00",
+      "kind": "fixed",
+      "cyclePhase": {
+        "cycleId": "cyc_sunday",
+        "phaseKey": "test"
+      }
+    },
+    {
+      "id": "rr_suna_shower",
+      "title": "Shower + get ready",
+      "trackerId": "trk_routine",
+      "days": [
+        0
+      ],
+      "start": "06:00",
+      "end": "07:00",
+      "kind": "fixed",
+      "cyclePhase": {
+        "cycleId": "cyc_sunday",
+        "phaseKey": "test"
+      }
+    },
+    {
+      "id": "rr_suna_breakfast",
+      "title": "Breakfast",
+      "trackerId": "trk_meals",
+      "days": [
+        0
+      ],
+      "start": "07:00",
+      "end": "07:15",
+      "kind": "meal",
+      "cyclePhase": {
+        "cycleId": "cyc_sunday",
+        "phaseKey": "test"
+      },
+      "protected": true
+    },
+    {
+      "id": "rr_suna_prep",
+      "title": "Test revision",
+      "trackerId": "trk_revision",
+      "days": [
+        0
+      ],
+      "start": "07:15",
+      "end": "08:00",
+      "kind": "fixed",
+      "cyclePhase": {
+        "cycleId": "cyc_sunday",
+        "phaseKey": "test"
+      }
+    },
+    {
+      "id": "rr_suna_test",
+      "title": "Sunday test",
+      "trackerId": "trk_exam",
+      "days": [
+        0
+      ],
+      "start": "08:00",
+      "end": "10:00",
+      "kind": "fixed",
+      "cyclePhase": {
+        "cycleId": "cyc_sunday",
+        "phaseKey": "test"
+      },
+      "notes": "Record it as a paper so score and accuracy count.",
+      "paperSubjects": [
+        "trk_chemistry",
+        "trk_physics",
+        "trk_maths",
+        "trk_sat"
+      ],
+      "paperQuestions": 30
+    },
+    {
+      "id": "rr_suna_break1",
+      "title": "Break / recovery",
+      "trackerId": "trk_break",
+      "days": [
+        0
+      ],
+      "start": "10:00",
+      "end": "10:45",
+      "kind": "break",
+      "cyclePhase": {
+        "cycleId": "cyc_sunday",
+        "phaseKey": "test"
+      }
+    },
+    {
+      "id": "rr_suna_skills",
+      "title": "Skills / project work",
+      "trackerId": "trk_build",
+      "days": [
+        0
+      ],
+      "start": "10:45",
+      "end": "13:15",
+      "kind": "fixed",
+      "cyclePhase": {
+        "cycleId": "cyc_sunday",
+        "phaseKey": "test"
+      }
+    },
+    {
+      "id": "rr_suna_break2",
+      "title": "Break",
+      "trackerId": "trk_break",
+      "days": [
+        0
+      ],
+      "start": "13:15",
+      "end": "13:30",
+      "kind": "break",
+      "cyclePhase": {
+        "cycleId": "cyc_sunday",
+        "phaseKey": "test"
+      }
+    },
+    {
+      "id": "rr_suna_lunch",
+      "title": "Lunch",
+      "trackerId": "trk_meals",
+      "days": [
+        0
+      ],
+      "start": "13:30",
+      "end": "14:00",
+      "kind": "meal",
+      "cyclePhase": {
+        "cycleId": "cyc_sunday",
+        "phaseKey": "test"
+      },
+      "protected": true
+    },
+    {
+      "id": "rr_suna_free",
+      "title": "Free time",
+      "trackerId": "trk_free",
+      "days": [
+        0
+      ],
+      "start": "14:00",
+      "end": "15:00",
+      "kind": "break",
+      "cyclePhase": {
+        "cycleId": "cyc_sunday",
+        "phaseKey": "test"
+      },
+      "optional": true
+    },
+    {
+      "id": "rr_suna_analysis",
+      "title": "Test analysis",
+      "trackerId": "trk_exam_analysis",
+      "days": [
+        0
+      ],
+      "start": "15:00",
+      "end": "15:45",
+      "kind": "fixed",
+      "cyclePhase": {
+        "cycleId": "cyc_sunday",
+        "phaseKey": "test"
+      }
+    },
+    {
+      "id": "rr_suna_refresh",
+      "title": "Refreshment",
+      "trackerId": "trk_meals",
+      "days": [
+        0
+      ],
+      "start": "15:45",
+      "end": "16:00",
+      "kind": "meal",
+      "cyclePhase": {
+        "cycleId": "cyc_sunday",
+        "phaseKey": "test"
+      }
+    },
+    {
+      "id": "rr_suna_ac1",
+      "title": "Academic self-study",
+      "trackerId": "trk_academic",
+      "days": [
+        0
+      ],
+      "start": "16:00",
+      "end": "17:00",
+      "kind": "fixed",
+      "cyclePhase": {
+        "cycleId": "cyc_sunday",
+        "phaseKey": "test"
+      }
+    },
+    {
+      "id": "rr_suna_music",
+      "title": "Music / break",
+      "trackerId": "trk_music",
+      "days": [
+        0
+      ],
+      "start": "17:00",
+      "end": "17:30",
+      "kind": "break",
+      "cyclePhase": {
+        "cycleId": "cyc_sunday",
+        "phaseKey": "test"
+      }
+    },
+    {
+      "id": "rr_suna_ac2",
+      "title": "Academic self-study",
+      "trackerId": "trk_academic",
+      "days": [
+        0
+      ],
+      "start": "17:30",
+      "end": "19:00",
+      "kind": "fixed",
+      "cyclePhase": {
+        "cycleId": "cyc_sunday",
+        "phaseKey": "test"
+      }
+    },
+    {
+      "id": "rr_suna_dinner",
+      "title": "Dinner / free time",
+      "trackerId": "trk_free",
+      "days": [
+        0
+      ],
+      "start": "19:00",
+      "end": "20:00",
+      "kind": "break",
+      "cyclePhase": {
+        "cycleId": "cyc_sunday",
+        "phaseKey": "test"
+      },
+      "optional": true
+    },
+    {
+      "id": "rr_suna_weekly",
+      "title": "Weekly reflection",
+      "trackerId": "trk_weekly_review",
+      "days": [
+        0
+      ],
+      "start": "20:00",
+      "end": "21:00",
+      "kind": "fixed",
+      "cyclePhase": {
+        "cycleId": "cyc_sunday",
+        "phaseKey": "test"
+      },
+      "notes": "Academics, skills, cybersecurity, projects, fitness, SAT, energy, streak, schedule adherence — then plan next week."
+    },
+    {
+      "id": "rr_suna_night",
+      "title": "Free night",
+      "trackerId": "trk_free",
+      "days": [
+        0
+      ],
+      "start": "21:00",
+      "end": "24:00",
+      "kind": "break",
+      "cyclePhase": {
+        "cycleId": "cyc_sunday",
+        "phaseKey": "test"
+      },
+      "optional": true
+    },
+    {
+      "id": "rr_sunb_workout",
+      "title": "Recovery workout + shower — Recovery + Mobility",
+      "trackerId": "trk_workout",
+      "days": [
+        0
+      ],
+      "start": "05:00",
+      "end": "07:00",
+      "kind": "fixed",
+      "cyclePhase": {
+        "cycleId": "cyc_sunday",
+        "phaseKey": "normal"
+      }
+    },
+    {
+      "id": "rr_sunb_breakfast",
+      "title": "Breakfast",
+      "trackerId": "trk_meals",
+      "days": [
+        0
+      ],
+      "start": "07:00",
+      "end": "07:15",
+      "kind": "meal",
+      "cyclePhase": {
+        "cycleId": "cyc_sunday",
+        "phaseKey": "normal"
+      },
+      "protected": true
+    },
+    {
+      "id": "rr_sunb_ac1",
+      "title": "Academic self-study",
+      "trackerId": "trk_academic",
+      "days": [
+        0
+      ],
+      "start": "07:15",
+      "end": "09:00",
+      "kind": "fixed",
+      "cyclePhase": {
+        "cycleId": "cyc_sunday",
+        "phaseKey": "normal"
+      }
+    },
+    {
+      "id": "rr_sunb_music1",
+      "title": "Music / break",
+      "trackerId": "trk_music",
+      "days": [
+        0
+      ],
+      "start": "09:00",
+      "end": "09:30",
+      "kind": "break",
+      "cyclePhase": {
+        "cycleId": "cyc_sunday",
+        "phaseKey": "normal"
+      }
+    },
+    {
+      "id": "rr_sunb_ac2",
+      "title": "Academic self-study",
+      "trackerId": "trk_academic",
+      "days": [
+        0
+      ],
+      "start": "09:30",
+      "end": "11:00",
+      "kind": "fixed",
+      "cyclePhase": {
+        "cycleId": "cyc_sunday",
+        "phaseKey": "normal"
+      }
+    },
+    {
+      "id": "rr_sunb_skills",
+      "title": "Skills / projects",
+      "trackerId": "trk_build",
+      "days": [
+        0
+      ],
+      "start": "11:00",
+      "end": "13:30",
+      "kind": "fixed",
+      "cyclePhase": {
+        "cycleId": "cyc_sunday",
+        "phaseKey": "normal"
+      }
+    },
+    {
+      "id": "rr_sunb_lunch",
+      "title": "Lunch",
+      "trackerId": "trk_meals",
+      "days": [
+        0
+      ],
+      "start": "13:30",
+      "end": "14:00",
+      "kind": "meal",
+      "cyclePhase": {
+        "cycleId": "cyc_sunday",
+        "phaseKey": "normal"
+      },
+      "protected": true
+    },
+    {
+      "id": "rr_sunb_free",
+      "title": "Free time",
+      "trackerId": "trk_free",
+      "days": [
+        0
+      ],
+      "start": "14:00",
+      "end": "15:30",
+      "kind": "break",
+      "cyclePhase": {
+        "cycleId": "cyc_sunday",
+        "phaseKey": "normal"
+      },
+      "optional": true
+    },
+    {
+      "id": "rr_sunb_reset",
+      "title": "Reset",
+      "trackerId": "trk_break",
+      "days": [
+        0
+      ],
+      "start": "15:30",
+      "end": "15:45",
+      "kind": "buffer",
+      "cyclePhase": {
+        "cycleId": "cyc_sunday",
+        "phaseKey": "normal"
+      }
+    },
+    {
+      "id": "rr_sunb_refresh",
+      "title": "Refreshment",
+      "trackerId": "trk_meals",
+      "days": [
+        0
+      ],
+      "start": "15:45",
+      "end": "16:00",
+      "kind": "meal",
+      "cyclePhase": {
+        "cycleId": "cyc_sunday",
+        "phaseKey": "normal"
+      }
+    },
+    {
+      "id": "rr_sunb_ac3",
+      "title": "Academic self-study",
+      "trackerId": "trk_academic",
+      "days": [
+        0
+      ],
+      "start": "16:00",
+      "end": "17:30",
+      "kind": "fixed",
+      "cyclePhase": {
+        "cycleId": "cyc_sunday",
+        "phaseKey": "normal"
+      }
+    },
+    {
+      "id": "rr_sunb_music2",
+      "title": "Music / break",
+      "trackerId": "trk_music",
+      "days": [
+        0
+      ],
+      "start": "17:30",
+      "end": "18:00",
+      "kind": "break",
+      "cyclePhase": {
+        "cycleId": "cyc_sunday",
+        "phaseKey": "normal"
+      }
+    },
+    {
+      "id": "rr_sunb_light",
+      "title": "Light revision / planning",
+      "trackerId": "trk_revision",
+      "days": [
+        0
+      ],
+      "start": "18:00",
+      "end": "19:00",
+      "kind": "fixed",
+      "cyclePhase": {
+        "cycleId": "cyc_sunday",
+        "phaseKey": "normal"
+      }
+    },
+    {
+      "id": "rr_sunb_dinner",
+      "title": "Dinner / free time",
+      "trackerId": "trk_free",
+      "days": [
+        0
+      ],
+      "start": "19:00",
+      "end": "20:00",
+      "kind": "break",
+      "cyclePhase": {
+        "cycleId": "cyc_sunday",
+        "phaseKey": "normal"
+      },
+      "optional": true
+    },
+    {
+      "id": "rr_sunb_weekly",
+      "title": "Weekly reflection + next-week planning",
+      "trackerId": "trk_weekly_review",
+      "days": [
+        0
+      ],
+      "start": "20:00",
+      "end": "21:00",
+      "kind": "fixed",
+      "cyclePhase": {
+        "cycleId": "cyc_sunday",
+        "phaseKey": "normal"
+      },
+      "notes": "Academics, skills, cybersecurity, projects, fitness, SAT, energy, streak, schedule adherence — then plan next week."
+    },
+    {
+      "id": "rr_sunb_night",
+      "title": "Free night",
+      "trackerId": "trk_free",
+      "days": [
+        0
+      ],
+      "start": "21:00",
+      "end": "24:00",
+      "kind": "break",
+      "cyclePhase": {
+        "cycleId": "cyc_sunday",
+        "phaseKey": "normal"
+      },
+      "optional": true
+    }
+  ],
+  "goals": [
+    {
+      "id": "gol_project_1",
+      "title": "Portfolio Project 1",
+      "description": "Working MVP, tests, README, architecture note and demo. Rename to the project's real name in Projects.",
+      "trackerId": "trk_projects",
+      "type": "milestone",
+      "sequence": {
+        "group": "major-projects",
+        "order": 1
+      },
+      "completionXP": 250,
+      "targetDate": "2026-12-06",
+      "milestones": [
+        {
+          "title": "Scope & design"
+        },
+        {
+          "title": "Core MVP"
+        },
+        {
+          "title": "Tests"
+        },
+        {
+          "title": "README & architecture note"
+        },
+        {
+          "title": "Demo & release"
+        }
+      ]
+    },
+    {
+      "id": "gol_project_2",
+      "title": "Portfolio Project 2",
+      "description": "Functional MVP, tests, README, architecture note and demo. Rename to the project's real name in Projects.",
+      "trackerId": "trk_projects",
+      "type": "milestone",
+      "sequence": {
+        "group": "major-projects",
+        "order": 2
+      },
+      "completionXP": 250,
+      "targetDate": "2026-12-27",
+      "milestones": [
+        {
+          "title": "Scope & design"
+        },
+        {
+          "title": "Core MVP"
+        },
+        {
+          "title": "Tests"
+        },
+        {
+          "title": "README & architecture note"
+        },
+        {
+          "title": "Demo & release"
+        }
+      ]
+    },
+    {
+      "id": "gol_project_3",
+      "title": "Portfolio Project 3",
+      "description": "Functional MVP, tests, README, architecture note and demo. Rename to the project's real name in Projects.",
+      "trackerId": "trk_projects",
+      "type": "milestone",
+      "sequence": {
+        "group": "major-projects",
+        "order": 3
+      },
+      "completionXP": 250,
+      "targetDate": "2027-01-03",
+      "milestones": [
+        {
+          "title": "Scope & design"
+        },
+        {
+          "title": "Core MVP"
+        },
+        {
+          "title": "Tests"
+        },
+        {
+          "title": "README & architecture note"
+        },
+        {
+          "title": "Demo & release"
+        }
+      ]
+    },
+    {
+      "id": "gol_project_4",
+      "title": "Portfolio Project 4",
+      "description": "Deployable/demo-ready project, tests and documentation. Rename to the project's real name in Projects.",
+      "trackerId": "trk_projects",
+      "type": "milestone",
+      "sequence": {
+        "group": "major-projects",
+        "order": 4
+      },
+      "completionXP": 250,
+      "targetDate": "2027-01-24",
+      "milestones": [
+        {
+          "title": "Scope & design"
+        },
+        {
+          "title": "Core MVP"
+        },
+        {
+          "title": "Tests"
+        },
+        {
+          "title": "README & architecture note"
+        },
+        {
+          "title": "Demo & release"
+        }
+      ]
+    },
+    {
+      "id": "gol_course_cyber",
+      "title": "Cybersecurity course",
+      "trackerId": "trk_courses",
+      "type": "milestone",
+      "completionXP": 200
+    },
+    {
+      "id": "gol_course_iitm",
+      "title": "IITM course",
+      "trackerId": "trk_courses",
+      "type": "milestone",
+      "completionXP": 200
+    },
+    {
+      "id": "gol_course_cs50",
+      "title": "CS50",
+      "trackerId": "trk_courses",
+      "type": "milestone",
+      "completionXP": 200
+    },
+    {
+      "id": "gol_course_cisco",
+      "title": "Cisco course",
+      "trackerId": "trk_courses",
+      "type": "milestone",
+      "completionXP": 200
+    },
+    {
+      "id": "gol_course_kaggle",
+      "title": "Kaggle courses",
+      "trackerId": "trk_courses",
+      "type": "milestone",
+      "completionXP": 200
+    },
+    {
+      "id": "gol_project_5",
+      "trackerId": "trk_projects",
+      "type": "milestone",
+      "sequence": {
+        "group": "major-projects",
+        "order": 5
+      },
+      "completionXP": 250,
+      "title": "Portfolio Project 5",
+      "description": "Flagship project with measurable technical depth, tests and demo. Rename to the project's real name in Projects.",
+      "targetDate": "2027-02-07",
+      "milestones": [
+        {
+          "title": "Scope & design"
+        },
+        {
+          "title": "Core MVP"
+        },
+        {
+          "title": "Tests"
+        },
+        {
+          "title": "README & architecture note"
+        },
+        {
+          "title": "Demo & release"
+        }
+      ]
+    },
+    {
+      "id": "gol_sat_1600",
+      "title": "SAT 1600",
+      "trackerId": "trk_sat",
+      "type": "milestone",
+      "description": "Official Bluebook score target. Diagnostic 1250 (R&W 560 / Math 690). Log every practice and official score in Exams.",
+      "targetDate": "2027-03-13",
+      "completionXP": 1000,
+      "milestones": [
+        {
+          "title": "Diagnostic logged (1250)"
+        },
+        {
+          "title": "1350 on a full practice test"
+        },
+        {
+          "title": "1450 on a full practice test"
+        },
+        {
+          "title": "1500+ on two consecutive tests"
+        },
+        {
+          "title": "1550+ on a full practice test"
+        },
+        {
+          "title": "Official attempt"
+        }
+      ]
+    },
+    {
+      "id": "gol_xi_physics",
+      "title": "Class XI Physics",
+      "trackerId": "trk_physics",
+      "type": "milestone",
+      "description": "All school-required chapters revised, NCERT questions completed, mock errors corrected.",
+      "targetDate": "2027-02-17",
+      "completionXP": 500,
+      "milestones": [
+        {
+          "title": "All chapters learned"
+        },
+        {
+          "title": "NCERT questions complete"
+        },
+        {
+          "title": "Mock paper errors corrected"
+        },
+        {
+          "title": "Final revision pass"
+        }
+      ]
+    },
+    {
+      "id": "gol_xi_chemistry",
+      "title": "Class XI Chemistry",
+      "trackerId": "trk_chemistry",
+      "type": "milestone",
+      "description": "All required units revised, NCERT questions and numericals completed, mock errors corrected.",
+      "targetDate": "2027-02-17",
+      "completionXP": 500,
+      "milestones": [
+        {
+          "title": "All units learned"
+        },
+        {
+          "title": "NCERT questions & numericals complete"
+        },
+        {
+          "title": "Mock paper errors corrected"
+        },
+        {
+          "title": "Final revision pass"
+        }
+      ]
+    },
+    {
+      "id": "gol_xi_maths",
+      "title": "Class XI Mathematics",
+      "trackerId": "trk_maths",
+      "type": "milestone",
+      "description": "All 14 chapters practised; weak questions reattempted; formula and error log complete.",
+      "targetDate": "2027-02-17",
+      "completionXP": 500,
+      "milestones": [
+        {
+          "title": "Chapters 1–7 practised"
+        },
+        {
+          "title": "Chapters 8–14 practised"
+        },
+        {
+          "title": "Weak questions reattempted"
+        },
+        {
+          "title": "Formula & error log complete"
+        }
+      ]
+    },
+    {
+      "id": "gol_ap_calc",
+      "title": "AP Calculus BC",
+      "trackerId": "trk_ap_calc",
+      "type": "milestone",
+      "description": "All 10 BC units covered; FRQs and timed practice completed.",
+      "targetDate": "2027-05-10",
+      "completionXP": 750,
+      "milestones": [
+        {
+          "title": "Unit 1 · Limits and Continuity"
+        },
+        {
+          "title": "Unit 2 · Differentiation: Definition and Properties"
+        },
+        {
+          "title": "Unit 3 · Composite, Implicit and Inverse Functions"
+        },
+        {
+          "title": "Unit 4 · Contextual Applications of Differentiation"
+        },
+        {
+          "title": "Unit 5 · Analytical Applications of Differentiation"
+        },
+        {
+          "title": "Unit 6 · Integration and Accumulation of Change"
+        },
+        {
+          "title": "Unit 7 · Differential Equations"
+        },
+        {
+          "title": "Unit 8 · Applications of Integration"
+        },
+        {
+          "title": "Unit 9 · Parametric, Polar and Vector-Valued Functions"
+        },
+        {
+          "title": "Unit 10 · Infinite Sequences and Series"
+        },
+        {
+          "title": "FRQ practice set complete"
+        },
+        {
+          "title": "Full timed practice exam"
+        }
+      ]
+    },
+    {
+      "id": "gol_ap_cyber",
+      "title": "AP Cybersecurity",
+      "trackerId": "trk_ap_cyber",
+      "type": "milestone",
+      "description": "Five course units covered; scenario analysis and timed practice completed. Rename the units to the official course framework.",
+      "targetDate": "2027-05-05",
+      "completionXP": 750,
+      "milestones": [
+        {
+          "title": "Unit 1"
+        },
+        {
+          "title": "Unit 2"
+        },
+        {
+          "title": "Unit 3"
+        },
+        {
+          "title": "Unit 4"
+        },
+        {
+          "title": "Unit 5"
+        },
+        {
+          "title": "Scenario analysis practice"
+        },
+        {
+          "title": "Full timed practice exam"
+        }
+      ]
+    },
+    {
+      "id": "gol_lr_1",
+      "title": "Literature Review 1",
+      "trackerId": "trk_research",
+      "type": "milestone",
+      "targetDate": "2026-11-29",
+      "completionXP": 400,
+      "description": "Question, search strategy, screened sources, thematic synthesis, citations and limitations.",
+      "milestones": [
+        {
+          "title": "Question & search strategy"
+        },
+        {
+          "title": "Sources screened"
+        },
+        {
+          "title": "Extraction matrix complete"
+        },
+        {
+          "title": "Thematic synthesis drafted"
+        },
+        {
+          "title": "Final review with citations & limitations"
+        }
+      ]
+    },
+    {
+      "id": "gol_lr_2",
+      "title": "Literature Review 2",
+      "trackerId": "trk_research",
+      "type": "milestone",
+      "targetDate": "2026-12-06",
+      "completionXP": 400,
+      "description": "Complete cited review with source comparison, themes and gaps.",
+      "milestones": [
+        {
+          "title": "Question & search strategy"
+        },
+        {
+          "title": "Sources screened"
+        },
+        {
+          "title": "Extraction matrix complete"
+        },
+        {
+          "title": "Thematic synthesis drafted"
+        },
+        {
+          "title": "Final review with citations & limitations"
+        }
+      ]
+    },
+    {
+      "id": "gol_lr_3",
+      "title": "Literature Review 3",
+      "trackerId": "trk_research",
+      "type": "milestone",
+      "targetDate": "2026-12-13",
+      "completionXP": 400,
+      "description": "Complete cited review with source comparison, themes and gaps.",
+      "milestones": [
+        {
+          "title": "Question & search strategy"
+        },
+        {
+          "title": "Sources screened"
+        },
+        {
+          "title": "Extraction matrix complete"
+        },
+        {
+          "title": "Thematic synthesis drafted"
+        },
+        {
+          "title": "Final review with citations & limitations"
+        }
+      ]
+    },
+    {
+      "id": "gol_lr_4",
+      "title": "Literature Review 4",
+      "trackerId": "trk_research",
+      "type": "milestone",
+      "targetDate": "2026-12-27",
+      "completionXP": 400,
+      "description": "Complete cited review with source comparison, themes and gaps.",
+      "milestones": [
+        {
+          "title": "Question & search strategy"
+        },
+        {
+          "title": "Sources screened"
+        },
+        {
+          "title": "Extraction matrix complete"
+        },
+        {
+          "title": "Thematic synthesis drafted"
+        },
+        {
+          "title": "Final review with citations & limitations"
+        }
+      ]
+    },
+    {
+      "id": "gol_lr_5",
+      "title": "Literature Review 5",
+      "trackerId": "trk_research",
+      "type": "milestone",
+      "targetDate": "2027-01-10",
+      "completionXP": 400,
+      "description": "Complete cited review with source comparison, themes and gaps.",
+      "milestones": [
+        {
+          "title": "Question & search strategy"
+        },
+        {
+          "title": "Sources screened"
+        },
+        {
+          "title": "Extraction matrix complete"
+        },
+        {
+          "title": "Thematic synthesis drafted"
+        },
+        {
+          "title": "Final review with citations & limitations"
+        }
+      ]
+    },
+    {
+      "id": "gol_rp_1",
+      "title": "Research Paper 1",
+      "trackerId": "trk_research",
+      "type": "milestone",
+      "targetDate": "2027-01-24",
+      "completionXP": 800,
+      "description": "Complete student manuscript: question, literature, method, real results, limitations and references.",
+      "milestones": [
+        {
+          "title": "Question & literature"
+        },
+        {
+          "title": "Method designed"
+        },
+        {
+          "title": "Real results collected"
+        },
+        {
+          "title": "Manuscript drafted"
+        },
+        {
+          "title": "Source audit & references"
+        },
+        {
+          "title": "Final manuscript"
+        }
+      ]
+    },
+    {
+      "id": "gol_rp_2",
+      "title": "Research Paper 2",
+      "trackerId": "trk_research",
+      "type": "milestone",
+      "targetDate": "2027-02-16",
+      "completionXP": 800,
+      "description": "Complete student manuscript: question, literature, method, real results, limitations and references.",
+      "milestones": [
+        {
+          "title": "Question & literature"
+        },
+        {
+          "title": "Method designed"
+        },
+        {
+          "title": "Real results collected"
+        },
+        {
+          "title": "Manuscript drafted"
+        },
+        {
+          "title": "Source audit & references"
+        },
+        {
+          "title": "Final manuscript"
+        }
+      ]
+    },
+    {
+      "id": "gol_app",
+      "title": "Play Store Application",
+      "trackerId": "trk_app",
+      "type": "milestone",
+      "targetDate": "2027-02-16",
+      "completionXP": 800,
+      "description": "MVP, testing track, privacy and store assets, production access and release. Date depends on Play testing and review.",
+      "milestones": [
+        {
+          "title": "MVP feature-complete"
+        },
+        {
+          "title": "Internal testing"
+        },
+        {
+          "title": "Closed testing (testers + days as Play requires)"
+        },
+        {
+          "title": "Privacy policy & data-safety form"
+        },
+        {
+          "title": "Store listing assets"
+        },
+        {
+          "title": "Production access & release"
+        }
+      ]
+    },
+    {
+      "id": "gol_freelance",
+      "title": "First paid freelance delivery",
+      "trackerId": "trk_earning",
+      "type": "milestone",
+      "targetDate": "2027-01-31",
+      "completionXP": 600,
+      "description": "Offer one focused service; track outreach, leads, proposals, delivery and revenue in Earning.",
+      "milestones": [
+        {
+          "title": "Define one service, scope & price"
+        },
+        {
+          "title": "Portfolio page with 2 projects"
+        },
+        {
+          "title": "20 personalised outreach messages"
+        },
+        {
+          "title": "First proposal sent"
+        },
+        {
+          "title": "First paid delivery"
+        }
+      ]
+    }
+  ],
+  "achievements": [
+    {
+      "key": "schedule_early_bird_7",
+      "title": "Early Bird",
+      "description": "Complete the morning routine for 7 days",
+      "category": "fitness",
+      "target": 7,
+      "xpReward": 150,
+      "tier": 1,
+      "condition": {
+        "id": "schedule_early_bird_7:root",
+        "type": "leaf",
+        "metric": "windowDays:300-420",
+        "operator": ">=",
+        "value": 7,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "workouts_25",
+      "title": "Training Arc",
+      "description": "Complete 25 workouts",
+      "category": "fitness",
+      "target": 25,
+      "xpReward": 300,
+      "tier": 1,
+      "condition": {
+        "id": "workouts_25:root",
+        "type": "leaf",
+        "metric": "sessions:trk_workout",
+        "operator": ">=",
+        "value": 25,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "workouts_100",
+      "title": "Iron Routine",
+      "description": "Complete 100 workouts",
+      "category": "fitness",
+      "target": 100,
+      "xpReward": 1000,
+      "tier": 2,
+      "condition": {
+        "id": "workouts_100:root",
+        "type": "leaf",
+        "metric": "sessions:trk_workout",
+        "operator": ">=",
+        "value": 100,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "leetcode_streak_7",
+      "title": "Code Every Day",
+      "description": "Complete LeetCode work for 7 consecutive days",
+      "category": "skills",
+      "target": 7,
+      "xpReward": 200,
+      "tier": 1,
+      "condition": {
+        "id": "leetcode_streak_7:root",
+        "type": "leaf",
+        "metric": "streak:trk_leetcode",
+        "operator": ">=",
+        "value": 7,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "leetcode_100",
+      "title": "Problem Solver",
+      "description": "Complete 100 LeetCode problems",
+      "category": "skills",
+      "target": 100,
+      "xpReward": 750,
+      "tier": 2,
+      "condition": {
+        "id": "leetcode_100:root",
+        "type": "leaf",
+        "metric": "units:trk_leetcode",
+        "operator": ">=",
+        "value": 100,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "cybersecurity_10h",
+      "title": "Cyber Initiate",
+      "description": "Complete 10 hours of cybersecurity learning/practice",
+      "category": "skills",
+      "target": 600,
+      "xpReward": 200,
+      "tier": 1,
+      "condition": {
+        "id": "cybersecurity_10h:root",
+        "type": "leaf",
+        "metric": "minutes:trk_cyber",
+        "operator": ">=",
+        "value": 600,
+        "window": {
+          "kind": "all_time"
+        }
+      },
+      "unit": "minutes"
+    },
+    {
+      "key": "cybersecurity_50h",
+      "title": "Security Grind",
+      "description": "Complete 50 hours of cybersecurity learning/practice",
+      "category": "skills",
+      "target": 3000,
+      "xpReward": 750,
+      "tier": 2,
+      "condition": {
+        "id": "cybersecurity_50h:root",
+        "type": "leaf",
+        "metric": "minutes:trk_cyber",
+        "operator": ">=",
+        "value": 3000,
+        "window": {
+          "kind": "all_time"
+        }
+      },
+      "unit": "minutes"
+    },
+    {
+      "key": "cybersecurity_100h",
+      "title": "Cyber Operator",
+      "description": "Complete 100 hours of cybersecurity learning/practice",
+      "category": "skills",
+      "target": 6000,
+      "xpReward": 1500,
+      "tier": 3,
+      "condition": {
+        "id": "cybersecurity_100h:root",
+        "type": "leaf",
+        "metric": "minutes:trk_cyber",
+        "operator": ">=",
+        "value": 6000,
+        "window": {
+          "kind": "all_time"
+        }
+      },
+      "unit": "minutes"
+    },
+    {
+      "key": "course_complete_1",
+      "title": "Course Crusher",
+      "description": "Complete 1 course",
+      "category": "skills",
+      "target": 1,
+      "xpReward": 300,
+      "tier": 1,
+      "condition": {
+        "id": "course_complete_1:root",
+        "type": "leaf",
+        "metric": "goals:trk_courses",
+        "operator": ">=",
+        "value": 1,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "course_complete_3",
+      "title": "Knowledge Hoarder",
+      "description": "Complete 3 courses",
+      "category": "skills",
+      "target": 3,
+      "xpReward": 1000,
+      "tier": 2,
+      "condition": {
+        "id": "course_complete_3:root",
+        "type": "leaf",
+        "metric": "goals:trk_courses",
+        "operator": ">=",
+        "value": 3,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "projects_complete_1",
+      "title": "Builder",
+      "description": "Complete the first major project",
+      "category": "projects",
+      "target": 1,
+      "xpReward": 500,
+      "tier": 2,
+      "condition": {
+        "id": "projects_complete_1:root",
+        "type": "leaf",
+        "metric": "goals:trk_projects",
+        "operator": ">=",
+        "value": 1,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "projects_complete_2",
+      "title": "Serial Builder",
+      "description": "Complete 2 major projects",
+      "category": "projects",
+      "target": 2,
+      "xpReward": 1000,
+      "tier": 2,
+      "condition": {
+        "id": "projects_complete_2:root",
+        "type": "leaf",
+        "metric": "goals:trk_projects",
+        "operator": ">=",
+        "value": 2,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "projects_complete_4",
+      "title": "Project Machine",
+      "description": "Complete all 4 major projects",
+      "category": "projects",
+      "target": 4,
+      "xpReward": 3000,
+      "tier": 3,
+      "condition": {
+        "id": "projects_complete_4:root",
+        "type": "leaf",
+        "metric": "goals:trk_projects",
+        "operator": ">=",
+        "value": 4,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "academic_sessions_10",
+      "title": "Study Mode",
+      "description": "Complete 10 academic study sessions",
+      "category": "academic",
+      "target": 10,
+      "xpReward": 200,
+      "tier": 1,
+      "condition": {
+        "id": "academic_sessions_10:root",
+        "type": "leaf",
+        "metric": "sessions:trk_academic",
+        "operator": ">=",
+        "value": 10,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "academic_50h",
+      "title": "Academic Grind",
+      "description": "Complete 50 hours of academic self-study",
+      "category": "academic",
+      "target": 3000,
+      "xpReward": 750,
+      "tier": 2,
+      "condition": {
+        "id": "academic_50h:root",
+        "type": "leaf",
+        "metric": "minutes:trk_academic",
+        "operator": ">=",
+        "value": 3000,
+        "window": {
+          "kind": "all_time"
+        }
+      },
+      "unit": "minutes"
+    },
+    {
+      "key": "exam_cycles_4",
+      "title": "Exam Ready",
+      "description": "Complete 4 full Prep Week to Exam Week cycles",
+      "category": "academic",
+      "target": 4,
+      "xpReward": 500,
+      "tier": 2,
+      "condition": {
+        "id": "exam_cycles_4:root",
+        "type": "leaf",
+        "metric": "cycles:cyc_academic",
+        "operator": ">=",
+        "value": 4,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "score_improved_1",
+      "title": "Score Up",
+      "description": "Improve an exam or mock score",
+      "category": "academic",
+      "target": 1,
+      "xpReward": 250,
+      "tier": 1,
+      "condition": {
+        "id": "score_improved_1:root",
+        "type": "leaf",
+        "metric": "papersImproved",
+        "operator": ">=",
+        "value": 1,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "perfect_prep_week_1",
+      "title": "Perfect Prep",
+      "description": "Complete all planned academic preparation sessions in a prep week",
+      "category": "academic",
+      "target": 1,
+      "xpReward": 400,
+      "tier": 1,
+      "condition": {
+        "id": "perfect_prep_week_1:root",
+        "type": "leaf",
+        "metric": "perfectPhases:cyc_academic:prep:trk_academic",
+        "operator": ">=",
+        "value": 1,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "full_exams_10",
+      "title": "Paper Crusher",
+      "description": "Complete 10 full exams/mock papers",
+      "category": "academic",
+      "target": 10,
+      "xpReward": 750,
+      "tier": 2,
+      "condition": {
+        "id": "full_exams_10:root",
+        "type": "leaf",
+        "metric": "papers:*",
+        "operator": ">=",
+        "value": 10,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "physics_chemistry_same_week",
+      "title": "Science Grind",
+      "description": "Complete Physics and Chemistry academic work in the same week",
+      "category": "academic",
+      "target": 1,
+      "xpReward": 250,
+      "tier": 1,
+      "condition": {
+        "id": "physics_chemistry_same_week:root",
+        "type": "leaf",
+        "metric": "sameWeek:trk_physics,trk_chemistry",
+        "operator": ">=",
+        "value": 1,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "math_sessions_10",
+      "title": "Math Machine",
+      "description": "Complete 10 Maths study sessions",
+      "category": "academic",
+      "target": 10,
+      "xpReward": 300,
+      "tier": 1,
+      "condition": {
+        "id": "math_sessions_10:root",
+        "type": "leaf",
+        "metric": "sessions:trk_maths",
+        "operator": ">=",
+        "value": 10,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "sat_sessions_25",
+      "title": "SAT Grinder",
+      "description": "Complete 25 SAT sessions",
+      "category": "academic",
+      "target": 25,
+      "xpReward": 500,
+      "tier": 2,
+      "condition": {
+        "id": "sat_sessions_25:root",
+        "type": "leaf",
+        "metric": "sessions:trk_sat,trk_sat_class",
+        "operator": ">=",
+        "value": 25,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "sat_mocks_10",
+      "title": "SAT Ready",
+      "description": "Complete 10 SAT mock/full exams",
+      "category": "academic",
+      "target": 10,
+      "xpReward": 750,
+      "tier": 2,
+      "condition": {
+        "id": "sat_mocks_10:root",
+        "type": "leaf",
+        "metric": "papers:trk_sat",
+        "operator": ">=",
+        "value": 10,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "perfect_week_1",
+      "title": "No Skip Week",
+      "description": "Complete all planned core blocks for 7 days",
+      "category": "discipline",
+      "target": 1,
+      "xpReward": 500,
+      "tier": 2,
+      "condition": {
+        "id": "perfect_week_1:root",
+        "type": "leaf",
+        "metric": "perfectWeeks",
+        "operator": ">=",
+        "value": 1,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "schedule_streak_14",
+      "title": "Two Week Warrior",
+      "description": "Follow the planned schedule for 14 consecutive days",
+      "category": "discipline",
+      "target": 14,
+      "xpReward": 750,
+      "tier": 2,
+      "condition": {
+        "id": "schedule_streak_14:root",
+        "type": "leaf",
+        "metric": "scheduleStreak",
+        "operator": ">=",
+        "value": 14,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "schedule_streak_30",
+      "title": "30-Day Discipline",
+      "description": "Follow the planned schedule for 30 consecutive days",
+      "category": "discipline",
+      "target": 30,
+      "xpReward": 1500,
+      "tier": 3,
+      "condition": {
+        "id": "schedule_streak_30:root",
+        "type": "leaf",
+        "metric": "scheduleStreak",
+        "operator": ">=",
+        "value": 30,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "schedule_streak_60",
+      "title": "60-Day Beast Mode",
+      "description": "Follow the planned schedule for 60 consecutive days",
+      "category": "discipline",
+      "target": 60,
+      "xpReward": 3000,
+      "tier": 3,
+      "condition": {
+        "id": "schedule_streak_60:root",
+        "type": "leaf",
+        "metric": "scheduleStreak",
+        "operator": ">=",
+        "value": 60,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "balanced_day_10",
+      "title": "Balanced Day",
+      "description": "Complete Fitness + Skills + Academics on 10 days",
+      "category": "discipline",
+      "target": 10,
+      "xpReward": 300,
+      "tier": 1,
+      "condition": {
+        "id": "balanced_day_10:root",
+        "type": "leaf",
+        "metric": "allDays:trk_fitness,trk_skills,trk_academic",
+        "operator": ">=",
+        "value": 10,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "build_and_study_10",
+      "title": "Build & Study",
+      "description": "Complete Skills + Academics on the same day for 10 days",
+      "category": "discipline",
+      "target": 10,
+      "xpReward": 300,
+      "tier": 1,
+      "condition": {
+        "id": "build_and_study_10:root",
+        "type": "leaf",
+        "metric": "allDays:trk_skills,trk_academic",
+        "operator": ">=",
+        "value": 10,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "late_study_10",
+      "title": "Night Scholar",
+      "description": "Complete 10 late study sessions starting at or after 22:00",
+      "category": "academic",
+      "target": 10,
+      "xpReward": 300,
+      "tier": 1,
+      "condition": {
+        "id": "late_study_10:root",
+        "type": "leaf",
+        "metric": "lateSessions:trk_academic,trk_sat:1320",
+        "operator": ">=",
+        "value": 10,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "weekly_reviews_4",
+      "title": "Weekly Architect",
+      "description": "Save 4 weekly reviews",
+      "category": "discipline",
+      "target": 4,
+      "xpReward": 300,
+      "tier": 1,
+      "condition": {
+        "id": "weekly_reviews_4:root",
+        "type": "leaf",
+        "metric": "reviews:weekly",
+        "operator": ">=",
+        "value": 4,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "schedule_comeback_1",
+      "title": "Comeback",
+      "description": "Return to the schedule after a missed day",
+      "category": "discipline",
+      "target": 1,
+      "xpReward": 150,
+      "tier": 1,
+      "condition": {
+        "id": "schedule_comeback_1:root",
+        "type": "leaf",
+        "metric": "comebacks",
+        "operator": ">=",
+        "value": 1,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "active_streak_14",
+      "title": "Consistency > Motivation",
+      "description": "Complete activity on 14 consecutive days",
+      "category": "discipline",
+      "target": 14,
+      "xpReward": 750,
+      "tier": 2,
+      "condition": {
+        "id": "active_streak_14:root",
+        "type": "leaf",
+        "metric": "longestStreak",
+        "operator": ">=",
+        "value": 14,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "total_xp_10000",
+      "title": "LifeOS Veteran",
+      "description": "Earn 10,000 total XP",
+      "category": "meta",
+      "target": 10000,
+      "xpReward": 1000,
+      "tier": 2,
+      "condition": {
+        "id": "total_xp_10000:root",
+        "type": "leaf",
+        "metric": "totalXP",
+        "operator": ">=",
+        "value": 10000,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "total_xp_25000",
+      "title": "LifeOS Legend",
+      "description": "Earn 25,000 total XP",
+      "category": "meta",
+      "target": 25000,
+      "xpReward": 3000,
+      "tier": 3,
+      "condition": {
+        "id": "total_xp_25000:root",
+        "type": "leaf",
+        "metric": "totalXP",
+        "operator": ">=",
+        "value": 25000,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "combined_hours_100",
+      "title": "The First 100",
+      "description": "Complete 100 combined academic + skills hours",
+      "category": "meta",
+      "target": 6000,
+      "xpReward": 500,
+      "tier": 2,
+      "condition": {
+        "id": "combined_hours_100:root",
+        "type": "leaf",
+        "metric": "minutes:trk_study,trk_skills",
+        "operator": ">=",
+        "value": 6000,
+        "window": {
+          "kind": "all_time"
+        }
+      },
+      "unit": "minutes"
+    },
+    {
+      "key": "combined_hours_500",
+      "title": "500 Hour Arc",
+      "description": "Complete 500 combined academic + skills hours",
+      "category": "meta",
+      "target": 30000,
+      "xpReward": 1500,
+      "tier": 3,
+      "condition": {
+        "id": "combined_hours_500:root",
+        "type": "leaf",
+        "metric": "minutes:trk_study,trk_skills",
+        "operator": ">=",
+        "value": 30000,
+        "window": {
+          "kind": "all_time"
+        }
+      },
+      "unit": "minutes"
+    },
+    {
+      "key": "combined_hours_1000",
+      "title": "1000 Hour Arc",
+      "description": "Complete 1000 combined academic + skills hours",
+      "category": "meta",
+      "target": 60000,
+      "xpReward": 3000,
+      "tier": 3,
+      "condition": {
+        "id": "combined_hours_1000:root",
+        "type": "leaf",
+        "metric": "minutes:trk_study,trk_skills",
+        "operator": ">=",
+        "value": 60000,
+        "window": {
+          "kind": "all_time"
+        }
+      },
+      "unit": "minutes"
+    },
+    {
+      "key": "four_pillars_month",
+      "title": "Four Pillars",
+      "description": "Make measurable progress in Fitness, Academics, Skills, and Projects during the same month",
+      "category": "meta",
+      "target": 1,
+      "xpReward": 1000,
+      "tier": 2,
+      "condition": {
+        "id": "four_pillars_month:root",
+        "type": "leaf",
+        "metric": "sameMonth:trk_fitness,trk_academic,trk_skills,trk_projects",
+        "operator": ">=",
+        "value": 1,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "prep_exam_cycle_1",
+      "title": "The Full Cycle",
+      "description": "Complete one Prep Week followed by one Exam Week",
+      "category": "academic",
+      "target": 1,
+      "xpReward": 750,
+      "tier": 2,
+      "condition": {
+        "id": "prep_exam_cycle_1:root",
+        "type": "leaf",
+        "metric": "cycles:cyc_academic",
+        "operator": ">=",
+        "value": 1,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "zero_missed_blocks_week",
+      "title": "Zero Excuses",
+      "description": "Complete every required planned block in a week",
+      "category": "discipline",
+      "target": 1,
+      "xpReward": 1000,
+      "tier": 2,
+      "condition": {
+        "id": "zero_missed_blocks_week:root",
+        "type": "leaf",
+        "metric": "perfectWeeks",
+        "operator": ">=",
+        "value": 1,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "final_boss",
+      "title": "Final Boss",
+      "description": "Complete 4 major projects, 10 exam papers, and 100 LeetCode problems",
+      "category": "meta",
+      "target": 1,
+      "xpReward": 5000,
+      "tier": 3,
+      "condition": {
+        "id": "final_boss:root",
+        "type": "and",
+        "children": [
+          {
+            "id": "final_boss:projects:root",
+            "type": "leaf",
+            "metric": "goals:trk_projects",
+            "operator": ">=",
+            "value": 4,
+            "window": {
+              "kind": "all_time"
+            }
+          },
+          {
+            "id": "final_boss:papers:root",
+            "type": "leaf",
+            "metric": "papers:*",
+            "operator": ">=",
+            "value": 10,
+            "window": {
+              "kind": "all_time"
+            }
+          },
+          {
+            "id": "final_boss:leetcode:root",
+            "type": "leaf",
+            "metric": "units:trk_leetcode",
+            "operator": ">=",
+            "value": 100,
+            "window": {
+              "kind": "all_time"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "key": "milestone_first",
+      "title": "First Milestone",
+      "description": "Reach your first milestone",
+      "category": "goals",
+      "target": 1,
+      "xpReward": 100,
+      "tier": 1,
+      "condition": {
+        "id": "milestone_first:root",
+        "type": "leaf",
+        "metric": "events:milestone_completed",
+        "operator": ">=",
+        "value": 1,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "milestones_10",
+      "title": "Milestone Maker",
+      "description": "Reach 10 milestones",
+      "category": "goals",
+      "target": 10,
+      "xpReward": 400,
+      "tier": 2,
+      "condition": {
+        "id": "milestones_10:root",
+        "type": "leaf",
+        "metric": "events:milestone_completed",
+        "operator": ">=",
+        "value": 10,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "milestones_40",
+      "title": "Roadmap Runner",
+      "description": "Reach 40 milestones",
+      "category": "goals",
+      "target": 40,
+      "xpReward": 1200,
+      "tier": 3,
+      "condition": {
+        "id": "milestones_40:root",
+        "type": "leaf",
+        "metric": "events:milestone_completed",
+        "operator": ">=",
+        "value": 40,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "project_shipped_1",
+      "title": "Shipped",
+      "description": "Ship your first project",
+      "category": "projects",
+      "target": 1,
+      "xpReward": 500,
+      "tier": 1,
+      "condition": {
+        "id": "project_shipped_1:root",
+        "type": "leaf",
+        "metric": "events:project_shipped",
+        "operator": ">=",
+        "value": 1,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "project_shipped_3",
+      "title": "Builder",
+      "description": "Ship three projects",
+      "category": "projects",
+      "target": 3,
+      "xpReward": 1000,
+      "tier": 2,
+      "condition": {
+        "id": "project_shipped_3:root",
+        "type": "leaf",
+        "metric": "events:project_shipped",
+        "operator": ">=",
+        "value": 3,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "project_shipped_6",
+      "title": "Portfolio Complete",
+      "description": "Ship all five portfolio projects and the app",
+      "category": "projects",
+      "target": 6,
+      "xpReward": 3000,
+      "tier": 3,
+      "condition": {
+        "id": "project_shipped_6:root",
+        "type": "leaf",
+        "metric": "events:project_shipped",
+        "operator": ">=",
+        "value": 6,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "daily_checklist_7",
+      "title": "Routine",
+      "description": "Complete a daily checklist 7 times",
+      "category": "discipline",
+      "target": 7,
+      "xpReward": 200,
+      "tier": 1,
+      "condition": {
+        "id": "daily_checklist_7:root",
+        "type": "leaf",
+        "metric": "checklists:daily",
+        "operator": ">=",
+        "value": 7,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "daily_checklist_30",
+      "title": "Ritual",
+      "description": "Complete a daily checklist 30 times",
+      "category": "discipline",
+      "target": 30,
+      "xpReward": 600,
+      "tier": 2,
+      "condition": {
+        "id": "daily_checklist_30:root",
+        "type": "leaf",
+        "metric": "checklists:daily",
+        "operator": ">=",
+        "value": 30,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "weekly_checklist_4",
+      "title": "Weekly Operator",
+      "description": "Complete the weekly checklist 4 times",
+      "category": "discipline",
+      "target": 4,
+      "xpReward": 400,
+      "tier": 2,
+      "condition": {
+        "id": "weekly_checklist_4:root",
+        "type": "leaf",
+        "metric": "checklists:weekly",
+        "operator": ">=",
+        "value": 4,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "monthly_review_3",
+      "title": "Quarterly Clarity",
+      "description": "Complete the monthly review 3 times",
+      "category": "discipline",
+      "target": 3,
+      "xpReward": 800,
+      "tier": 2,
+      "condition": {
+        "id": "monthly_review_3:root",
+        "type": "leaf",
+        "metric": "checklists:monthly",
+        "operator": ">=",
+        "value": 3,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "sources_read_25",
+      "title": "Well Read",
+      "description": "Read or extract 25 research sources",
+      "category": "research",
+      "target": 25,
+      "xpReward": 400,
+      "tier": 1,
+      "condition": {
+        "id": "sources_read_25:root",
+        "type": "leaf",
+        "metric": "events:source_read",
+        "operator": ">=",
+        "value": 25,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "sources_read_100",
+      "title": "Scholar",
+      "description": "Read or extract 100 research sources",
+      "category": "research",
+      "target": 100,
+      "xpReward": 1200,
+      "tier": 3,
+      "condition": {
+        "id": "sources_read_100:root",
+        "type": "leaf",
+        "metric": "events:source_read",
+        "operator": ">=",
+        "value": 100,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "evidence_10",
+      "title": "Proof of Work",
+      "description": "Attach 10 pieces of skill evidence",
+      "category": "skills",
+      "target": 10,
+      "xpReward": 400,
+      "tier": 2,
+      "condition": {
+        "id": "evidence_10:root",
+        "type": "leaf",
+        "metric": "events:skill_evidence",
+        "operator": ">=",
+        "value": 10,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "first_payment",
+      "title": "First Rupee",
+      "description": "Receive your first paid income",
+      "category": "earning",
+      "target": 1,
+      "xpReward": 500,
+      "tier": 1,
+      "condition": {
+        "id": "first_payment:root",
+        "type": "leaf",
+        "metric": "earned:*",
+        "operator": ">=",
+        "value": 1,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "earned_10000",
+      "title": "Five Figures",
+      "description": "Earn ₹10,000 in total",
+      "category": "earning",
+      "target": 10000,
+      "xpReward": 1000,
+      "tier": 2,
+      "condition": {
+        "id": "earned_10000:root",
+        "type": "leaf",
+        "metric": "earned:*",
+        "operator": ">=",
+        "value": 10000,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    },
+    {
+      "key": "passive_first",
+      "title": "Money While Sleeping",
+      "description": "Receive your first passive income",
+      "category": "earning",
+      "target": 1,
+      "xpReward": 600,
+      "tier": 2,
+      "condition": {
+        "id": "passive_first:root",
+        "type": "leaf",
+        "metric": "earned:passive",
+        "operator": ">=",
+        "value": 1,
+        "window": {
+          "kind": "all_time"
+        }
+      }
+    }
+  ],
+  "rewards": [
+    {
+      "id": "rwd_1",
+      "name": "Anime episode",
+      "cost": 100,
+      "description": ""
+    },
+    {
+      "id": "rwd_2",
+      "name": "Gaming session",
+      "cost": 250,
+      "description": ""
+    },
+    {
+      "id": "rwd_3",
+      "name": "Favorite snack",
+      "cost": 300,
+      "description": ""
+    },
+    {
+      "id": "rwd_4",
+      "name": "Movie / anime session",
+      "cost": 400,
+      "description": "Suggested 250–500"
+    },
+    {
+      "id": "rwd_5",
+      "name": "Favorite meal",
+      "cost": 500,
+      "description": ""
+    },
+    {
+      "id": "rwd_6",
+      "name": "Gaming night",
+      "cost": 750,
+      "description": "Suggested 500–1000"
+    },
+    {
+      "id": "rwd_7",
+      "name": "Small personal purchase",
+      "cost": 2000,
+      "description": ""
+    },
+    {
+      "id": "rwd_8",
+      "name": "Bigger personal reward",
+      "cost": 5000,
+      "description": ""
+    },
+    {
+      "id": "rwd_9",
+      "name": "Major reward",
+      "cost": 10000,
+      "description": ""
+    }
+  ],
+  "xp": {
+    "trackerAwards": {
+      "trk_fitness": 20,
+      "trk_leetcode": 15,
+      "trk_cyber": 25,
+      "trk_courses": 20,
+      "trk_build": 20,
+      "trk_projects": 30,
+      "trk_skills": 20,
+      "trk_academic": 20,
+      "trk_sat": 20,
+      "trk_sat_class": 20,
+      "trk_revision": 15,
+      "trk_exam": 0,
+      "trk_exam_analysis": 40,
+      "trk_weekly_review": 100,
+      "trk_reflection": 0,
+      "trk_routine": 0,
+      "trk_english": 20,
+      "trk_sat_math": 20,
+      "trk_school": 30,
+      "trk_research": 30,
+      "trk_ap": 20,
+      "trk_ap_calc": 20,
+      "trk_ap_cyber": 20,
+      "trk_app": 30,
+      "trk_earning": 20
+    },
+    "noXPTrackers": [
+      "trk_music",
+      "trk_free",
+      "trk_break",
+      "trk_meals",
+      "trk_sleep",
+      "trk_entertainment"
+    ],
+    "awards": {
+      "paper_submitted": 50
+    },
+    "streakMilestones": {
+      "7": 150,
+      "14": 300,
+      "30": 600
+    },
+    "fullDayBonus": 50,
+    "fullWeekBonus": 200,
+    "rewardCurrencyPerXP": 1,
+    "dailyCaps": {
+      "block_completed": 800,
+      "task_completed": 600
+    },
+    "dailyTotalCap": 2000
+  },
+  "dailyReviewHour": 22,
+  "projects": [
+    {
+      "id": "prj_portfolio_1",
+      "title": "Portfolio Project 1",
+      "goalId": "gol_project_1",
+      "kind": "portfolio",
+      "status": "active",
+      "summary": "Working MVP, tests, README, architecture note and demo.",
+      "definitionOfDone": "Working MVP, tests, README, architecture note and demo.",
+      "targetDate": "2026-12-06",
+      "deliverables": [
+        "Working code in a public repo",
+        "Automated tests",
+        "README with setup + screenshots",
+        "Architecture note",
+        "Demo video / live link",
+        "Portfolio write-up"
+      ]
+    },
+    {
+      "id": "prj_portfolio_2",
+      "title": "Portfolio Project 2",
+      "goalId": "gol_project_2",
+      "kind": "portfolio",
+      "status": "planning",
+      "summary": "Functional MVP, tests, README, architecture note and demo.",
+      "definitionOfDone": "Functional MVP, tests, README, architecture note and demo.",
+      "targetDate": "2026-12-27",
+      "deliverables": [
+        "Working code in a public repo",
+        "Automated tests",
+        "README with setup + screenshots",
+        "Architecture note",
+        "Demo video / live link",
+        "Portfolio write-up"
+      ]
+    },
+    {
+      "id": "prj_portfolio_3",
+      "title": "Portfolio Project 3",
+      "goalId": "gol_project_3",
+      "kind": "portfolio",
+      "status": "planning",
+      "summary": "Functional MVP, tests, README, architecture note and demo.",
+      "definitionOfDone": "Functional MVP, tests, README, architecture note and demo.",
+      "targetDate": "2027-01-03",
+      "deliverables": [
+        "Working code in a public repo",
+        "Automated tests",
+        "README with setup + screenshots",
+        "Architecture note",
+        "Demo video / live link",
+        "Portfolio write-up"
+      ]
+    },
+    {
+      "id": "prj_portfolio_4",
+      "title": "Portfolio Project 4",
+      "goalId": "gol_project_4",
+      "kind": "portfolio",
+      "status": "planning",
+      "summary": "Deployable/demo-ready project, tests and documentation.",
+      "definitionOfDone": "Deployable/demo-ready project, tests and documentation.",
+      "targetDate": "2027-01-24",
+      "deliverables": [
+        "Working code in a public repo",
+        "Automated tests",
+        "README with setup + screenshots",
+        "Architecture note",
+        "Demo video / live link",
+        "Portfolio write-up"
+      ]
+    },
+    {
+      "id": "prj_portfolio_5",
+      "title": "Portfolio Project 5",
+      "goalId": "gol_project_5",
+      "kind": "portfolio",
+      "status": "planning",
+      "summary": "Flagship project with measurable technical depth, tests and demo.",
+      "definitionOfDone": "Flagship project with measurable technical depth, tests and demo.",
+      "targetDate": "2027-02-07",
+      "deliverables": [
+        "Working code in a public repo",
+        "Automated tests",
+        "README with setup + screenshots",
+        "Architecture note",
+        "Demo video / live link",
+        "Portfolio write-up"
+      ]
+    },
+    {
+      "id": "prj_app",
+      "title": "Play Store Application",
+      "goalId": "gol_app",
+      "kind": "app",
+      "status": "planning",
+      "targetDate": "2027-02-16",
+      "summary": "Android app taken through testing to a production release.",
+      "definitionOfDone": "Live on Google Play in production.",
+      "deliverables": [
+        "Signed release build",
+        "Privacy policy URL",
+        "Data-safety form",
+        "Store listing: icon, screenshots, feature graphic",
+        "Closed-test feedback addressed",
+        "Production release"
+      ]
+    }
+  ],
+  "studies": [
+    {
+      "id": "std_lr_1",
+      "title": "Literature Review 1",
+      "kind": "literature_review",
+      "goalId": "gol_lr_1",
+      "targetDate": "2026-11-29"
+    },
+    {
+      "id": "std_lr_2",
+      "title": "Literature Review 2",
+      "kind": "literature_review",
+      "goalId": "gol_lr_2",
+      "targetDate": "2026-12-06"
+    },
+    {
+      "id": "std_lr_3",
+      "title": "Literature Review 3",
+      "kind": "literature_review",
+      "goalId": "gol_lr_3",
+      "targetDate": "2026-12-13"
+    },
+    {
+      "id": "std_lr_4",
+      "title": "Literature Review 4",
+      "kind": "literature_review",
+      "goalId": "gol_lr_4",
+      "targetDate": "2026-12-27"
+    },
+    {
+      "id": "std_lr_5",
+      "title": "Literature Review 5",
+      "kind": "literature_review",
+      "goalId": "gol_lr_5",
+      "targetDate": "2027-01-10"
+    },
+    {
+      "id": "std_rp_1",
+      "title": "Research Paper 1",
+      "kind": "paper",
+      "goalId": "gol_rp_1",
+      "targetDate": "2027-01-24"
+    },
+    {
+      "id": "std_rp_2",
+      "title": "Research Paper 2",
+      "kind": "paper",
+      "goalId": "gol_rp_2",
+      "targetDate": "2027-02-16"
+    }
+  ],
+  "skills": [
+    {
+      "id": "skl_websec",
+      "name": "Web application security",
+      "category": "Cybersecurity",
+      "level": 1,
+      "targetLevel": 3,
+      "trackerId": "trk_cyber",
+      "path": [
+        {
+          "id": "skl_websec_1",
+          "title": "PortSwigger Web Security Academy — apprentice labs"
+        },
+        {
+          "id": "skl_websec_2",
+          "title": "PortSwigger — practitioner labs"
+        },
+        {
+          "id": "skl_websec_3",
+          "title": "Write up 5 labs in your own words"
+        },
+        {
+          "id": "skl_websec_4",
+          "title": "Build an authorised testing tool (portfolio project)"
+        }
+      ]
+    },
+    {
+      "id": "skl_offsec",
+      "name": "Offensive security & CTFs",
+      "category": "Cybersecurity",
+      "level": 1,
+      "targetLevel": 3,
+      "trackerId": "trk_cyber",
+      "path": [
+        {
+          "id": "skl_offsec_1",
+          "title": "TryHackMe learning path"
+        },
+        {
+          "id": "skl_offsec_2",
+          "title": "Hack The Box starting point"
+        },
+        {
+          "id": "skl_offsec_3",
+          "title": "HackerDNA challenges"
+        },
+        {
+          "id": "skl_offsec_4",
+          "title": "10 documented write-ups"
+        }
+      ]
+    },
+    {
+      "id": "skl_network",
+      "name": "Networking",
+      "category": "Cybersecurity",
+      "level": 1,
+      "targetLevel": 3,
+      "trackerId": "trk_courses",
+      "path": [
+        {
+          "id": "skl_network_1",
+          "title": "Cisco NetAcad course"
+        },
+        {
+          "id": "skl_network_2",
+          "title": "Packet Tracer labs"
+        },
+        {
+          "id": "skl_network_3",
+          "title": "Subnetting drills"
+        }
+      ]
+    },
+    {
+      "id": "skl_dsa",
+      "name": "Data structures & algorithms",
+      "category": "Programming",
+      "level": 2,
+      "targetLevel": 4,
+      "trackerId": "trk_leetcode",
+      "path": [
+        {
+          "id": "skl_dsa_1",
+          "title": "NeetCode 150 patterns"
+        },
+        {
+          "id": "skl_dsa_2",
+          "title": "100 LeetCode problems"
+        },
+        {
+          "id": "skl_dsa_3",
+          "title": "Weekly contest x4"
+        }
+      ]
+    },
+    {
+      "id": "skl_cs50",
+      "name": "Computer science foundations",
+      "category": "Programming",
+      "level": 2,
+      "targetLevel": 3,
+      "trackerId": "trk_courses",
+      "path": [
+        {
+          "id": "skl_cs50_1",
+          "title": "CS50x problem sets"
+        },
+        {
+          "id": "skl_cs50_2",
+          "title": "CS50 final project"
+        }
+      ]
+    },
+    {
+      "id": "skl_android",
+      "name": "Android app development",
+      "category": "Programming",
+      "level": 1,
+      "targetLevel": 3,
+      "trackerId": "trk_app",
+      "path": [
+        {
+          "id": "skl_android_1",
+          "title": "Kotlin + Jetpack Compose basics"
+        },
+        {
+          "id": "skl_android_2",
+          "title": "Ship the Play Store app"
+        }
+      ]
+    },
+    {
+      "id": "skl_ml",
+      "name": "Machine learning",
+      "category": "AI",
+      "level": 1,
+      "targetLevel": 3,
+      "trackerId": "trk_courses",
+      "path": [
+        {
+          "id": "skl_ml_1",
+          "title": "Kaggle Intro to ML"
+        },
+        {
+          "id": "skl_ml_2",
+          "title": "Kaggle Intermediate ML"
+        },
+        {
+          "id": "skl_ml_3",
+          "title": "One end-to-end ML project"
+        }
+      ]
+    },
+    {
+      "id": "skl_research",
+      "name": "Academic research & writing",
+      "category": "Research",
+      "level": 1,
+      "targetLevel": 3,
+      "trackerId": "trk_research",
+      "path": [
+        {
+          "id": "skl_research_1",
+          "title": "Systematic search strategy"
+        },
+        {
+          "id": "skl_research_2",
+          "title": "Literature matrix technique"
+        },
+        {
+          "id": "skl_research_3",
+          "title": "APA referencing"
+        },
+        {
+          "id": "skl_research_4",
+          "title": "Complete 5 literature reviews"
+        }
+      ]
+    },
+    {
+      "id": "skl_freelance",
+      "name": "Client acquisition & delivery",
+      "category": "Business",
+      "level": 0,
+      "targetLevel": 2,
+      "trackerId": "trk_earning",
+      "path": [
+        {
+          "id": "skl_freelance_1",
+          "title": "Define one service and pricing"
+        },
+        {
+          "id": "skl_freelance_2",
+          "title": "Write a proposal template"
+        },
+        {
+          "id": "skl_freelance_3",
+          "title": "Deliver one paid project"
+        }
+      ]
+    }
+  ],
+  "examTracks": [
+    {
+      "id": "exm_sat",
+      "title": "SAT",
+      "family": "SAT",
+      "minTotal": 400,
+      "maxTotal": 1600,
+      "target": 1600,
+      "examDate": "2027-03-13",
+      "goalId": "gol_sat_1600",
+      "sections": [
+        {
+          "id": "rw",
+          "name": "Reading & Writing",
+          "min": 200,
+          "max": 800,
+          "trackerId": "trk_english"
+        },
+        {
+          "id": "math",
+          "name": "Math",
+          "min": 200,
+          "max": 800,
+          "trackerId": "trk_sat_math"
+        }
+      ]
+    },
+    {
+      "id": "exm_ap_calc",
+      "title": "AP Calculus BC",
+      "family": "AP",
+      "minTotal": 1,
+      "maxTotal": 5,
+      "directTotal": true,
+      "target": 5,
+      "examDate": "2027-05-10",
+      "goalId": "gol_ap_calc",
+      "sections": [
+        {
+          "id": "mcq",
+          "name": "Multiple choice %",
+          "min": 0,
+          "max": 100,
+          "trackerId": "trk_ap_calc"
+        },
+        {
+          "id": "frq",
+          "name": "Free response %",
+          "min": 0,
+          "max": 100,
+          "trackerId": "trk_ap_calc"
+        }
+      ]
+    },
+    {
+      "id": "exm_ap_cyber",
+      "title": "AP Cybersecurity",
+      "family": "AP",
+      "minTotal": 1,
+      "maxTotal": 5,
+      "directTotal": true,
+      "target": 5,
+      "examDate": "2027-05-05",
+      "goalId": "gol_ap_cyber",
+      "sections": [
+        {
+          "id": "mcq",
+          "name": "Multiple choice %",
+          "min": 0,
+          "max": 100,
+          "trackerId": "trk_ap_cyber"
+        },
+        {
+          "id": "scn",
+          "name": "Scenario response %",
+          "min": 0,
+          "max": 100,
+          "trackerId": "trk_ap_cyber"
+        }
+      ]
+    }
+  ],
+  "checklists": [
+    {
+      "id": "chk_daily",
+      "title": "Daily checklist",
+      "cadence": "daily",
+      "completionXP": 40,
+      "description": "Your daily definition of a good day.",
+      "items": [
+        {
+          "id": "chk_daily_1",
+          "title": "Check today's calendar and pick the three most important outcomes",
+          "doneDefinition": "Top 3 written; schedule reviewed",
+          "timing": "Before 07:30",
+          "area": "Planning"
+        },
+        {
+          "id": "chk_daily_2",
+          "title": "SAT targeted drill (Information & Ideas, Craft & Structure)",
+          "doneDefinition": "Timed set done; every miss/guess logged",
+          "timing": "07:30–08:20",
+          "area": "SAT"
+        },
+        {
+          "id": "chk_daily_3",
+          "title": "Attend the SAT class",
+          "doneDefinition": "Notes, three takeaways and homework recorded",
+          "timing": "Class time",
+          "area": "SAT"
+        },
+        {
+          "id": "chk_daily_4",
+          "title": "Scheduled Physics / Chemistry / Maths / NCERT learning or mock",
+          "doneDefinition": "Questions attempted; chapter progress updated",
+          "timing": "Main study block",
+          "area": "Academics"
+        },
+        {
+          "id": "chk_daily_5",
+          "title": "Review errors and reattempt wrong or guessed questions",
+          "doneDefinition": "Error log updated; next reattempt date set",
+          "timing": "Review window",
+          "area": "Assessment review"
+        },
+        {
+          "id": "chk_daily_6",
+          "title": "AP Calculus BC / AP Cybersecurity topic",
+          "doneDefinition": "Notes plus AP-style questions or a scenario response",
+          "timing": "AP block",
+          "area": "AP",
+          "days": [
+            5,
+            0
+          ]
+        },
+        {
+          "id": "chk_daily_7",
+          "title": "Advance the current literature review or paper",
+          "doneDefinition": "A tangible output: matrix, synthesis, method, draft, citations",
+          "timing": "Research block",
+          "area": "Research"
+        },
+        {
+          "id": "chk_daily_8",
+          "title": "One portfolio project / app increment",
+          "doneDefinition": "Commit, test or issue update; README/demo when relevant",
+          "timing": "Project block",
+          "area": "Projects"
+        },
+        {
+          "id": "chk_daily_9",
+          "title": "Workout or prescribed active recovery",
+          "doneDefinition": "Session logged",
+          "timing": "60 min",
+          "area": "Fitness"
+        },
+        {
+          "id": "chk_daily_10",
+          "title": "Cybersecurity / coding / AI / course / freelancing rotation",
+          "doneDefinition": "Lab, problem set, proposal or experiment documented",
+          "timing": "Evening skills block",
+          "area": "Skills"
+        },
+        {
+          "id": "chk_daily_11",
+          "title": "Write a short poem, journal entry, research note or technical paragraph",
+          "doneDefinition": "Small written artefact saved",
+          "timing": "Before bed",
+          "area": "Writing"
+        },
+        {
+          "id": "chk_daily_12",
+          "title": "Breaks, meals, water — then close the day",
+          "doneDefinition": "Wind-down done; sleep protected",
+          "timing": "Across the day",
+          "area": "Recovery"
+        }
+      ]
+    },
+    {
+      "id": "chk_habits",
+      "title": "Habits",
+      "cadence": "daily",
+      "completionXP": 20,
+      "description": "Small daily habits — the streak is the point.",
+      "items": [
+        {
+          "id": "chk_habits_1",
+          "title": "Lights out on time",
+          "doneDefinition": "In bed by the planned time",
+          "timing": "Night",
+          "area": "Habit"
+        },
+        {
+          "id": "chk_habits_2",
+          "title": "Workout or mobility",
+          "doneDefinition": "Any training logged",
+          "timing": "Daily",
+          "area": "Habit"
+        },
+        {
+          "id": "chk_habits_3",
+          "title": "Read 20 minutes (non-study)",
+          "doneDefinition": "20 minutes read",
+          "timing": "Daily",
+          "area": "Habit"
+        },
+        {
+          "id": "chk_habits_4",
+          "title": "2–3 L water",
+          "doneDefinition": "Bottle finished",
+          "timing": "Daily",
+          "area": "Habit"
+        },
+        {
+          "id": "chk_habits_5",
+          "title": "No phone for the first 30 minutes",
+          "doneDefinition": "Morning without phone",
+          "timing": "Morning",
+          "area": "Habit"
+        }
+      ]
+    },
+    {
+      "id": "chk_weekly",
+      "title": "Weekly checklist",
+      "cadence": "weekly",
+      "dueWeekday": 0,
+      "completionXP": 150,
+      "items": [
+        {
+          "id": "chk_weekly_1",
+          "title": "Physics practice exam",
+          "doneDefinition": "Timed paper + corrections (a real school paper can replace it)",
+          "timing": "Monday",
+          "area": "Academics"
+        },
+        {
+          "id": "chk_weekly_2",
+          "title": "Chemistry practice exam",
+          "doneDefinition": "Timed paper + corrections",
+          "timing": "Tuesday",
+          "area": "Academics"
+        },
+        {
+          "id": "chk_weekly_3",
+          "title": "Maths practice exam",
+          "doneDefinition": "Timed paper + corrections",
+          "timing": "Wednesday",
+          "area": "Academics"
+        },
+        {
+          "id": "chk_weekly_4",
+          "title": "SAT assessment A",
+          "doneDefinition": "Full digital SAT or official full mock; score logged in Exams",
+          "timing": "Thursday",
+          "area": "SAT"
+        },
+        {
+          "id": "chk_weekly_5",
+          "title": "SAT assessment B",
+          "doneDefinition": "Timed section / full practice; errors reviewed",
+          "timing": "Saturday",
+          "area": "SAT"
+        },
+        {
+          "id": "chk_weekly_6",
+          "title": "Seven SAT classes + review all SAT errors",
+          "doneDefinition": "Domain and 1/3/7-day error reattempts logged",
+          "timing": "Daily + Sunday",
+          "area": "SAT"
+        },
+        {
+          "id": "chk_weekly_7",
+          "title": "Finish chapter targets; close overdue revision entries",
+          "doneDefinition": "Revision queue clear",
+          "timing": "Friday / Sunday",
+          "area": "Revision"
+        },
+        {
+          "id": "chk_weekly_8",
+          "title": "Two AP Calculus BC + two AP Cybersecurity sessions",
+          "doneDefinition": "One new-topic and one retrieval block per course",
+          "timing": "Friday and Sunday",
+          "area": "AP"
+        },
+        {
+          "id": "chk_weekly_9",
+          "title": "Advance one dated research deliverable",
+          "doneDefinition": "A named section or review draft reaches done",
+          "timing": "Weekly",
+          "area": "Research"
+        },
+        {
+          "id": "chk_weekly_10",
+          "title": "Ship a measurable feature for the active portfolio project",
+          "doneDefinition": "Working increment, test, README/demo, commit",
+          "timing": "Sprint review",
+          "area": "Projects"
+        },
+        {
+          "id": "chk_weekly_11",
+          "title": "Advance app testing, privacy, store assets or release readiness",
+          "doneDefinition": "One app milestone evidenced",
+          "timing": "App sprint",
+          "area": "App"
+        },
+        {
+          "id": "chk_weekly_12",
+          "title": "Rotate TryHackMe, HTB/HackerDNA, PortSwigger, CS50, NetAcad, course",
+          "doneDefinition": "At least two practical outputs documented",
+          "timing": "Skills rotation",
+          "area": "Cyber / coding"
+        },
+        {
+          "id": "chk_weekly_13",
+          "title": "Outreach, proposal / client follow-up, delivery review",
+          "doneDefinition": "Pipeline and ledger updated",
+          "timing": "1–2 short sessions",
+          "area": "Earning"
+        },
+        {
+          "id": "chk_weekly_14",
+          "title": "Six training sessions + one recovery day",
+          "doneDefinition": "Workout log updated",
+          "timing": "Across the week",
+          "area": "Fitness"
+        },
+        {
+          "id": "chk_weekly_15",
+          "title": "Review scores, hours, projects, research, fitness, rewards; set next week",
+          "doneDefinition": "Weekly review saved",
+          "timing": "Sunday",
+          "area": "Weekly review"
+        },
+        {
+          "id": "chk_weekly_16",
+          "title": "Back up LifeOS and repos; update project boards",
+          "doneDefinition": "Backup file saved; project statuses current",
+          "timing": "Sunday",
+          "area": "Backup"
+        }
+      ]
+    },
+    {
+      "id": "chk_monthly",
+      "title": "Monthly review",
+      "cadence": "monthly",
+      "completionXP": 300,
+      "description": "Month-end audit across every area.",
+      "items": [
+        {
+          "id": "chk_monthly_1",
+          "title": "Review every subject's chapter status against the syllabus / date sheet",
+          "doneDefinition": "Every chapter tagged: not started / learning / practice / tested / mastered",
+          "timing": "Month-end",
+          "area": "Academic audit"
+        },
+        {
+          "id": "chk_monthly_2",
+          "title": "Review Bluebook score trend, section scores and domain breakdown",
+          "doneDefinition": "Latest score + weakest two skills; next month weighted",
+          "timing": "Month-end",
+          "area": "SAT audit"
+        },
+        {
+          "id": "chk_monthly_3",
+          "title": "Review AP Calculus BC and AP Cybersecurity unit coverage",
+          "doneDefinition": "Unit milestones updated; next units and FRQ work scheduled",
+          "timing": "Month-end",
+          "area": "AP audit"
+        },
+        {
+          "id": "chk_monthly_4",
+          "title": "Review all five literature reviews and two papers",
+          "doneDefinition": "Each has a stage, source audit and next action",
+          "timing": "Month-end",
+          "area": "Research audit"
+        },
+        {
+          "id": "chk_monthly_5",
+          "title": "Review all five portfolio projects and the app",
+          "doneDefinition": "Code, tests, README, demo, backlog and deployment checked",
+          "timing": "Month-end",
+          "area": "Project audit"
+        },
+        {
+          "id": "chk_monthly_6",
+          "title": "Review labs, CS50 / NetAcad / course work, AI and coding outputs",
+          "doneDefinition": "Evidence attached to each skill",
+          "timing": "Month-end",
+          "area": "Skills audit"
+        },
+        {
+          "id": "chk_monthly_7",
+          "title": "Review leads, proposals, paid hours, revenue and expenses",
+          "doneDefinition": "Ledger reconciled; invoices chased",
+          "timing": "Month-end",
+          "area": "Earning audit"
+        },
+        {
+          "id": "chk_monthly_8",
+          "title": "Review workout consistency, strength progression, recovery",
+          "doneDefinition": "Trend noted; load adjusted",
+          "timing": "Month-end",
+          "area": "Fitness audit"
+        },
+        {
+          "id": "chk_monthly_9",
+          "title": "Complete, pause, re-scope or re-date every active goal; add next month's milestones",
+          "doneDefinition": "No stale goals; every goal has a next milestone",
+          "timing": "Month-end",
+          "area": "Goal / milestone audit"
+        },
+        {
+          "id": "chk_monthly_10",
+          "title": "Redeem or re-price rewards; check XP and balance",
+          "doneDefinition": "Reward shop reviewed",
+          "timing": "Month-end",
+          "area": "Rewards"
+        },
+        {
+          "id": "chk_monthly_11",
+          "title": "Archive finished goals; prune stale tasks and rules; export a backup",
+          "doneDefinition": "Fresh backup stored; recurring rules reviewed",
+          "timing": "Month-end",
+          "area": "LifeOS housekeeping"
+        }
+      ]
+    }
+  ]
+}
